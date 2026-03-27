@@ -1,0 +1,52 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: zen-ui 0.1.0\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+"Language: en\\n"
+
+msgid "Zen UI"
+msgstr "Zen UI"
+
+msgid "Unified settings"
+msgstr "Unified settings"
+
+msgid "Bottom navbar"
+msgstr "Bottom navbar"
+
+msgid "Quick settings panel"
+msgstr "Quick settings panel"
+
+msgid "Custom status bar"
+msgstr "Custom status bar"
+
+msgid "Hide pagination footer"
+msgstr "Hide pagination footer"
+
+msgid "Disable top menu zones"
+msgstr "Disable top menu zones"
+
+msgid "Browser folder covers"
+msgstr "Browser folder covers"
+
+msgid "Browser hide underline"
+msgstr "Browser hide underline"
+
+msgid "Browser up-folder behavior"
+msgstr "Browser up-folder behavior"
+
+msgid "Reader header clock"
+msgstr "Reader header clock"
+
+msgid "Safe mode"
+msgstr "Safe mode"
+
+msgid "Legacy settings migrated"
+msgstr "Legacy settings migrated"
+
+msgid "No legacy settings migrated"
+msgstr "No legacy settings migrated"
+
+msgid "Toggle Zen UI safe mode"
+msgstr "Toggle Zen UI safe mode"

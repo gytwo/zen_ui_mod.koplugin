@@ -1,0 +1,104 @@
+local function apply_browser_up_folder()
+    local BD = require("ui/bidi")
+    local FileChooser = require("ui/widget/filechooser")
+
+    local zen_plugin = rawget(_G, "__ZEN_UI_PLUGIN")
+    if not zen_plugin or type(zen_plugin.config) ~= "table" then
+        return
+    end
+
+    local function is_enabled()
+        local features = zen_plugin.config and zen_plugin.config.features
+        return type(features) == "table" and features.browser_up_folder == true
+    end
+
+    local config_default = {
+        hide_empty_folder = false,
+        hide_up_folder = true,
+    }
+
+    local function loadConfig()
+        local config = zen_plugin.config.browser_up_folder or {}
+        for k, v in pairs(config_default) do
+            if config[k] == nil then
+                config[k] = v
+            end
+        end
+        zen_plugin.config.browser_up_folder = config
+        return config
+    end
+
+    local config = loadConfig()
+
+    local Icon = {
+        home = "home",
+        up = BD.mirroredUILayout() and "back.top.rtl" or "back.top",
+    }
+
+    function FileChooser:_changeLeftIcon(icon, func)
+        local titlebar = self.title_bar
+        titlebar.left_icon = icon
+        titlebar.left_icon_tap_callback = func
+        if titlebar.left_button then
+            titlebar.left_button:setIcon(icon)
+            titlebar.left_button.callback = func
+        end
+    end
+
+    function FileChooser:_isEmptyDir(item)
+        if item.attr and item.attr.mode == "directory" then
+            local sub_dirs, dir_files = self:getList(item.path, {})
+            local empty = #dir_files == 0
+            if empty then
+                for _, sub_dir in ipairs(sub_dirs) do
+                    if not self:_isEmptyDir(sub_dir) then
+                        empty = false
+                        break
+                    end
+                end
+            end
+            return empty
+        end
+    end
+
+    local orig_FileChooser_genItemTable = FileChooser.genItemTable
+
+    function FileChooser:genItemTable(dirs, files, path)
+        local item_table = orig_FileChooser_genItemTable(self, dirs, files, path)
+        if not is_enabled() then
+            return item_table
+        end
+        if self._dummy or self.name ~= "filemanager" then
+            return item_table
+        end
+
+        local items = {}
+        local is_sub_folder = false
+        for _, item in ipairs(item_table) do
+            if item.path:find("\u{e257}/") then
+                table.insert(items, item)
+            elseif (item.is_go_up or item.text:find("\u{2B06} ..")) and config.hide_up_folder then
+                is_sub_folder = true
+            elseif not (config.hide_empty_folder and self:_isEmptyDir(item)) then
+                table.insert(items, item)
+            end
+        end
+
+        if config.hide_empty_folder and #items == 0 then
+            self:onFolderUp()
+            return
+        end
+
+        self._left_tap_callback = self._left_tap_callback or self.title_bar.left_icon_tap_callback
+        if is_sub_folder then
+            self:_changeLeftIcon(Icon.up, function() self:onFolderUp() end)
+        else
+            self:_changeLeftIcon(Icon.home, self._left_tap_callback)
+        end
+        return items
+    end
+
+end
+
+
+return apply_browser_up_folder

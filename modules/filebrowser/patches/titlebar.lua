@@ -504,7 +504,13 @@ local function apply_titlebar()
         -- Periodic refresh for time/battery/disk
         local function autoRefresh()
             if FileManager.instance ~= fm then return end
-            fm:_updateStatusBar()
+            -- Only update when FM is the topmost widget; prevents the titlebar
+            -- from bleeding into the screensaver/lockscreen when inactive.
+            local stack = UIManager._window_stack
+            local top = stack and stack[#stack]
+            if top and (top.widget == fm or top.widget == fm.show_parent) then
+                fm:_updateStatusBar()
+            end
             UIManager:scheduleIn(60, autoRefresh)
         end
         UIManager:scheduleIn(60, autoRefresh)

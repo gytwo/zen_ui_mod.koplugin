@@ -2,6 +2,7 @@ local M = {}
 local initialized = false
 
 local PATCH_MODULES = {
+    opening_banner = "modules/reader/patches/opening_banner",
     reader_header_clock = "modules/reader/patches/reader_header_clock",
 }
 
@@ -38,6 +39,12 @@ end
 function M.init(logger, plugin)
     if initialized then
         return true
+    end
+
+    -- Always apply: replaces the "Opening file..." popup with a bottom banner
+    local opening_banner_fn = load_patch("opening_banner")
+    if opening_banner_fn then
+        run_feature(logger, plugin, "opening_banner", opening_banner_fn)
     end
 
     if is_feature_enabled(plugin, "reader_header_clock") then

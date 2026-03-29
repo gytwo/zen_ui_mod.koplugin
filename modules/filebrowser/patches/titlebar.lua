@@ -411,9 +411,11 @@ local function apply_titlebar()
         -- Folder title row shown centered below the time row when in a subfolder
         local folder_row
         if in_subfolder and folder_name then
+            local folder_face = Font:getFace("NotoSans-Bold.ttf", Font.sizemap["x_smallinfofont"])
             local folder_text = TextWidget:new{
                 text = folder_name,
-                face = getBarFont(),
+                face = folder_face,
+                bold = true,
             }
             local folder_h = folder_text:getSize().h
             folder_row = CenterContainer:new{
@@ -512,6 +514,17 @@ local function apply_titlebar()
         end
 
         UIManager:setDirty(self.show_parent or self, "ui", tb.dimen)
+
+        -- Also repaint the region just below the titlebar to clear any
+        -- overflow from the folder-title row (which paints outside tb.dimen).
+        local extra_h = Screen:scaleBySize(40)
+        local overflow_dimen = Geom:new{
+            x = tb.dimen.x,
+            y = tb.dimen.y + tb.dimen.h,
+            w = tb.dimen.w,
+            h = extra_h,
+        }
+        UIManager:setDirty(self.show_parent or self, "ui", overflow_dimen)
     end
 
     -- === Hooks ===
@@ -582,7 +595,10 @@ local function apply_titlebar()
             orig_onPathChanged(self, path)
         end
         if is_enabled() then
-            self:_updateStatusBar()
+            local fm = self
+            UIManager:nextTick(function()
+                fm:_updateStatusBar()
+            end)
         end
     end
 

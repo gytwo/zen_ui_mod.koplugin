@@ -12,6 +12,7 @@ local FEATURES = {
 
 local PATCH_MODULES = {
     context_menu = "modules/filebrowser/patches/context_menu",
+    subfolder_padding = "modules/filebrowser/patches/subfolder_padding",
     navbar = "modules/filebrowser/patches/navbar",
     titlebar = "modules/filebrowser/patches/titlebar",
     hide_pagination = "modules/filebrowser/patches/hide_pagination",
@@ -65,6 +66,13 @@ function M.init(logger, plugin)
     local context_menu_fn = load_patch("context_menu")
     if context_menu_fn then
         run_feature(logger, plugin, "context_menu", context_menu_fn)
+    end
+
+    -- Always apply: pads item list when inside a subfolder so items don't
+    -- overlap the folder-title row drawn by the titlebar patch.
+    local subfolder_padding_fn = load_patch("subfolder_padding")
+    if subfolder_padding_fn then
+        run_feature(logger, plugin, "subfolder_padding", subfolder_padding_fn)
     end
 
     for _, feature in ipairs(FEATURES) do

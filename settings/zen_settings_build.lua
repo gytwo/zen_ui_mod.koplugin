@@ -1290,7 +1290,6 @@ function M.build(plugin)
     table.insert(filebrowser_items, {
         text = _("Browser hide up-folder settings"),
         sub_item_table = {
-            make_enable_feature_item("browser_hide_up_folder", _("Browser hide up-folder behavior"), _("Enable browser hide up-folder behavior")),
             {
                 text = _("Hide up folders"),
                 checked_func = function() return config.browser_hide_up_folder.hide_up_folder == true end,

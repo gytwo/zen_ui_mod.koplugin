@@ -188,6 +188,7 @@ local function apply_browser_folder_cover()
             self.menu._dummy = false
             if not entries then return end
 
+            local found_cover = false
             for _, entry in ipairs(entries) do
                 if entry.is_file or entry.file then
                     local bookinfo = BookInfoManager:getBookInfo(entry.path, true)
@@ -200,9 +201,13 @@ local function apply_browser_folder_cover()
                         and not BookInfoManager.isCachedCoverInvalid(bookinfo, self.menu.cover_specs)
                     then
                         self:_setFolderCover { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h }
+                        found_cover = true
                         break
                     end
                 end
+            end
+            if not found_cover then
+                self:_setFolderCover { no_image = true }
             end
         end
 
@@ -213,25 +218,49 @@ local function apply_browser_folder_cover()
                 h = self.height - 2 * Folder.face.border_size - top_h,
             }
 
-            local img_options = { file = img.file, image = img.data }
-            if img.scale_to_fit then
-                img_options.scale_factor = math.max(target.w / img.w, target.h / img.h)
-                img_options.width = target.w
-                img_options.height = target.h
+            local size, dimen, image_widget
+            if img.no_image then
+                -- Simulate portrait book cover scaling (same math.min logic as ImageWidget path).
+                -- Use cover_specs ratio when available, otherwise fall back to 2:3 (w:h).
+                local specs = self.menu.cover_specs
+                local ratio = (specs and specs.size_ratio) and (1 / specs.size_ratio) or (2 / 3) -- w/h
+                local sf = math.min(target.w / ratio, target.h) -- scale to fit
+                -- equivalent to math.min(target.w / (ratio*100), target.h / 100)
+                local cover_w = math.floor(ratio * sf)
+                local cover_h = math.floor(sf)
+                size = { w = cover_w, h = cover_h }
+                dimen = { w = cover_w + 2 * Folder.face.border_size, h = cover_h + 2 * Folder.face.border_size }
+                image_widget = FrameContainer:new {
+                    padding = 0,
+                    bordersize = Folder.face.border_size,
+                    background = Blitbuffer.COLOR_LIGHT_GRAY,
+                    CenterContainer:new {
+                        dimen = { w = cover_w, h = cover_h },
+                        VerticalSpan:new { width = 1 },
+                    },
+                    overlap_align = "center",
+                }
             else
-                img_options.scale_factor = math.min(target.w / img.w, target.h / img.h)
+                local img_options = { file = img.file, image = img.data }
+                if img.scale_to_fit then
+                    img_options.scale_factor = math.max(target.w / img.w, target.h / img.h)
+                    img_options.width = target.w
+                    img_options.height = target.h
+                else
+                    img_options.scale_factor = math.min(target.w / img.w, target.h / img.h)
+                end
+
+                local image = ImageWidget:new(img_options)
+                size = image:getSize()
+                dimen = { w = size.w + 2 * Folder.face.border_size, h = size.h + 2 * Folder.face.border_size }
+
+                image_widget = FrameContainer:new {
+                    padding = 0,
+                    bordersize = Folder.face.border_size,
+                    image,
+                    overlap_align = "center",
+                }
             end
-
-            local image = ImageWidget:new(img_options)
-            local size = image:getSize()
-            local dimen = { w = size.w + 2 * Folder.face.border_size, h = size.h + 2 * Folder.face.border_size }
-
-            local image_widget = FrameContainer:new {
-                padding = 0,
-                bordersize = Folder.face.border_size,
-                image,
-                overlap_align = "center",
-            }
 
             local directory, nbitems = self:_getTextBoxes { w = size.w, h = size.h }
             local size = nbitems:getSize()
@@ -253,7 +282,7 @@ local function apply_browser_folder_cover()
             end
 
             local nbitems_widget
-            if tonumber(nbitems.text) ~= 0 then
+            if nbitems.text ~= "" then
                 nbitems_widget = BottomContainer:new {
                     dimen = dimen,
                     RightContainer:new {
@@ -376,9 +405,28 @@ local function apply_browser_folder_cover()
         end
     end
 
-    local ok, coverbrowser = pcall(require, "coverbrowser")
-    if ok and coverbrowser then
-        patchCoverBrowser(coverbrowser)
+    -- `require("coverbrowser")` fails at plugin-init time because the plugin
+    -- hasn't been instantiated yet.  By the time FileManager:setupLayout() runs
+    -- (inside FileManager:init()), all plugins — including coverbrowser — have
+    -- already been registered on `self`.  Hook there instead.
+    local FileManager = require("apps/filemanager/filemanager")
+    local orig_fm_setupLayout = FileManager.setupLayout
+    local coverbrowser_patched = false
+
+    FileManager.setupLayout = function(self)
+        orig_fm_setupLayout(self)
+        if not coverbrowser_patched and self.coverbrowser then
+            patchCoverBrowser(self.coverbrowser)
+            coverbrowser_patched = true
+            -- The file list may have already rendered before patching completed.
+            -- Schedule a refresh so our cover rendering runs on all visible items.
+            local UIManager = require("ui/uimanager")
+            UIManager:scheduleIn(0, function()
+                if self.file_chooser then
+                    self.file_chooser:updateItems()
+                end
+            end)
+        end
     end
 end
 

@@ -541,7 +541,30 @@ local function apply_titlebar()
     chainHook("onNetworkDisconnected")
     chainHook("onCharging")
     chainHook("onNotCharging")
-    chainHook("onResume")
+
+    -- onResume: defer long enough for the screensaver to finish its full-screen
+    -- repaint and for the titlebar layout to be fully established.  nextTick
+    -- (one loop pass) is too fast — it races against the screensaver's flashui
+    -- flush and can fire before paintTo has set correct layout geometry, which
+    -- causes child widgets to render at offset (0,0) i.e. top-left.
+    -- scheduleIn(0) ticks once more after all current events and repaints settle.
+    -- The topmost-widget guard (same as autoRefresh) prevents painting during
+    -- any modal that might still be on top.
+    local orig_onResume = FileManager.onResume
+    FileManager.onResume = function(self)
+        if orig_onResume then orig_onResume(self) end
+        if is_enabled() then
+            local fm = self
+            UIManager:scheduleIn(0, function()
+                if FileManager.instance ~= fm then return end
+                local stack = UIManager._window_stack
+                local top = stack and stack[#stack]
+                if top and (top.widget == fm or top.widget == fm.show_parent) then
+                    fm:_updateStatusBar()
+                end
+            end)
+        end
+    end
 end
 
 

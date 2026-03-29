@@ -11,6 +11,7 @@ local FEATURES = {
 }
 
 local PATCH_MODULES = {
+    context_menu = "modules/filebrowser/patches/context_menu",
     navbar = "modules/filebrowser/patches/navbar",
     titlebar = "modules/filebrowser/patches/titlebar",
     hide_pagination = "modules/filebrowser/patches/hide_pagination",
@@ -58,6 +59,12 @@ end
 function M.init(logger, plugin)
     if initialized then
         return true
+    end
+
+    -- Always apply: replaces the long-hold context menu with a minimal layout
+    local context_menu_fn = load_patch("context_menu")
+    if context_menu_fn then
+        run_feature(logger, plugin, "context_menu", context_menu_fn)
     end
 
     for _, feature in ipairs(FEATURES) do

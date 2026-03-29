@@ -993,14 +993,6 @@ function M.build(plugin)
         sub_item_table = {
             make_enable_feature_item("titlebar", _("Custom status bar"), _("Enable custom status bar")),
             {
-                text = _("Hide browser bar"),
-                checked_func = function() return config.titlebar.hide_topbar == true end,
-                callback = function()
-                    config.titlebar.hide_topbar = not (config.titlebar.hide_topbar == true)
-                    save_and_apply_titlebar()
-                end,
-            },
-            {
                 text_func = function()
                     local name = config.titlebar.device_name
                     if name == nil or name == "" then

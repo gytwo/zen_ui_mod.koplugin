@@ -110,8 +110,9 @@ local function apply_browser_folder_cover()
         face = {
             border_size = Size.border.thick,
             alpha = 0.75,
-            nb_items_font_size = 20,
-            nb_items_margin = Screen:scaleBySize(5),
+            nb_items_font_size = 15,
+            nb_items_badge_size = Screen:scaleBySize(22),  -- fixed circle diameter
+            nb_items_offset = Screen:scaleBySize(5),       -- push badge down from top edge
             dir_max_font_size = 25,
         },
     }
@@ -262,9 +263,12 @@ local function apply_browser_folder_cover()
                 }
             end
 
+            -- Pass inner image dimensions; the FrameContainer (bordersize) brings the
+            -- banner flush with the outer cover edge (dimen.w = size.w + 2*border_size).
             local directory, nbitems = self:_getTextBoxes { w = size.w, h = size.h }
-            local size = nbitems:getSize()
-            local nb_size = math.max(size.w, size.h)
+            -- Fixed circle diameter, independent of font size.
+            local badge_d = Folder.face.nb_items_badge_size
+            local badge_offset = Folder.face.nb_items_offset
 
             local folder_name_widget
             if settings.show_folder_name.get() then
@@ -283,19 +287,22 @@ local function apply_browser_folder_cover()
 
             local nbitems_widget
             if nbitems.text ~= "" then
-                nbitems_widget = BottomContainer:new {
+                nbitems_widget = TopContainer:new {
                     dimen = dimen,
                     RightContainer:new {
                         dimen = {
-                            w = dimen.w - Folder.face.nb_items_margin,
-                            h = nb_size + Folder.face.nb_items_margin * 2 + math.ceil(nb_size * 0.125),
+                            w = dimen.w - Screen:scaleBySize(4),
+                            h = badge_d + badge_offset,
                         },
-                        FrameContainer:new {
-                            padding = 0,
-                            padding_bottom = math.ceil(nb_size * 0.125),
-                            radius = math.ceil(nb_size * 0.5),
-                            background = Blitbuffer.COLOR_WHITE,
-                            CenterContainer:new { dimen = { w = nb_size, h = nb_size }, nbitems },
+                        VerticalGroup:new {
+                            VerticalSpan:new{ width = badge_offset },
+                            FrameContainer:new {
+                                padding = 0,
+                                bordersize = 0,
+                                radius = math.floor(badge_d / 2),
+                                background = Blitbuffer.COLOR_WHITE,
+                                CenterContainer:new { dimen = { w = badge_d, h = badge_d }, nbitems },
+                            },
                         },
                     },
                     overlap_align = "center",
@@ -342,10 +349,21 @@ local function apply_browser_folder_cover()
                 padding = 0,
             }
 
+            -- Always reserve the same badge height so the title font stays
+            -- consistent whether the folder is empty or not.
+            local badge_ref = TextWidget:new {
+                text = "0",
+                face = Font:getFace("cfont", Folder.face.nb_items_font_size),
+                bold = true,
+                padding = 0,
+            }
+            local badge_h = badge_ref:getSize().h
+            badge_ref:free()
+
             local text = self.text
             if text:match("/$") then text = text:sub(1, -2) end -- remove "/"
             text = BD.directory(capitalize(text))
-            local available_height = dimen.h - 2 * nbitems:getSize().h
+            local available_height = dimen.h - 2 * badge_h
             local dir_font_size = Folder.face.dir_max_font_size
             local directory
 

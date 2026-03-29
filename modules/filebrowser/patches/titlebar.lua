@@ -284,11 +284,48 @@ local function apply_titlebar()
 
     -- === Build the status row ===
 
-    local function createStatusRow()
-        local left_text = TextWidget:new{
-            text = getDeviceName(),
-            face = getBarFont(),
-        }
+    local function createStatusRow(path, file_manager)
+        local CenterContainer = require("ui/widget/container/centercontainer")
+
+        -- Detect whether we are inside a subfolder of the home directory
+        local in_subfolder = false
+        local folder_name = nil
+        local g_settings = rawget(_G, "G_reader_settings")
+        local home_dir = g_settings and g_settings:readSetting("home_dir")
+        if home_dir and path then
+            local norm_home = home_dir:gsub("/$", "")
+            local norm_path = path:gsub("/$", "")
+            if norm_path ~= norm_home and norm_path:sub(1, #norm_home + 1) == norm_home .. "/" then
+                in_subfolder = true
+                folder_name = path:match("([^/]+)/?$") or path
+            end
+        end
+
+        -- Left widget: tappable chevron.left button when in a subfolder, device name otherwise
+        local left_widget
+        if in_subfolder then
+            local Button = require("ui/widget/button")
+            local ffiUtil = require("ffi/util")
+            local icon_size = Screen:scaleBySize(28)
+            left_widget = Button:new{
+                icon = "chevron.left",
+                icon_width = icon_size,
+                icon_height = icon_size,
+                bordersize = 0,
+                padding = 0,
+                callback = function()
+                    local parent = ffiUtil.dirname(path)
+                    if file_manager and file_manager.file_chooser and parent then
+                        file_manager.file_chooser:changeToPath(parent)
+                    end
+                end,
+            }
+        else
+            left_widget = TextWidget:new{
+                text = getDeviceName(),
+                face = getBarFont(),
+            }
+        end
 
         local sep = getSeparator()
         local use_color = config.colored
@@ -331,11 +368,10 @@ local function apply_titlebar()
             end
         end
 
-        local row_height = math.max(left_text:getSize().h, right_group:getSize().h)
+        local row_height = math.max(left_widget:getSize().h, right_group:getSize().h)
         local screen_w = Screen:getWidth()
 
         local inner_w = screen_w - h_padding * 2
-        local CenterContainer = require("ui/widget/container/centercontainer")
 
         local row = OverlapGroup:new{
             dimen = Geom:new{ w = screen_w, h = row_height },
@@ -343,7 +379,7 @@ local function apply_titlebar()
                 dimen = Geom:new{ w = screen_w, h = row_height },
                 HorizontalGroup:new{
                     HorizontalSpan:new{ width = h_padding },
-                    left_text,
+                    left_widget,
                 },
             },
             RightContainer:new{
@@ -372,7 +408,28 @@ local function apply_titlebar()
             })
         end
 
+        -- Folder title row shown centered below the time row when in a subfolder
+        local folder_row
+        if in_subfolder and folder_name then
+            local folder_text = TextWidget:new{
+                text = folder_name,
+                face = getBarFont(),
+            }
+            local folder_h = folder_text:getSize().h
+            folder_row = CenterContainer:new{
+                dimen = Geom:new{ w = screen_w, h = folder_h },
+                folder_text,
+            }
+        end
+
         if not config.show_bottom_border then
+            if folder_row then
+                return VerticalGroup:new{
+                    align = "center",
+                    row,
+                    folder_row,
+                }
+            end
             return row
         end
 
@@ -381,14 +438,15 @@ local function apply_titlebar()
             background = Blitbuffer.COLOR_LIGHT_GRAY,
         }
 
-        return VerticalGroup:new{
-            align = "center",
-            row,
-            CenterContainer:new{
-                dimen = Geom:new{ w = screen_w, h = Size.line.medium },
-                border,
-            },
-        }
+        local vg = VerticalGroup:new{ align = "center", row }
+        if folder_row then
+            table.insert(vg, folder_row)
+        end
+        table.insert(vg, CenterContainer:new{
+            dimen = Geom:new{ w = screen_w, h = Size.line.medium },
+            border,
+        })
+        return vg
     end
 
     -- === Replace title content and reposition buttons ===
@@ -404,7 +462,8 @@ local function apply_titlebar()
         local title_group = tb.title_group
         if #title_group < 2 then return end
 
-        local status_row = createStatusRow()
+        local current_path = self.file_chooser and self.file_chooser.path
+        local status_row = createStatusRow(current_path, self)
         title_group[2] = status_row
         title_group:resetLayout()
 

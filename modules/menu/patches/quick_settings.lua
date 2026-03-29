@@ -47,7 +47,7 @@ local function apply_quick_settings()
     -- ============================================================
 
     local config_default = {
-        button_order = { "wifi", "night", "rotate", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "browserbar", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
         show_buttons = {
             wifi = true,
             night = true,
@@ -61,7 +61,6 @@ local function apply_quick_settings()
             restart = true,
             exit = true,
             sleep = true,
-            browserbar = false,
             -- External plugin buttons (disabled by default; enable if plugin is installed)
             notion = false,
             streak = false,
@@ -331,26 +330,6 @@ local function apply_quick_settings()
                         text = _("Filebrowser plugin is not installed."),
                     })
                 end
-            end,
-        },
-        browserbar = {
-            icon = "quick_browserbar",
-            label = "Bar",
-            active_func = function()
-                local fm_config = getTitlebarConfig()
-                return not (fm_config.hide_topbar == true)
-            end,
-            callback = function(touch_menu)
-                local fm_config = getTitlebarConfig()
-                fm_config.hide_topbar = not (fm_config.hide_topbar == true)
-                if zen_plugin.saveConfig then
-                    zen_plugin:saveConfig()
-                end
-                local ok_f, FileManager = pcall(require, "apps/filemanager/filemanager")
-                if ok_f and FileManager.instance then
-                    FileManager.instance:reinit()
-                end
-                touch_menu:updateItems(1)
             end,
         },
 

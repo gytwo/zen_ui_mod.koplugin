@@ -104,7 +104,6 @@ local defaults = {
         show_bottom_border = true,
         colored = false,
         bold_text = false,
-        hide_topbar = false,
     },
     browser_hide_up_folder = {
         hide_empty_folder = false,

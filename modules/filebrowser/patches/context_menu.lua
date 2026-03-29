@@ -18,31 +18,49 @@ local function apply_context_menu()
     local Device       = require("device")
     local FileChooser  = require("ui/widget/filechooser")
     local FileManager  = require("apps/filemanager/filemanager")
-    local Geom         = require("ui/geometry")
     local PathChooser  = require("ui/widget/pathchooser")
     local UIManager    = require("ui/uimanager")
-    local Screen       = Device.screen
     local _            = require("gettext")
     local C_           = _.pgettext
 
-    -- ── MoveChooser ───────────────────────────────────────────────────────────
-    -- PathChooser subclass used by the Move action:
-    --   • hides the go-up (..) row and the "long-press here" current-dir hint
-    --   • single tap on a folder immediately confirms the move (no long-press)
-    --   • folder covers render automatically via CoverBrowser (mosaic mode)
+    -- ── MoveChooser ──────────────────────────────────────────────────────────
+    -- PathChooser subclass for picking a move destination.
+    --   • Cover-browser rendering applies automatically when the coverbrowser
+    --     plugin is active (it hooks MosaicMenuItem.update on FileChooser items).
+    --   • genItemTable strips hidden folders (.sdr, .thumbnails, etc.) and the
+    --     go-up row — the list is intentionally flat.
+    --   • onMenuSelect fires immediately on single tap (no navigate-into behaviour).
     local _orig_fc_genItemTable = FileChooser.genItemTable
     local MoveChooser = PathChooser:extend{}
 
     function MoveChooser:genItemTable(dirs, files, path)
+        local ffiUtil3 = require("ffi/util")
         local items = _orig_fc_genItemTable(self, dirs, files, path)
         local filtered = {}
         for _, item in ipairs(items) do
-            -- skip ".." (go-up) and "." (choose-current-dir-for-hold) entries
-            if not item.is_go_up
-               and (not item.path or not item.path:match("/%./?$"))
-            then
-                table.insert(filtered, item)
-            end
+            -- drop the ".." go-up row
+            if item.is_go_up then goto continue end
+            -- drop PathChooser's "Long-press to choose current folder" hint row
+            -- (its path ends in "/." regardless of translated text)
+            if item.path and item.path:sub(-2) == "/." then goto continue end
+            -- drop hidden entries (.sdr, .thumbnails, etc.)
+            local fname = item.text or ""
+            if fname:sub(1, 1) == "." then goto continue end
+            table.insert(filtered, item)
+            ::continue::
+        end
+        -- Prepend a Home item so the user can move directly into home_dir.
+        -- Skip it when the item being moved is already a direct child of home_dir
+        -- (moving it there would be a no-op).
+        local real_path = ffiUtil3.realpath(path)
+        if not self.src_dir or self.src_dir ~= real_path then
+            table.insert(filtered, 1, {
+                text           = ffiUtil3.basename(path),
+                path           = path,
+                is_file        = false,
+                bidi_wrap_func = BD.directory,
+                mandatory      = self:getMenuItemMandatory({ path = path }),
+            })
         end
         return filtered
     end
@@ -51,7 +69,7 @@ local function apply_context_menu()
         local path = item and item.path
         if not path then return true end
         local ffiUtil2 = require("ffi/util")
-        local real     = ffiUtil2.realpath(path)
+        local real = ffiUtil2.realpath(path)
         if not real then return true end
         local lfs2 = require("libs/libkoreader-lfs")
         if lfs2.attributes(real, "mode") == "directory" then
@@ -60,6 +78,8 @@ local function apply_context_menu()
         end
         return true
     end
+
+    function MoveChooser:onMenuHold() return true end
     -- ─────────────────────────────────────────────────────────────────────────
 
     local orig_setupLayout = FileManager.setupLayout
@@ -84,23 +104,18 @@ local function apply_context_menu()
                 self_fc:refreshPath()
             end
 
-            -- ── Edit submenu (anchored to right edge so it appears beside main dialog) ──
+            -- ── Edit submenu ──────────────────────────────────────────────────────────
             local function showEditSubmenu()
-                -- Keep main dialog open; layer the edit dialog on top anchored right.
+                close_dialog()
                 local edit_dialog
-                local sw = Screen:getWidth()
-                local sh = Screen:getHeight()
-                -- anchor: a slim rect on the right edge, vertically centered
-                local anchor = Geom:new{ x = sw - 1, y = math.floor(sh * 0.25),
-                                         w = 1, h = math.floor(sh * 0.5) }
 
                 local edit_buttons = {
                     {
                         {
                             text     = _("Select"),
+                            align    = "left",
                             callback = function()
                                 UIManager:close(edit_dialog)
-                                close_dialog()
                                 file_manager:onToggleSelectMode()
                                 if is_file then
                                     file_manager.selected_files[file] = true
@@ -109,32 +124,25 @@ local function apply_context_menu()
                                 end
                             end,
                         },
+                    },
+                    {
                         {
-                            text     = _("Rename"),
+                            text     = _("Delete"),
+                            align    = "left",
                             enabled  = is_not_parent_folder,
                             callback = function()
                                 UIManager:close(edit_dialog)
-                                close_dialog()
-                                file_manager:showRenameFileDialog(file, is_file)
+                                file_manager:showDeleteFileDialog(file, refresh)
                             end,
                         },
                     },
                     {
                         {
-                            text     = _("Delete"),
-                            enabled  = is_not_parent_folder,
-                            callback = function()
-                                UIManager:close(edit_dialog)
-                                close_dialog()
-                                file_manager:showDeleteFileDialog(file, refresh)
-                            end,
-                        },
-                        {
                             text     = _("Cut"),
+                            align    = "left",
                             enabled  = is_not_parent_folder,
                             callback = function()
                                 UIManager:close(edit_dialog)
-                                close_dialog()
                                 file_manager:cutFile(file)
                             end,
                         },
@@ -142,19 +150,21 @@ local function apply_context_menu()
                     {
                         {
                             text     = C_("File", "Copy"),
+                            align    = "left",
                             enabled  = is_not_parent_folder,
                             callback = function()
                                 UIManager:close(edit_dialog)
-                                close_dialog()
                                 file_manager:copyFile(file)
                             end,
                         },
+                    },
+                    {
                         {
                             text     = C_("File", "Paste"),
+                            align    = "left",
                             enabled  = file_manager.clipboard and true or false,
                             callback = function()
                                 UIManager:close(edit_dialog)
-                                close_dialog()
                                 file_manager:pasteFileFromClipboard(file)
                             end,
                         },
@@ -162,52 +172,66 @@ local function apply_context_menu()
                 }
 
                 edit_dialog = ButtonDialog:new{
-                    anchor      = anchor,
-                    buttons     = edit_buttons,
+                    buttons = edit_buttons,
                 }
                 UIManager:show(edit_dialog)
             end
 
             -- ── Main dialog ───────────────────────────────────────────────────
-            local buttons = {
-                {
-                    {
-                        text     = _("New folder"),
-                        callback = function()
-                            close_dialog()
-                            file_manager:createFolder()
-                        end,
-                    },
-                },
-            }
+            local buttons = {}
 
             if is_not_parent_folder then
+                table.insert(buttons, {
+                    {
+                        text     = _("Rename"),
+                        align    = "left",
+                        callback = function()
+                            close_dialog()
+                            file_manager:showRenameFileDialog(file, is_file)
+                        end,
+                    },
+                })
+            end
+
+            table.insert(buttons, {
+                {
+                    text     = _("New folder"),
+                    align    = "left",
+                    callback = function()
+                        close_dialog()
+                        file_manager:createFolder()
+                    end,
+                },
+            })
+
+            if is_file and is_not_parent_folder then
                 -- Move: open a folder picker then immediately execute the move
                 table.insert(buttons, {
                     {
                         text     = _("Move"),
+                        align    = "left",
                         callback = function()
                             close_dialog()
-                            local ffiUtil     = require("ffi/util")
-                            local DocSettings = require("docsettings")
-                            local ReadHistory = require("readhistory")
+                            local ffiUtil        = require("ffi/util")
+                            local DocSettings    = require("docsettings")
+                            local ReadHistory    = require("readhistory")
                             local ReadCollection = require("readcollection")
-                            local lfs         = require("libs/libkoreader-lfs")
-                            local src         = ffiUtil.realpath(file)
+                            local lfs            = require("libs/libkoreader-lfs")
+                            local src            = ffiUtil.realpath(file)
+                            if not src then return end
+                            local home_dir = (G_reader_settings and G_reader_settings:readSetting("home_dir"))
+                                or file_chooser.path
+                            if not home_dir then return end
+                            local src_dir = ffiUtil.realpath(ffiUtil.dirname(src))
                             local chooser = MoveChooser:new{
                                 select_directory = true,
                                 select_file      = false,
                                 show_files       = false,
-                                title            = _"Move to…",
-                                path             = ffiUtil.dirname(src),
-                                onConfirm        = function(dest_dir)
-                                    local dest_dir_real = ffiUtil.realpath(dest_dir)
-                                    if not dest_dir_real then return end
-                                    -- bail if destination is same directory
-                                    if dest_dir_real == ffiUtil.realpath(ffiUtil.dirname(src)) then
-                                        return
-                                    end
-                                    local name     = ffiUtil.basename(src)
+                                title            = _("Move to…"),
+                                path             = home_dir,
+                                src_dir          = src_dir,
+                                onConfirm        = function(dest_dir_real)
+                                    local name      = ffiUtil.basename(src)
                                     local dest_file = ffiUtil.joinPath(dest_dir_real, name)
                                     if lfs.attributes(dest_file) then
                                         local InfoMessage = require("ui/widget/infomessage")
@@ -226,7 +250,27 @@ local function apply_context_menu()
                                             ReadHistory:updateItemsByPath(src, dest_file)
                                             ReadCollection:updateItemsByPath(src, dest_file)
                                         end
-                                        refresh()
+                                        -- If the current directory is now empty and we're
+                                        -- in a subfolder, navigate home to avoid a blank screen.
+                                        local real_cur  = ffiUtil.realpath(file_chooser.path)
+                                        local real_home = ffiUtil.realpath(home_dir)
+                                        local at_home   = real_cur == real_home
+                                        local n = 0
+                                        if not at_home then
+                                            local ok3, iter3, dir3 = pcall(lfs.dir, file_chooser.path)
+                                            if ok3 then
+                                                for f3 in iter3, dir3 do
+                                                    if f3 ~= "." and f3 ~= ".." then n = n + 1 end
+                                                end
+                                            end
+                                        end
+                                        if not at_home and n == 0 then
+                                            UIManager:nextTick(function()
+                                                file_chooser:changeToPath(home_dir)
+                                            end)
+                                        else
+                                            refresh()
+                                        end
                                     else
                                         local InfoMessage = require("ui/widget/infomessage")
                                         UIManager:show(InfoMessage:new{
@@ -250,6 +294,7 @@ local function apply_context_menu()
                 table.insert(buttons, {
                     {
                         text = is_fav and _("Remove from favorites") or _("Add to favorites"),
+                        align    = "left",
                         callback = function()
                             close_dialog()
                             if is_fav then
@@ -266,6 +311,7 @@ local function apply_context_menu()
             table.insert(buttons, {
                 {
                     text     = _("Edit  ▶"),
+                    align    = "left",
                     callback = showEditSubmenu,
                 },
             })

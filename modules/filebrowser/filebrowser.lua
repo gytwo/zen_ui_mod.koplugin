@@ -21,6 +21,7 @@ local PATCH_MODULES = {
     browser_list_item_layout = "modules/filebrowser/patches/browser_list_item_layout",
     browser_hide_underline = "modules/filebrowser/patches/browser_hide_underline",
     browser_hide_up_folder = "modules/filebrowser/patches/browser_hide_up_folder",
+    browser_cover_badges = "modules/filebrowser/patches/browser_cover_badges",
 }
 
 local function is_feature_enabled(plugin, key)
@@ -89,6 +90,13 @@ function M.init(logger, plugin)
     local browser_list_item_layout_fn = load_patch("browser_list_item_layout")
     if browser_list_item_layout_fn then
         run_feature(logger, plugin, "browser_list_item_layout", browser_list_item_layout_fn)
+    end
+
+    -- Always apply: remove dog-ears, move favorite star to top-left in mosaic,
+    -- add optional progress % badge at top-right in mosaic, hide list dog-ear.
+    local browser_cover_badges_fn = load_patch("browser_cover_badges")
+    if browser_cover_badges_fn then
+        run_feature(logger, plugin, "browser_cover_badges", browser_cover_badges_fn)
     end
 
     for _, feature in ipairs(FEATURES) do

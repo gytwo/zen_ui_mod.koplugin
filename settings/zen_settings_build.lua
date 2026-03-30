@@ -1281,6 +1281,23 @@ function M.build(plugin)
         end,
     })
 
+    table.insert(filebrowser_items, {
+        text = _("Show progress % on mosaic covers"),
+        checked_func = function()
+            return type(config.browser_cover_badges) == "table"
+                and config.browser_cover_badges.show_mosaic_progress == true
+        end,
+        callback = function()
+            if type(config.browser_cover_badges) ~= "table" then
+                config.browser_cover_badges = {}
+            end
+            config.browser_cover_badges.show_mosaic_progress =
+                not (config.browser_cover_badges.show_mosaic_progress == true)
+            plugin:saveConfig()
+            UIManager:setDirty(nil, "full")
+        end,
+    })
+
     table.insert(reader_items, {
         text = _("Reader clock"),
         sub_item_table = {

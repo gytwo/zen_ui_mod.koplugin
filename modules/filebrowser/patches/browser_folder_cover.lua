@@ -471,13 +471,17 @@ local function apply_browser_folder_cover()
                     end
 
                     -- Build the cover image widget (left side, squared zone, same as book covers).
+                    -- spine_x = left edge of the cover image within the cover zone (for spine line placement).
                     local wleft
+                    local spine_x
                     if img.no_image then
                         local fake_w = math.floor(max_img * 0.6)
+                        local cover_w = fake_w + 2 * border_size
+                        spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
                         wleft = CenterContainer:new {
                             dimen = { w = cover_zone_w, h = dimen_h },
                             FrameContainer:new {
-                                width = fake_w + 2 * border_size,
+                                width = cover_w,
                                 height = max_img + 2 * border_size,
                                 margin = 0, padding = 0, bordersize = border_size,
                                 CenterContainer:new {
@@ -498,16 +502,40 @@ local function apply_browser_folder_cover()
                         local image = ImageWidget:new(img_options)
                         image:_render()
                         local image_size = image:getSize()
+                        local cover_w = image_size.w + 2 * border_size
+                        spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
                         wleft = CenterContainer:new {
                             dimen = { w = cover_zone_w, h = dimen_h },
                             FrameContainer:new {
-                                width = image_size.w + 2 * border_size,
+                                width = cover_w,
                                 height = image_size.h + 2 * border_size,
                                 margin = 0, padding = 0, bordersize = border_size,
                                 image,
                             },
                         }
                     end
+
+                    -- Spine lines slightly offset from the left edge of the cover image.
+                    local spine_gap = Screen:scaleBySize(8)
+                    wleft = OverlapGroup:new {
+                        dimen = { w = cover_zone_w, h = dimen_h },
+                        wleft,
+                        LeftContainer:new {
+                            dimen = { w = cover_zone_w, h = dimen_h },
+                            HorizontalGroup:new {
+                                HorizontalSpan:new { width = math.max(0, spine_x - spine_gap) },
+                                LineWidget:new {
+                                    background = Folder.edge.color,
+                                    dimen = { w = Folder.edge.thick, h = dimen_h },
+                                },
+                                HorizontalSpan:new { width = Folder.edge.margin },
+                                LineWidget:new {
+                                    background = Folder.edge.color,
+                                    dimen = { w = Folder.edge.thick, h = dimen_h },
+                                },
+                            },
+                        },
+                    }
 
                     -- Right-side item count widget.
                     local pad = Screen:scaleBySize(10)

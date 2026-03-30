@@ -107,6 +107,9 @@ local defaults = {
     browser_hide_up_folder = {
         hide_up_folder = true,
     },
+    browser_cover_badges = {
+        show_mosaic_progress = true,
+    },
     reader_clock = {
         use_24h = false,
         position = "center",

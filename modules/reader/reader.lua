@@ -4,7 +4,7 @@ local initialized = false
 local PATCH_MODULES = {
     opening_banner = "modules/reader/patches/opening_banner",
     book_status = "modules/reader/patches/book_status",
-    reader_header_clock = "modules/reader/patches/reader_header_clock",
+    reader_clock = "modules/reader/patches/reader_clock",
 }
 
 local function is_feature_enabled(plugin, key)
@@ -54,12 +54,12 @@ function M.init(logger, plugin)
         run_feature(logger, plugin, "book_status", book_status_fn)
     end
 
-    if is_feature_enabled(plugin, "reader_header_clock") then
-        local fn = load_patch("reader_header_clock")
+    if is_feature_enabled(plugin, "reader_clock") then
+        local fn = load_patch("reader_clock")
         if fn then
-            run_feature(logger, plugin, "reader_header_clock", fn)
+            run_feature(logger, plugin, "reader_clock", fn)
         elseif logger then
-            logger.warn("zen-ui: reader patch module missing", "reader_header_clock")
+            logger.warn("zen-ui: reader patch module missing", "reader_clock")
         end
     end
 

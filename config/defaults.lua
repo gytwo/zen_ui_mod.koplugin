@@ -28,7 +28,7 @@ local defaults = {
         browser_folder_cover = true,
         browser_hide_underline = true,
         browser_hide_up_folder = true,
-        reader_header_clock = true,
+        reader_clock = true,
     },
     navbar = {
         show_tabs = {
@@ -93,7 +93,7 @@ local defaults = {
             frontlight = false,
             battery = true,
         },
-        device_name = " ",
+        custom_text = " ",
         separator_key = "small-space",
         custom_separator = "  ",
         order = { "wifi", "disk", "ram", "frontlight", "battery" },
@@ -106,8 +106,9 @@ local defaults = {
     browser_hide_up_folder = {
         hide_up_folder = true,
     },
-    reader_header_clock = {
+    reader_clock = {
         use_24h = false,
+        position = "center",
     }
 }
 

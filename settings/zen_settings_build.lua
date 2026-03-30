@@ -993,19 +993,19 @@ function M.build(plugin)
             make_enable_feature_item("titlebar", _("Custom status bar"), _("Enable custom status bar")),
             {
                 text_func = function()
-                    local name = config.titlebar.device_name
+                    local name = config.titlebar.custom_text
                     if name == nil or name == "" then
                         name = Device.model or ""
                     end
-                    return _("Device name: ") .. name
+                    return _("Custom text: ") .. name
                 end,
                 keep_menu_open = true,
                 callback = function(touchmenu_instance)
                     local InputDialog = require("ui/widget/inputdialog")
                     local dlg
                     dlg = InputDialog:new{
-                        title = _("Device name"),
-                        input = config.titlebar.device_name or "",
+                        title = _("Custom text"),
+                        input = config.titlebar.custom_text or "",
                         hint = Device.model or "",
                         buttons = {{
                             {
@@ -1017,7 +1017,7 @@ function M.build(plugin)
                                 text = _("Set"),
                                 is_enter_default = true,
                                 callback = function()
-                                    config.titlebar.device_name = dlg:getInputText()
+                                    config.titlebar.custom_text = dlg:getInputText()
                                     UIManager:close(dlg)
                                     save_and_apply_titlebar()
                                     if touchmenu_instance then
@@ -1282,19 +1282,60 @@ function M.build(plugin)
     })
 
     table.insert(reader_items, {
-        text = _("Reader header clock settings"),
+        text = _("Reader clock"),
         sub_item_table = {
-            make_enable_feature_item("reader_header_clock", _("Reader header clock"), _("Enable reader header clock")),
+            make_enable_feature_item("reader_clock", _("Reader clock"), _("Enable reader clock")),
             {
                 text = _("Use 24-hour time"),
                 checked_func = function()
-                    return config.reader_header_clock and config.reader_header_clock.use_24h == true
+                    return config.reader_clock and config.reader_clock.use_24h == true
                 end,
                 callback = function()
-                    if type(config.reader_header_clock) ~= "table" then config.reader_header_clock = {} end
-                    config.reader_header_clock.use_24h = not (config.reader_header_clock.use_24h == true)
-                    save_and_apply("reader_header_clock", _("Reader header clock"))
+                    if type(config.reader_clock) ~= "table" then config.reader_clock = {} end
+                    config.reader_clock.use_24h = not (config.reader_clock.use_24h == true)
+                    save_and_apply("reader_clock", _("Reader clock"))
                 end,
+            },
+            {
+                text = _("Position"),
+                sub_item_table = {
+                    {
+                        text = _("Left"),
+                        checked_func = function()
+                            local pos = config.reader_clock and config.reader_clock.position
+                            return pos == "left"
+                        end,
+                        callback = function()
+                            if type(config.reader_clock) ~= "table" then config.reader_clock = {} end
+                            config.reader_clock.position = "left"
+                            save_and_apply("reader_clock", _("Reader clock"))
+                        end,
+                    },
+                    {
+                        text = _("Center"),
+                        checked_func = function()
+                            local pos = config.reader_clock and config.reader_clock.position
+                            return pos == nil or pos == "center"
+                        end,
+                        callback = function()
+                            if type(config.reader_clock) ~= "table" then config.reader_clock = {} end
+                            config.reader_clock.position = "center"
+                            save_and_apply("reader_clock", _("Reader clock"))
+                        end,
+                    },
+                    {
+                        text = _("Right"),
+                        checked_func = function()
+                            local pos = config.reader_clock and config.reader_clock.position
+                            return pos == "right"
+                        end,
+                        callback = function()
+                            if type(config.reader_clock) ~= "table" then config.reader_clock = {} end
+                            config.reader_clock.position = "right"
+                            save_and_apply("reader_clock", _("Reader clock"))
+                        end,
+                    },
+                },
             },
         },
     })
@@ -1333,8 +1374,8 @@ function M.build(plugin)
     })
 
     filebrowser_items = order_items_by_text(filebrowser_items, {
-        _("Navbar"),
         _("Status bar"),
+        _("Navbar"),
         _("Browser hide up-folder settings"),
         _("Hide pagination footer"),
     })
@@ -1342,6 +1383,17 @@ function M.build(plugin)
     menu_items = order_items_by_text(menu_items, {
         _("Quick settings"),
         _("Disable top menu swipe zone (always show quick settings first)"),
+    })
+
+    reorder_nested_items_by_text(filebrowser_items, _("Status bar"), {
+        _("Enable custom status bar"),
+        _("Hide browser bar"),
+        _("Show time"),
+        _("12-hour time"),
+        _("Show bottom border"),
+        _("Bold text"),
+        _("Colored status icons"),
+        _("Items"),
     })
 
     reorder_nested_items_by_text(filebrowser_items, _("Navbar"), {
@@ -1370,17 +1422,6 @@ function M.build(plugin)
         _("Show warmth slider"),
         _("Always open on this tab"),
         _("Buttons"),
-    })
-
-    reorder_nested_items_by_text(filebrowser_items, _("Status bar"), {
-        _("Enable custom status bar"),
-        _("Hide browser bar"),
-        _("Show time"),
-        _("12-hour time"),
-        _("Show bottom border"),
-        _("Bold text"),
-        _("Colored status icons"),
-        _("Items"),
     })
 
     reorder_nested_items_by_text(filebrowser_items, _("Browser hide up-folder settings"), {

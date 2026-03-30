@@ -1,4 +1,4 @@
-local function apply_reader_header_clock()
+local function apply_reader_clock()
     --[[
         This Zen UI feature adds a "header" into the reader display, similar to the footer at the bottom.
 
@@ -51,7 +51,7 @@ local function apply_reader_header_clock()
     local function is_enabled()
         local plugin = zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")
         local features = plugin and plugin.config and plugin.config.features
-        return type(features) == "table" and features.reader_header_clock == true
+        return type(features) == "table" and features.reader_clock == true
     end
 
     ReaderView.paintTo = function(self, bb, x, y)
@@ -125,8 +125,9 @@ local function apply_reader_header_clock()
         pages_done = pages_done + 1 -- This +1 is to include the page you're looking at
         local chapter_progress = pages_done .. " ⁄⁄ " .. pages_chapter
         -- Clock:
-        local zen_clock_config = zen_plugin and zen_plugin.config and zen_plugin.config.reader_header_clock
+        local zen_clock_config = zen_plugin and zen_plugin.config and zen_plugin.config.reader_clock
         local use_24h = type(zen_clock_config) == "table" and zen_clock_config.use_24h == true
+        local clock_position = (type(zen_clock_config) == "table" and zen_clock_config.position) or "center"
         local time = datetime.secondsToHour(os.time(), not use_24h) or ""
         -- Battery:
         local battery = ""
@@ -185,17 +186,31 @@ local function apply_reader_header_clock()
             fgcolor = header_font_color,
             padding = 0,
         }
-        local header = CenterContainer:new {
-            dimen = Geom:new{ w = screen_width, h = header_text:getSize().h + header_top_padding },
-            VerticalGroup:new {
-                VerticalSpan:new { width = header_top_padding },
-                HorizontalGroup:new {
-                    HorizontalSpan:new { width = left_margin },
-                    header_text,
-                    HorizontalSpan:new { width = right_margin },
-                },
-            },
+        local header_h = header_text:getSize().h + header_top_padding
+        local text_inner = VerticalGroup:new {
+            VerticalSpan:new { width = header_top_padding },
+            header_text,
         }
+        local header
+        if clock_position == "left" then
+            header = HorizontalGroup:new {
+                align = "top",
+                HorizontalSpan:new { width = left_margin },
+                text_inner,
+            }
+        elseif clock_position == "right" then
+            local text_w = header_text:getSize().w
+            header = HorizontalGroup:new {
+                align = "top",
+                HorizontalSpan:new { width = screen_width - right_margin - text_w },
+                text_inner,
+            }
+        else -- center
+            header = CenterContainer:new {
+                dimen = Geom:new{ w = screen_width, h = header_h },
+                text_inner,
+            }
+        end
         header:paintTo(bb, x, y)
 
         -- Periodic refresh so the clock updates even when idle
@@ -222,4 +237,4 @@ local function apply_reader_header_clock()
     end
 end
 
-return apply_reader_header_clock
+return apply_reader_clock

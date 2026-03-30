@@ -56,7 +56,7 @@ local function apply_titlebar()
             frontlight = false,
             battery = true,
         },
-        device_name = "",  -- empty = use Device.model
+        custom_text = "",  -- empty = use Device.model
         separator_key = "dot",
         custom_separator = "  ",
         order = { "wifi", "disk", "ram", "frontlight", "battery" },
@@ -191,8 +191,8 @@ local function apply_titlebar()
     -- === Data fetching functions (return icon, label, color) ===
 
     local function getDeviceName()
-        if config.device_name and config.device_name ~= "" then
-            return config.device_name
+        if config.custom_text and config.custom_text ~= "" then
+            return config.custom_text
         end
         return Device.model or "KOReader"
     end

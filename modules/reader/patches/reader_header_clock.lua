@@ -58,6 +58,15 @@ local function apply_reader_header_clock()
         _ReaderView_paintTo_orig(self, bb, x, y)
         if not is_enabled() then return end
         if self.render_mode ~= nil then return end -- Show only for epub-likes and never on pdf-likes
+        -- Guard: don't paint when reader is not the topmost widget (prevents clock bleed on close)
+        local _stack = UIManager._window_stack
+        if _stack then
+            local _top = _stack[#_stack]
+            local _w = _top and _top.widget
+            if _w ~= self.ui and _w ~= (self.ui and self.ui.show_parent) then
+                return
+            end
+        end
         -- don't change anything above this line
 
 

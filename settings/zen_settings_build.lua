@@ -418,7 +418,7 @@ function M.build(plugin)
     end
 
     table.insert(filebrowser_items, {
-        text = _("Bottom navbar settings"),
+        text = _("Navbar"),
         sub_item_table = {
             make_enable_feature_item("navbar", _("Bottom navbar"), _("Enable bottom nav bar")),
             {
@@ -895,7 +895,6 @@ function M.build(plugin)
         { key = "streak", text = _("Streak") },
         { key = "opds", text = _("OPDS") },
         { key = "filebrowser", text = _("Filebrowser") },
-        { key = "browserbar", text = _("Browser bar") },
         { key = "restart", text = _("Restart") },
         { key = "exit", text = _("Exit") },
         { key = "sleep", text = _("Sleep") },
@@ -954,7 +953,7 @@ function M.build(plugin)
     end
 
     table.insert(menu_items, {
-        text = _("Quick settings panel settings"),
+        text = _("Quick settings"),
         sub_item_table = {
             make_enable_feature_item("quick_settings", _("Quick settings panel"), _("Enable quick settings panel")),
             {
@@ -989,7 +988,7 @@ function M.build(plugin)
     })
 
     table.insert(filebrowser_items, {
-        text = _("Custom status bar settings"),
+        text = _("Status bar"),
         sub_item_table = {
             make_enable_feature_item("titlebar", _("Custom status bar"), _("Enable custom status bar")),
             {
@@ -1273,32 +1272,13 @@ function M.build(plugin)
         _("Zen pagination bar")
     ))
 
-    table.insert(menu_items, make_enable_feature_item(
-        "disable_top_menu_swipe_zones",
-        _("Disable top menu swipe zones"),
-        _("Disable top menu swipe zone (always show quick settings first)")
-    ))
-
     table.insert(filebrowser_items, {
-        text = _("Browser hide up-folder settings"),
-        sub_item_table = {
-            {
-                text = _("Hide up folders"),
-                checked_func = function() return config.browser_hide_up_folder.hide_up_folder == true end,
-                callback = function()
-                    config.browser_hide_up_folder.hide_up_folder = not (config.browser_hide_up_folder.hide_up_folder == true)
-                    save_and_apply("browser_hide_up_folder", _("Browser hide up-folder behavior"))
-                end,
-            },
-            {
-                text = _("Hide empty folders"),
-                checked_func = function() return config.browser_hide_up_folder.hide_empty_folder == true end,
-                callback = function()
-                    config.browser_hide_up_folder.hide_empty_folder = not (config.browser_hide_up_folder.hide_empty_folder == true)
-                    save_and_apply("browser_hide_up_folder", _("Browser hide up-folder behavior"))
-                end,
-            },
-        },
+        text = _("Hide up folders"),
+        checked_func = function() return config.browser_hide_up_folder.hide_up_folder == true end,
+        callback = function()
+            config.browser_hide_up_folder.hide_up_folder = not (config.browser_hide_up_folder.hide_up_folder == true)
+            save_and_apply("browser_hide_up_folder", _("Browser hide up-folder behavior"))
+        end,
     })
 
     table.insert(reader_items, {
@@ -1353,18 +1333,18 @@ function M.build(plugin)
     })
 
     filebrowser_items = order_items_by_text(filebrowser_items, {
-        _("Bottom navbar settings"),
-        _("Custom status bar settings"),
+        _("Navbar"),
+        _("Status bar"),
         _("Browser hide up-folder settings"),
         _("Hide pagination footer"),
     })
 
     menu_items = order_items_by_text(menu_items, {
-        _("Quick settings panel settings"),
+        _("Quick settings"),
         _("Disable top menu swipe zone (always show quick settings first)"),
     })
 
-    reorder_nested_items_by_text(filebrowser_items, _("Bottom navbar settings"), {
+    reorder_nested_items_by_text(filebrowser_items, _("Navbar"), {
         _("Enable bottom nav bar"),
         _("Show labels"),
         _("Show top border"),
@@ -1384,7 +1364,7 @@ function M.build(plugin)
         _("Arrange tabs"),
     })
 
-    reorder_nested_items_by_text(menu_items, _("Quick settings panel settings"), {
+    reorder_nested_items_by_text(menu_items, _("Quick settings"), {
         _("Enable quick settings panel"),
         _("Show frontlight slider"),
         _("Show warmth slider"),
@@ -1392,7 +1372,7 @@ function M.build(plugin)
         _("Buttons"),
     })
 
-    reorder_nested_items_by_text(filebrowser_items, _("Custom status bar settings"), {
+    reorder_nested_items_by_text(filebrowser_items, _("Status bar"), {
         _("Enable custom status bar"),
         _("Hide browser bar"),
         _("Show time"),

@@ -4,7 +4,6 @@ local initialized = false
 local FEATURES = {
     "quick_settings",
     "zen_mode",
-    "disable_top_menu_swipe_zones",
 }
 
 local PATCH_MODULES = {
@@ -57,6 +56,12 @@ function M.init(logger, plugin)
                 logger.warn("zen-ui: menu patch module missing", feature)
             end
         end
+    end
+
+    -- Always apply: disable swipe zones so quick settings tab is always shown first
+    local swipe_fn = load_patch("disable_top_menu_swipe_zones")
+    if swipe_fn then
+        run_feature(logger, plugin, "disable_top_menu_swipe_zones", swipe_fn)
     end
 
     initialized = true

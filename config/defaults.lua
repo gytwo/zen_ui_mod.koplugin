@@ -33,11 +33,11 @@ local defaults = {
     navbar = {
         show_tabs = {
             books = true,
-            manga = true,
-            news = true,
+            manga = false,
+            news = false,
             continue = true,
             history = false,
-            favorites = false,
+            favorites = true,
             collections = false,
             exit = false,
             page_left = false,
@@ -57,11 +57,11 @@ local defaults = {
         show_top_gap = false,
         active_tab_styling = true,
         active_tab_bold = true,
-        active_tab_underline = true,
+        active_tab_underline = false,
         underline_above = true,
     },
     quick_settings = {
-        button_order = { "wifi", "night", "rotate", "settings", "usb", "home", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "browserbar", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "settings", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
         show_buttons = {
             wifi = true,
             night = true,
@@ -74,10 +74,8 @@ local defaults = {
             zlibrary = false,
             calibre = false,
             restart = true,
-            exit = true,
+            exit = false,
             sleep = true,
-            home = true,
-            browserbar = false,
             notion = false,
             streak = false,
             opds = false,
@@ -85,18 +83,18 @@ local defaults = {
         },
         show_frontlight = true,
         show_warmth = true,
-        open_on_start = false,
+        open_on_start = true,
     },
     titlebar = {
         show = {
             wifi = true,
-            disk = true,
+            disk = false,
             ram = false,
             frontlight = false,
             battery = true,
         },
-        device_name = "",
-        separator_key = "dot",
+        device_name = " ",
+        separator_key = "small-space",
         custom_separator = "  ",
         order = { "wifi", "disk", "ram", "frontlight", "battery" },
         show_time = true,
@@ -106,18 +104,11 @@ local defaults = {
         bold_text = false,
     },
     browser_hide_up_folder = {
-        hide_empty_folder = false,
         hide_up_folder = true,
     },
     reader_header_clock = {
         use_24h = false,
-    },
-    zen = {
-        context_menu_override = false,
-        cover_style_controls = true,
-        hide_koreader_ui_sections = false,
-        updater_enabled = false,
-    },
+    }
 }
 
 return defaults

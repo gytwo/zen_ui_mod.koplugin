@@ -3,6 +3,7 @@ local initialized = false
 
 local PATCH_MODULES = {
     opening_banner = "modules/reader/patches/opening_banner",
+    book_status = "modules/reader/patches/book_status",
     reader_header_clock = "modules/reader/patches/reader_header_clock",
 }
 
@@ -45,6 +46,12 @@ function M.init(logger, plugin)
     local opening_banner_fn = load_patch("opening_banner")
     if opening_banner_fn then
         run_feature(logger, plugin, "opening_banner", opening_banner_fn)
+    end
+
+    -- Always apply: custom Book Status layout + redirect end-of-book to Book Status
+    local book_status_fn = load_patch("book_status")
+    if book_status_fn then
+        run_feature(logger, plugin, "book_status", book_status_fn)
     end
 
     if is_feature_enabled(plugin, "reader_header_clock") then

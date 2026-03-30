@@ -8,7 +8,10 @@ local function apply_browser_folder_cover()
     local FileChooser = require("ui/widget/filechooser")
     local Font = require("ui/font")
     local FrameContainer = require("ui/widget/container/framecontainer")
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
+    local HorizontalSpan = require("ui/widget/horizontalspan")
     local ImageWidget = require("ui/widget/imagewidget")
+    local LeftContainer = require("ui/widget/container/leftcontainer")
     local LineWidget = require("ui/widget/linewidget")
     local OverlapGroup = require("ui/widget/overlapgroup")
     local RightContainer = require("ui/widget/container/rightcontainer")
@@ -389,6 +392,180 @@ local function apply_browser_folder_cover()
             end
 
             return directory, nbitems
+        end
+
+        -- list mode cover
+        do
+            local ListMenu = require("listmenu")
+            local ListMenuItem = get_upvalue(ListMenu._updateItemsBuildUI, "ListMenuItem")
+            if ListMenuItem then
+                local original_list_update = ListMenuItem.update
+
+                function ListMenuItem:update(...)
+                    original_list_update(self, ...)
+                    if self._foldercover_processed or self.menu.no_refresh_covers or not self.do_cover_image then return end
+                    if self.entry.is_file or self.entry.file or not self.mandatory then return end
+                    local dir_path = self.entry and self.entry.path
+                    if not dir_path then return end
+
+                    self._foldercover_processed = true
+
+                    local cover_file = findCover(dir_path)
+                    if cover_file then
+                        local success, w, h = pcall(function()
+                            local tmp_img = ImageWidget:new { file = cover_file, scale_factor = 1 }
+                            tmp_img:_render()
+                            local orig_w = tmp_img:getOriginalWidth()
+                            local orig_h = tmp_img:getOriginalHeight()
+                            tmp_img:free()
+                            return orig_w, orig_h
+                        end)
+                        if success then
+                            self:_setListFolderCover { file = cover_file, w = w, h = h, scale_to_fit = settings.crop_to_fit.get() }
+                            return
+                        end
+                    end
+
+                    self.menu._dummy = true
+                    local entries = self.menu:genItemTableFromPath(dir_path)
+                    self.menu._dummy = false
+                    if not entries then return end
+
+                    local found_cover = false
+                    for _, entry in ipairs(entries) do
+                        if entry.is_file or entry.file then
+                            local bookinfo = BookInfoManager:getBookInfo(entry.path, true)
+                            if
+                                bookinfo
+                                and bookinfo.cover_bb
+                                and bookinfo.has_cover
+                                and bookinfo.cover_fetched
+                                and not bookinfo.ignore_cover
+                                and not BookInfoManager.isCachedCoverInvalid(bookinfo, self.menu.cover_specs)
+                            then
+                                self:_setListFolderCover { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h }
+                                found_cover = true
+                                break
+                            end
+                        end
+                    end
+                    if not found_cover then
+                        self:_setListFolderCover { no_image = true }
+                    end
+                end
+
+                function ListMenuItem:_setListFolderCover(img)
+                    local underline_h = 1 -- same as self.underline_h = 1 set in ListMenuItem:init()
+                    local border_size = Size.border.thin
+                    local dimen_h = self.height - 2 * underline_h
+                    local cover_zone_w = dimen_h -- squared, matches book cover zone in list mode
+                    local max_img = dimen_h - 2 * border_size
+
+                    -- Font sizes scaled to item height, matching ListMenuItem's _fontSize formula.
+                    local scale_by_size = Screen:scaleBySize(1000000) * (1 / 1000000)
+                    local function _fontSize(nominal, max_size)
+                        local fs = math.floor(nominal * dimen_h * (1 / 64) / scale_by_size)
+                        if max_size and fs >= max_size then return max_size end
+                        return fs
+                    end
+
+                    -- Build the cover image widget (left side, squared zone, same as book covers).
+                    local wleft
+                    if img.no_image then
+                        local fake_w = math.floor(max_img * 0.6)
+                        wleft = CenterContainer:new {
+                            dimen = { w = cover_zone_w, h = dimen_h },
+                            FrameContainer:new {
+                                width = fake_w + 2 * border_size,
+                                height = max_img + 2 * border_size,
+                                margin = 0, padding = 0, bordersize = border_size,
+                                CenterContainer:new {
+                                    dimen = { w = fake_w, h = max_img },
+                                    VerticalSpan:new { width = 1 },
+                                },
+                            },
+                        }
+                    else
+                        local img_options = { file = img.file, image = img.data }
+                        if img.scale_to_fit then
+                            img_options.scale_factor = math.max(max_img / img.w, max_img / img.h)
+                            img_options.width = max_img
+                            img_options.height = max_img
+                        else
+                            img_options.scale_factor = math.min(max_img / img.w, max_img / img.h)
+                        end
+                        local image = ImageWidget:new(img_options)
+                        image:_render()
+                        local image_size = image:getSize()
+                        wleft = CenterContainer:new {
+                            dimen = { w = cover_zone_w, h = dimen_h },
+                            FrameContainer:new {
+                                width = image_size.w + 2 * border_size,
+                                height = image_size.h + 2 * border_size,
+                                margin = 0, padding = 0, bordersize = border_size,
+                                image,
+                            },
+                        }
+                    end
+
+                    -- Right-side item count widget.
+                    local pad = Screen:scaleBySize(10)
+                    local wmain_left_pad = Screen:scaleBySize(5) -- narrower padding when cover present
+                    local wright = TextWidget:new {
+                        text = self.mandatory or "",
+                        face = Font:getFace("infont", _fontSize(14, 18)),
+                        padding = 0,
+                    }
+                    local wright_w = wright:getWidth()
+                    local wright_right_pad = pad
+
+                    -- Folder name widget (middle area).
+                    local text = self.text
+                    if text:match("/$") then text = text:sub(1, -2) end
+                    text = BD.directory(capitalize(text))
+                    local wmain_w = self.width - cover_zone_w - wmain_left_pad - pad - wright_w - wright_right_pad
+                    local wname = TextBoxWidget:new {
+                        text = text,
+                        face = Font:getFace("cfont", _fontSize(20, 24)),
+                        width = math.max(wmain_w, 0),
+                        alignment = "left",
+                        bold = true,
+                        height = dimen_h,
+                        height_adjust = true,
+                        height_overflow_show_ellipsis = true,
+                    }
+
+                    local dimen = { w = self.width, h = dimen_h }
+                    local widget = OverlapGroup:new {
+                        dimen = dimen,
+                        wleft,
+                        LeftContainer:new {
+                            dimen = dimen,
+                            HorizontalGroup:new {
+                                HorizontalSpan:new { width = cover_zone_w },
+                                HorizontalSpan:new { width = wmain_left_pad },
+                                wname,
+                            },
+                        },
+                        RightContainer:new {
+                            dimen = dimen,
+                            HorizontalGroup:new {
+                                wright,
+                                HorizontalSpan:new { width = wright_right_pad },
+                            },
+                        },
+                    }
+
+                    if self._underline_container[1] then
+                        local previous_widget = self._underline_container[1]
+                        previous_widget:free()
+                    end
+                    self._underline_container[1] = VerticalGroup:new {
+                        VerticalSpan:new { width = underline_h },
+                        widget,
+                    }
+                end
+            end
         end
 
         -- menu

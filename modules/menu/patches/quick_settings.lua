@@ -114,11 +114,11 @@ local function apply_quick_settings()
         end
     end
 
-    local function getTitlebarConfig()
-        if type(zen_plugin.config.titlebar) ~= "table" then
-            zen_plugin.config.titlebar = {}
+    local function getStatusBarConfig()
+        if type(zen_plugin.config.status_bar) ~= "table" then
+            zen_plugin.config.status_bar = {}
         end
-        return zen_plugin.config.titlebar
+        return zen_plugin.config.status_bar
     end
 
     loadConfig()

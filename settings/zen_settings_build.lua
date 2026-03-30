@@ -319,8 +319,8 @@ function M.build(plugin)
         save_and_apply("quick_settings", _("Quick settings panel"))
     end
 
-    local function save_and_apply_titlebar()
-        save_and_apply("titlebar", _("Custom status bar"))
+    local function save_and_apply_status_bar()
+        save_and_apply("status_bar", _("Custom status bar"))
     end
 
     local function make_enable_feature_item(feature, feature_label, enable_text)
@@ -990,10 +990,10 @@ function M.build(plugin)
     table.insert(filebrowser_items, {
         text = _("Status bar"),
         sub_item_table = {
-            make_enable_feature_item("titlebar", _("Custom status bar"), _("Enable custom status bar")),
+            make_enable_feature_item("status_bar", _("Custom status bar"), _("Enable custom status bar")),
             {
                 text_func = function()
-                    local name = config.titlebar.custom_text
+                    local name = config.status_bar.custom_text
                     if name == nil or name == "" then
                         name = Device.model or ""
                     end
@@ -1005,7 +1005,7 @@ function M.build(plugin)
                     local dlg
                     dlg = InputDialog:new{
                         title = _("Custom text"),
-                        input = config.titlebar.custom_text or "",
+                        input = config.status_bar.custom_text or "",
                         hint = Device.model or "",
                         buttons = {{
                             {
@@ -1017,9 +1017,9 @@ function M.build(plugin)
                                 text = _("Set"),
                                 is_enter_default = true,
                                 callback = function()
-                                    config.titlebar.custom_text = dlg:getInputText()
+                                    config.status_bar.custom_text = dlg:getInputText()
                                     UIManager:close(dlg)
-                                    save_and_apply_titlebar()
+                                    save_and_apply_status_bar()
                                     if touchmenu_instance then
                                         touchmenu_instance:updateItems()
                                     end
@@ -1033,43 +1033,43 @@ function M.build(plugin)
             },
             {
                 text = _("Show time"),
-                checked_func = function() return config.titlebar.show_time == true end,
+                checked_func = function() return config.status_bar.show_time == true end,
                 callback = function()
-                    config.titlebar.show_time = not (config.titlebar.show_time == true)
-                    save_and_apply_titlebar()
+                    config.status_bar.show_time = not (config.status_bar.show_time == true)
+                    save_and_apply_status_bar()
                 end,
             },
             {
                 text = _("12-hour time"),
-                checked_func = function() return config.titlebar.time_12h == true end,
-                enabled_func = function() return config.titlebar.show_time == true end,
+                checked_func = function() return config.status_bar.time_12h == true end,
+                enabled_func = function() return config.status_bar.show_time == true end,
                 callback = function()
-                    config.titlebar.time_12h = not (config.titlebar.time_12h == true)
-                    save_and_apply_titlebar()
+                    config.status_bar.time_12h = not (config.status_bar.time_12h == true)
+                    save_and_apply_status_bar()
                 end,
             },
             {
                 text = _("Show bottom border"),
-                checked_func = function() return config.titlebar.show_bottom_border == true end,
+                checked_func = function() return config.status_bar.show_bottom_border == true end,
                 callback = function()
-                    config.titlebar.show_bottom_border = not (config.titlebar.show_bottom_border == true)
-                    save_and_apply_titlebar()
+                    config.status_bar.show_bottom_border = not (config.status_bar.show_bottom_border == true)
+                    save_and_apply_status_bar()
                 end,
             },
             {
                 text = _("Bold text"),
-                checked_func = function() return config.titlebar.bold_text == true end,
+                checked_func = function() return config.status_bar.bold_text == true end,
                 callback = function()
-                    config.titlebar.bold_text = not (config.titlebar.bold_text == true)
-                    save_and_apply_titlebar()
+                    config.status_bar.bold_text = not (config.status_bar.bold_text == true)
+                    save_and_apply_status_bar()
                 end,
             },
             {
                 text = _("Colored status icons"),
-                checked_func = function() return config.titlebar.colored == true end,
+                checked_func = function() return config.status_bar.colored == true end,
                 callback = function()
-                    config.titlebar.colored = not (config.titlebar.colored == true)
-                    save_and_apply_titlebar()
+                    config.status_bar.colored = not (config.status_bar.colored == true)
+                    save_and_apply_status_bar()
                 end,
             },
             {
@@ -1081,7 +1081,7 @@ function M.build(plugin)
                         separator = true,
                         callback = function()
                             local SortWidget = require("ui/widget/sortwidget")
-                            local titlebar_items = {
+                            local status_bar_items = {
                                 wifi = _("WiFi"),
                                 disk = _("Disk space"),
                                 ram = _("RAM usage"),
@@ -1089,66 +1089,66 @@ function M.build(plugin)
                                 battery = _("Battery"),
                             }
                             local sort_items = {}
-                            for _, key in ipairs(config.titlebar.order) do
-                                if titlebar_items[key] then
+                            for _, key in ipairs(config.status_bar.order) do
+                                if status_bar_items[key] then
                                     table.insert(sort_items, {
-                                        text = titlebar_items[key],
+                                        text = status_bar_items[key],
                                         orig_item = key,
-                                        dim = not (config.titlebar.show[key] == true),
+                                        dim = not (config.status_bar.show[key] == true),
                                     })
                                 end
                             end
 
                             UIManager:show(SortWidget:new{
-                                title = _("Arrange titlebar items"),
+                                title = _("Arrange status bar items"),
                                 item_table = sort_items,
                                 callback = function()
                                     for i, item in ipairs(sort_items) do
-                                        config.titlebar.order[i] = item.orig_item
+                                        config.status_bar.order[i] = item.orig_item
                                     end
-                                    save_and_apply_titlebar()
+                                    save_and_apply_status_bar()
                                 end,
                             })
                         end,
                     },
                     {
                         text = _("Show WiFi"),
-                        checked_func = function() return config.titlebar.show.wifi == true end,
+                        checked_func = function() return config.status_bar.show.wifi == true end,
                         callback = function()
-                            config.titlebar.show.wifi = not (config.titlebar.show.wifi == true)
-                            save_and_apply_titlebar()
+                            config.status_bar.show.wifi = not (config.status_bar.show.wifi == true)
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Show disk space"),
-                        checked_func = function() return config.titlebar.show.disk == true end,
+                        checked_func = function() return config.status_bar.show.disk == true end,
                         callback = function()
-                            config.titlebar.show.disk = not (config.titlebar.show.disk == true)
-                            save_and_apply_titlebar()
+                            config.status_bar.show.disk = not (config.status_bar.show.disk == true)
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Show RAM usage"),
-                        checked_func = function() return config.titlebar.show.ram == true end,
+                        checked_func = function() return config.status_bar.show.ram == true end,
                         callback = function()
-                            config.titlebar.show.ram = not (config.titlebar.show.ram == true)
-                            save_and_apply_titlebar()
+                            config.status_bar.show.ram = not (config.status_bar.show.ram == true)
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Show frontlight"),
-                        checked_func = function() return config.titlebar.show.frontlight == true end,
+                        checked_func = function() return config.status_bar.show.frontlight == true end,
                         callback = function()
-                            config.titlebar.show.frontlight = not (config.titlebar.show.frontlight == true)
-                            save_and_apply_titlebar()
+                            config.status_bar.show.frontlight = not (config.status_bar.show.frontlight == true)
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Show battery"),
-                        checked_func = function() return config.titlebar.show.battery == true end,
+                        checked_func = function() return config.status_bar.show.battery == true end,
                         callback = function()
-                            config.titlebar.show.battery = not (config.titlebar.show.battery == true)
-                            save_and_apply_titlebar()
+                            config.status_bar.show.battery = not (config.status_bar.show.battery == true)
+                            save_and_apply_status_bar()
                         end,
                     },
                 },
@@ -1165,77 +1165,77 @@ function M.build(plugin)
                         none = _("No separator"),
                         custom = _("Custom"),
                     }
-                    local key = config.titlebar.separator_key or "dot"
+                    local key = config.status_bar.separator_key or "dot"
                     return _("Separator: ") .. (separator_label[key] or key)
                 end,
                 sub_item_table = {
                     {
                         text = _("Middle dot") .. "  '  ·  '",
-                        checked_func = function() return config.titlebar.separator_key == "dot" end,
+                        checked_func = function() return config.status_bar.separator_key == "dot" end,
                         callback = function()
-                            config.titlebar.separator_key = "dot"
-                            save_and_apply_titlebar()
+                            config.status_bar.separator_key = "dot"
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Vertical bar") .. "  '  |  '",
-                        checked_func = function() return config.titlebar.separator_key == "bar" end,
+                        checked_func = function() return config.status_bar.separator_key == "bar" end,
                         callback = function()
-                            config.titlebar.separator_key = "bar"
-                            save_and_apply_titlebar()
+                            config.status_bar.separator_key = "bar"
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Dash") .. "  '  -  '",
-                        checked_func = function() return config.titlebar.separator_key == "dash" end,
+                        checked_func = function() return config.status_bar.separator_key == "dash" end,
                         callback = function()
-                            config.titlebar.separator_key = "dash"
-                            save_and_apply_titlebar()
+                            config.status_bar.separator_key = "dash"
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Bullet") .. "  '  •  '",
-                        checked_func = function() return config.titlebar.separator_key == "bullet" end,
+                        checked_func = function() return config.status_bar.separator_key == "bullet" end,
                         callback = function()
-                            config.titlebar.separator_key = "bullet"
-                            save_and_apply_titlebar()
+                            config.status_bar.separator_key = "bullet"
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Space only") .. "  '   '",
-                        checked_func = function() return config.titlebar.separator_key == "space" end,
+                        checked_func = function() return config.status_bar.separator_key == "space" end,
                         callback = function()
-                            config.titlebar.separator_key = "space"
-                            save_and_apply_titlebar()
+                            config.status_bar.separator_key = "space"
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("Space only (small)") .. "  ' '",
-                        checked_func = function() return config.titlebar.separator_key == "small-space" end,
+                        checked_func = function() return config.status_bar.separator_key == "small-space" end,
                         callback = function()
-                            config.titlebar.separator_key = "small-space"
-                            save_and_apply_titlebar()
+                            config.status_bar.separator_key = "small-space"
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text = _("No separator"),
-                        checked_func = function() return config.titlebar.separator_key == "none" end,
+                        checked_func = function() return config.status_bar.separator_key == "none" end,
                         callback = function()
-                            config.titlebar.separator_key = "none"
-                            save_and_apply_titlebar()
+                            config.status_bar.separator_key = "none"
+                            save_and_apply_status_bar()
                         end,
                     },
                     {
                         text_func = function()
-                            return _("Custom") .. "  '" .. (config.titlebar.custom_separator or "") .. "'"
+                            return _("Custom") .. "  '" .. (config.status_bar.custom_separator or "") .. "'"
                         end,
-                        checked_func = function() return config.titlebar.separator_key == "custom" end,
+                        checked_func = function() return config.status_bar.separator_key == "custom" end,
                         callback = function(touchmenu_instance)
                             local InputDialog = require("ui/widget/inputdialog")
                             local dlg
                             dlg = InputDialog:new{
                                 title = _("Custom separator"),
-                                input = config.titlebar.custom_separator or "",
+                                input = config.status_bar.custom_separator or "",
                                 buttons = {{
                                     {
                                         text = _("Cancel"),
@@ -1246,10 +1246,10 @@ function M.build(plugin)
                                         text = _("Set"),
                                         is_enter_default = true,
                                         callback = function()
-                                            config.titlebar.custom_separator = dlg:getInputText()
-                                            config.titlebar.separator_key = "custom"
+                                            config.status_bar.custom_separator = dlg:getInputText()
+                                            config.status_bar.separator_key = "custom"
                                             UIManager:close(dlg)
-                                            save_and_apply_titlebar()
+                                            save_and_apply_status_bar()
                                             if touchmenu_instance then
                                                 touchmenu_instance:updateItems()
                                             end

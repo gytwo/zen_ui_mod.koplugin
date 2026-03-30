@@ -1,4 +1,4 @@
-local function apply_titlebar()
+local function apply_status_bar()
     -- Custom Status Bar patch for KOReader File Manager
     -- Replaces the "KOReader" title text with left/right status info
     -- Moves home/plus buttons to the subtitle (path) row
@@ -32,7 +32,7 @@ local function apply_titlebar()
 
     local function is_enabled()
         local features = zen_plugin.config and zen_plugin.config.features
-        return type(features) == "table" and features.titlebar == true
+        return type(features) == "table" and features.status_bar == true
     end
 
     -- === Persistent config ===
@@ -65,11 +65,11 @@ local function apply_titlebar()
         show_bottom_border = true,
         colored = false,
         bold_text = false,
-        hide_topbar = false,
+        hide_browser_bar = true,
     }
 
     local function loadConfig()
-        local config = zen_plugin.config.titlebar or {}
+        local config = zen_plugin.config.status_bar or {}
         -- Merge any new defaults into existing config
         for k, v in pairs(config_default) do
             if config[k] == nil then
@@ -97,7 +97,7 @@ local function apply_titlebar()
                 end
             end
         end
-        zen_plugin.config.titlebar = config
+        zen_plugin.config.status_bar = config
         return config
     end
 
@@ -536,7 +536,7 @@ local function apply_titlebar()
             return orig_setupLayout(self)
         end
 
-        if config.hide_topbar then
+        if config.hide_browser_bar then
             -- Patch TitleBar constructor to suppress only the subtitle row and
             -- icon buttons.  Our custom status row (the title area) is kept so
             -- the height accounts for it and _updateStatusBar can still paint it.
@@ -568,7 +568,7 @@ local function apply_titlebar()
         UIManager:nextTick(function()
             fm:_updateStatusBar()
             -- Restore subtitle path only when subtitle widget exists
-            if not config.hide_topbar and fm.file_chooser and fm.file_chooser.path then
+            if not config.hide_browser_bar and fm.file_chooser and fm.file_chooser.path then
                 fm:updateTitleBarPath(fm.file_chooser.path)
             end
         end)
@@ -643,4 +643,4 @@ local function apply_titlebar()
 end
 
 
-return apply_titlebar
+return apply_status_bar

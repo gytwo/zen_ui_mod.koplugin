@@ -3,7 +3,7 @@ local initialized = false
 
 local FEATURES = {
     "navbar",
-    "titlebar",
+    "status_bar",
     "zen_pagination_bar",
     "browser_folder_cover",
     "browser_hide_underline",
@@ -15,9 +15,10 @@ local PATCH_MODULES = {
     subfolder_padding = "modules/filebrowser/patches/subfolder_padding",
     partial_page_repaint = "modules/filebrowser/patches/partial_page_repaint",
     navbar = "modules/filebrowser/patches/navbar",
-    titlebar = "modules/filebrowser/patches/titlebar",
+    status_bar = "modules/filebrowser/patches/status_bar",
     zen_pagination_bar = "modules/filebrowser/patches/zen_pagination_bar",
     browser_folder_cover = "modules/filebrowser/patches/browser_folder_cover",
+    browser_list_item_layout = "modules/filebrowser/patches/browser_list_item_layout",
     browser_hide_underline = "modules/filebrowser/patches/browser_hide_underline",
     browser_hide_up_folder = "modules/filebrowser/patches/browser_hide_up_folder",
 }
@@ -81,6 +82,13 @@ function M.init(logger, plugin)
     local partial_page_repaint_fn = load_patch("partial_page_repaint")
     if partial_page_repaint_fn then
         run_feature(logger, plugin, "partial_page_repaint", partial_page_repaint_fn)
+    end
+
+    -- Always apply: custom layout for detailed list mode (title / author / series
+    -- on the left, progress % or folder item count on the right).
+    local browser_list_item_layout_fn = load_patch("browser_list_item_layout")
+    if browser_list_item_layout_fn then
+        run_feature(logger, plugin, "browser_list_item_layout", browser_list_item_layout_fn)
     end
 
     for _, feature in ipairs(FEATURES) do

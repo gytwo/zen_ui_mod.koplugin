@@ -511,9 +511,13 @@ local function apply_browser_folder_cover()
                     -- Right-side item count widget.
                     local pad = Screen:scaleBySize(10)
                     local wmain_left_pad = Screen:scaleBySize(5) -- narrower padding when cover present
-                    local wright = TextWidget:new {
-                        text = self.mandatory or "",
-                        face = Font:getFace("infont", _fontSize(14, 18)),
+                    -- mandatory may contain a trailing icon glyph (e.g. "3 \u{F016}"), strip to digits only
+                    local count_num = tonumber((self.mandatory or "0"):match("^%s*(%d+)")) or 0
+                    local fs_right = _fontSize(16, 20)
+                    local label_str = tostring(count_num) .. " " .. (count_num == 1 and _("Book") or _("Books"))
+                    local wright = TextWidget:new{
+                        text = label_str,
+                        face = Font:getFace("cfont", fs_right),
                         padding = 0,
                     }
                     local wright_w = wright:getWidth()

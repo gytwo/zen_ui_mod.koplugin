@@ -3,7 +3,7 @@ local UIManager = require("ui/uimanager")
 local Device = require("device")
 
 local settings_apply = require("settings/zen_settings_apply")
-local updater = require("settings/zen_settings_updater")
+local updater = require("settings/zen_updater")
 
 local M = {}
 
@@ -28,6 +28,9 @@ local function set_path(tbl, path, value)
 end
 
 function M.build(plugin)
+    -- Lazy one-shot update check (cached; silent if offline or on failure).
+    updater.check_for_update()
+
     local config = plugin.config
 
     local function first_non_empty(...)
@@ -1838,6 +1841,13 @@ function M.build(plugin)
             end,
         },
     }
+
+    -- Insert an "Update available" banner at position 2 (right after the
+    -- "Zen UI Settings" header) when a newer release has been detected.
+    local update_banner = updater.build_update_available_item(plugin)
+    if update_banner then
+        table.insert(root_items, 2, update_banner)
+    end
 
     return {
         text = _("Zen UI"),

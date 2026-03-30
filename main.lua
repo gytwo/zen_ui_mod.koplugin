@@ -5,6 +5,13 @@ local _ = require("gettext")
 local ConfigManager = require("config/manager")
 local registry = require("modules/registry")
 local zen_settings = require("settings/zen_settings")
+local zen_updater   = require("settings/zen_updater")
+
+-- Absolute path to this plugin's root directory (used for custom icon paths).
+local _plugin_root = (function()
+    local src = debug.getinfo(1, "S").source or ""
+    return (src:sub(1, 1) == "@") and src:sub(2):match("^(.*)/[^/]+$") or nil
+end)()
 
 -- Holds the single plugin instance so the FileManagerMenu patch can reach it
 -- without needing the __ZEN_UI_PLUGIN global (which is only set transiently).
@@ -104,7 +111,14 @@ function ZenUI:init()
             if type(m_self.tab_item_table) ~= "table" or not _zen_plugin_ref then return end
             -- Insert Zen UI tab right after the quicksettings tab.
             local zen_items = zen_settings.build(_zen_plugin_ref).sub_item_table
-            zen_items.icon = "appbar.settings"
+            -- Use the badge icon when an update is available.  Absolute paths are
+            -- accepted by KOReader's icon resolution (checked before the icon name
+            -- lookup) so the custom SVG in the plugin's icons/ dir will be used.
+            if zen_updater.has_update() and _plugin_root then
+                zen_items.icon = _plugin_root .. "/icons/appbar.settings.update.svg"
+            else
+                zen_items.icon = "appbar.settings"
+            end
             local qs_pos = find_quicksettings_pos(m_self.tab_item_table)
             local insert_pos = qs_pos and (qs_pos + 1) or 1
             table.insert(m_self.tab_item_table, insert_pos, zen_items)

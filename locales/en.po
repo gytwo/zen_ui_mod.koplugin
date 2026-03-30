@@ -9,9 +9,6 @@ msgstr ""
 msgid "Zen UI"
 msgstr "Zen UI"
 
-msgid "Unified settings"
-msgstr "Unified settings"
-
 msgid "Bottom navbar"
 msgstr "Bottom navbar"
 
@@ -23,24 +20,3 @@ msgstr "Custom status bar"
 
 msgid "Hide pagination footer"
 msgstr "Hide pagination footer"
-
-msgid "Disable top menu zones"
-msgstr "Disable top menu zones"
-
-msgid "Browser folder covers"
-msgstr "Browser folder covers"
-
-msgid "Browser hide underline"
-msgstr "Browser hide underline"
-
-msgid "Browser up-folder behavior"
-msgstr "Browser up-folder behavior"
-
-msgid "Reader header clock"
-msgstr "Reader header clock"
-
-msgid "Safe mode"
-msgstr "Safe mode"
-
-msgid "Toggle Zen UI safe mode"
-msgstr "Toggle Zen UI safe mode"

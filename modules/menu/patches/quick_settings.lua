@@ -856,6 +856,15 @@ local function apply_quick_settings()
     local datetime = require("datetime")
     local BD = require("ui/bidi")
 
+    -- Hook init to force tab 1 before bar:switchToTab runs when open_on_start
+    local orig_init = TouchMenu.init
+    function TouchMenu:init()
+        if is_enabled() and config.open_on_start then
+            self.last_index = 1
+        end
+        orig_init(self)
+    end
+
     -- Hook updateItems for panel rendering
     local orig_updateItems = TouchMenu.updateItems
 

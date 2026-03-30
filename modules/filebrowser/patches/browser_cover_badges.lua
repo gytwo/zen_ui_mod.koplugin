@@ -81,9 +81,9 @@ local function apply_browser_cover_badges()
 
     -- ── Draw two vertical bars (pause / on-hold) ─────────────────────────────
     local function paintPauseBars(bb, bx, by, bw, bh, color)
-        local bar_w = math.max(2, math.floor(bw * 0.26))
+        local bar_w = math.max(2, math.floor(bw * 0.12))
         local bar_h = math.floor(bh * 0.68)
-        local gap   = math.max(2, math.floor(bw * 0.20))
+        local gap   = math.max(2, math.floor(bw * 0.18))
         local total = 2 * bar_w + gap
         local bar1x = bx + math.floor((bw - total) / 2)
         local bar2x = bar1x + bar_w + gap
@@ -204,8 +204,8 @@ local function apply_browser_cover_badges()
                 local do_pct   = not do_check and not do_pause and self.percent_finished ~= nil
 
                 if do_check or do_pause or do_pct then
-                    local bw = math.floor(corner_mark_size * 1.2)
-                    local bh = math.floor(corner_mark_size * 1.5)
+                    local bw = math.floor(corner_mark_size * 1.4)
+                    local bh = math.floor(corner_mark_size * 1.1)
 
                     -- Align to top-right edge of cover frame, inset slightly
                     local cover_left = x + math.floor((self.width - target.dimen.w) / 2)
@@ -227,7 +227,11 @@ local function apply_browser_cover_badges()
                     local icon_h = rect_h - 2 * pad_y
 
                     if do_check then
-                        paintCheck(bb, icon_x, icon_y, icon_w, icon_h, Blitbuffer.COLOR_BLACK)
+                        -- Constrain to square so the checkmark isn't distorted
+                        local sq   = math.min(icon_w, icon_h)
+                        local sq_x = icon_x + math.floor((icon_w - sq) / 2)
+                        local sq_y = icon_y + math.floor((icon_h - sq) / 2)
+                        paintCheck(bb, sq_x, sq_y, sq, sq, Blitbuffer.COLOR_BLACK)
                     elseif do_pause then
                         paintPauseBars(bb, icon_x, icon_y, icon_w, icon_h, Blitbuffer.COLOR_BLACK)
                     else

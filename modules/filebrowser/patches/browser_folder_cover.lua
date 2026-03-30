@@ -275,12 +275,13 @@ local function apply_browser_folder_cover()
 
             local folder_name_widget
             if settings.show_folder_name.get() then
-                folder_name_widget = (settings.name_centered.get() and CenterContainer or TopContainer):new {
+                folder_name_widget = BottomContainer:new {
                     dimen = dimen,
                     FrameContainer:new {
                         padding = 0,
                         bordersize = Folder.face.border_size,
-                        AlphaContainer:new { alpha = Folder.face.alpha, directory },
+                        background = Blitbuffer.COLOR_WHITE,
+                        directory,
                     },
                     overlap_align = "center",
                 }

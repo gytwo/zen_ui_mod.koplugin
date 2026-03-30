@@ -15,7 +15,6 @@ Implemented in this pass:
 - plugin entrypoint and metadata: [main.lua](main.lua), [_meta.lua](_meta.lua)
 - centralized config manager: [config/manager.lua](config/manager.lua)
 - schema defaults: [config/defaults.lua](config/defaults.lua)
-- legacy settings migration (initial): [config/migrate.lua](config/migrate.lua)
 - module registry and module loaders: [modules/registry.lua](modules/registry.lua), [modules](modules)
 - unified settings menu (first version): [settings/menu.lua](settings/menu.lua)
 - localization scaffolding: [locales](locales)

@@ -42,11 +42,5 @@ msgstr "Reader header clock"
 msgid "Safe mode"
 msgstr "Safe mode"
 
-msgid "Legacy settings migrated"
-msgstr "Legacy settings migrated"
-
-msgid "No legacy settings migrated"
-msgstr "No legacy settings migrated"
-
 msgid "Toggle Zen UI safe mode"
 msgstr "Toggle Zen UI safe mode"

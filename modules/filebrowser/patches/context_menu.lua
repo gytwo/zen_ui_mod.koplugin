@@ -105,6 +105,36 @@ local function apply_context_menu()
                 self_fc:refreshPath()
             end
 
+            -- Build the dialog title.
+            -- Files: prefer book title + author from the cover cache; fall back to filename.
+            -- Folders: folder name with book count on a second line.
+            local function buildDialogTitle()
+                if is_file then
+                    local ok, BookInfoManager = pcall(require, "bookinfomanager")
+                    if ok then
+                        local bookinfo = BookInfoManager:getBookInfo(file, false)
+                        if bookinfo and not bookinfo.ignore_meta and bookinfo.title then
+                            local t = BD.auto(bookinfo.title)
+                            if bookinfo.authors then
+                                t = t .. "\n" .. BD.auto(bookinfo.authors)
+                            end
+                            return t
+                        end
+                    end
+                    return BD.filename(file:match("([^/]+)$"))
+                else
+                    local name = (file:match("([^/]+)/?$") or file):gsub("/$", "")
+                    local title_str = BD.directory(name)
+                    local count = item.mandatory and tostring(item.mandatory):match("^%s*(%d+)")
+                    if count then
+                        local n = tonumber(count) or 0
+                        title_str = title_str .. "\n" .. (n == 1 and _("1 book") or (n .. " " .. _("books")))
+                    end
+                    return title_str
+                end
+            end
+            local dialog_title = buildDialogTitle()
+
             -- ── Edit submenu ──────────────────────────────────────────────────────────
             local function showEditSubmenu()
                 close_dialog()
@@ -318,18 +348,30 @@ local function apply_context_menu()
                         callback = function()
                             close_dialog()
                             local filemanagerutil = require("apps/filemanager/filemanagerutil")
+                            local BookList        = require("ui/widget/booklist")
                             local DocSettings     = require("docsettings")
                             local doc_settings    = DocSettings:open(file)
+                            local summary         = doc_settings:readSetting("summary") or {}
+                            local current_status  = summary.status
                             local status_dialog
-                            local status_row = filemanagerutil.genStatusButtonsRow(
-                                doc_settings,
-                                function()
-                                    UIManager:close(status_dialog)
-                                    refresh()
-                                end
-                            )
+                            local caller_cb = function()
+                                UIManager:close(status_dialog)
+                                refresh()
+                            end
+                            local status_row = filemanagerutil.genStatusButtonsRow(doc_settings, caller_cb)
+                            local is_unread = not current_status or current_status == ""
+                            table.insert(status_row, {
+                                text     = _("Unread") .. (is_unread and "  ✓" or ""),
+                                enabled  = not is_unread,
+                                callback = function()
+                                    summary.status = nil
+                                    filemanagerutil.saveSummary(doc_settings, summary)
+                                    BookList.setBookInfoCacheProperty(file, "status", nil)
+                                    caller_cb()
+                                end,
+                            })
                             status_dialog = ButtonDialog:new{
-                                title        = BD.filename(file:match("([^/]+)$")),
+                                title        = dialog_title,
                                 title_align  = "center",
                                 buttons      = { status_row },
                             }
@@ -348,9 +390,7 @@ local function apply_context_menu()
             })
 
             self_fc.file_dialog = ButtonDialog:new{
-                title       = is_file
-                    and BD.filename(file:match("([^/]+)$"))
-                    or  BD.directory(file:match("([^/]+)$")),
+                title       = dialog_title,
                 title_align = "center",
                 buttons     = buttons,
             }

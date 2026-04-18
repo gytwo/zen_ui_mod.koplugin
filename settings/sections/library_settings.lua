@@ -8,6 +8,7 @@ local UIManager = require("ui/uimanager")
 
 local navbar_section     = require("settings/sections/library_settings/navbar_settings")
 local status_bar_section = require("settings/sections/library_settings/status_bar_settings")
+local settings_apply     = require("settings/zen_settings_apply")
 
 local M = {}
 
@@ -154,6 +155,20 @@ function M.build(ctx)
                         not (config.features.browser_cover_rounded_corners == true)
                     plugin:saveConfig()
                     UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
+                text = _("Uniform covers"),
+                checked_func = function()
+                    return type(config.features) == "table"
+                        and config.features.browser_cover_mosaic_uniform == true
+                end,
+                callback = function()
+                    if type(config.features) ~= "table" then config.features = {} end
+                    config.features.browser_cover_mosaic_uniform =
+                        not (config.features.browser_cover_mosaic_uniform == true)
+                    plugin:saveConfig()
+                    settings_apply.prompt_restart()
                 end,
             },
             {

@@ -119,9 +119,11 @@ function M.init(logger, plugin)
         run_feature(logger, plugin, "browser_cover_badges", browser_cover_badges_fn)
     end
 
-    local browser_cover_mosaic_uniform_fn = load_patch("browser_cover_mosaic_uniform")
-    if browser_cover_mosaic_uniform_fn then
-        run_feature(logger, plugin, "browser_cover_mosaic_uniform", browser_cover_mosaic_uniform_fn)
+    if is_feature_enabled(plugin, "browser_cover_mosaic_uniform") then
+        local browser_cover_mosaic_uniform_fn = load_patch("browser_cover_mosaic_uniform")
+        if browser_cover_mosaic_uniform_fn then
+            run_feature(logger, plugin, "browser_cover_mosaic_uniform", browser_cover_mosaic_uniform_fn)
+        end
     end
 
     -- Per-paint guard reads live config; no restart needed to toggle.

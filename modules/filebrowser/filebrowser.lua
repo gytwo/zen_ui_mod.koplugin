@@ -13,6 +13,7 @@ local PATCH_MODULES = {
     context_menu = "modules/filebrowser/patches/context_menu",
     browser_folder_sort = "modules/filebrowser/patches/browser_folder_sort",
     disable_modal_drag = "modules/filebrowser/patches/disable_modal_drag",
+    menu_single_page_scroll_guard = "modules/filebrowser/patches/menu_single_page_scroll_guard",
     partial_page_repaint = "modules/filebrowser/patches/partial_page_repaint",
     navbar = "modules/filebrowser/patches/navbar",
     status_bar = "modules/filebrowser/patches/status_bar",
@@ -75,6 +76,14 @@ function M.init(logger, plugin)
     local disable_modal_drag_fn = load_patch("disable_modal_drag")
     if disable_modal_drag_fn then
         run_feature(logger, plugin, "disable_modal_drag", disable_modal_drag_fn)
+    end
+
+    -- Always apply: suppress the screen-flash caused by swiping a Menu that
+    -- has only one page.  onNextPage/onPrevPage normally still call updateItems
+    -- even when there is nothing to scroll to.
+    local menu_single_page_scroll_guard_fn = load_patch("menu_single_page_scroll_guard")
+    if menu_single_page_scroll_guard_fn then
+        run_feature(logger, plugin, "menu_single_page_scroll_guard", menu_single_page_scroll_guard_fn)
     end
 
     -- Always apply: per-folder sort overrides.  Must run before context_menu so

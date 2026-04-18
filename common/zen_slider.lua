@@ -150,6 +150,10 @@ function ZenSlider:paintTo(bb, x, y)
     local th = self.track_height
     local r  = self.knob_radius
 
+    -- Clear own area first so stale pixels (e.g. from a moved knob) never
+    -- accumulate and corrupt the e-ink differential-update baseline.
+    bb:paintRect(x, y, w, h, self.knob_bg_color)
+
     local track_cy = math.floor(y + h / 2)
     local track_y  = track_cy - math.floor(th / 2)
 
@@ -164,9 +168,11 @@ function ZenSlider:paintTo(bb, x, y)
         paintPill(bb, x, fill_y, knob_x - x, fh, self.fill_color)
     end
 
-    -- Knob: white outer circle, then black inner circle
-    paintCircle(bb, knob_x, track_cy, r,                         self.knob_bg_color)
-    paintCircle(bb, knob_x, track_cy, r - Screen:scaleBySize(2), self.knob_color)
+    -- Knob: white outer circle, then black inner circle (hidden while dragging)
+    if not self.hide_knob then
+        paintCircle(bb, knob_x, track_cy, r,                         self.knob_bg_color)
+        paintCircle(bb, knob_x, track_cy, r - Screen:scaleBySize(2), self.knob_color)
+    end
 end
 
 -- Required by WidgetContainer.propagateEvent — called on every child during

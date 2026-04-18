@@ -496,8 +496,8 @@ local function apply_quick_settings()
         -- ----- Frontlight section -----
 
         local medium_font = Font:getFace("ffont")
-        local small_btn_width = Screen:scaleBySize(40)
-        local max_btn_width = Screen:scaleBySize(85)
+        local small_btn_font = Font:getFace("cfont")
+        local small_btn_width = Screen:scaleBySize(56)
         local toggle_width = Screen:scaleBySize(56)
         local slider_gap = Screen:scaleBySize(4)
         local slider_width = inner_width - 2 * small_btn_width - 2 * slider_gap
@@ -528,6 +528,7 @@ local function apply_quick_settings()
 
             local fl_minus = Button:new{
                 text = "−",
+                face = small_btn_font,
                 width = small_btn_width,
                 bordersize = 0,
                 show_parent = touch_menu.show_parent,
@@ -558,7 +559,15 @@ local function apply_quick_settings()
                 powerd:setIntensity(v)
                 fl.cur = v
                 if fl.cur > fl.min then fl.prev_non_min = fl.cur end
-                UIManager:setDirty(touch_menu.show_parent, "ui")
+                -- During drag limit repaint to the slider's own rect to prevent
+                -- rapid full-parent dirty regions from bloating into far-away
+                -- screen areas and causing e-ink artifacts.
+                UIManager:setDirty(touch_menu.show_parent, function()
+                    if fl_progress.hide_knob and fl_progress.dimen then
+                        return "ui", fl_progress.dimen
+                    end
+                    return "ui"
+                end)
                 if fl_label_fn then UIManager:unschedule(fl_label_fn) end
                 fl_label_fn = function()
                     fl_label_fn = nil
@@ -572,6 +581,7 @@ local function apply_quick_settings()
             fl_minus.callback = function() setBrightness(fl.cur - 1) end
             local fl_plus = Button:new{
                 text = "＋",
+                face = small_btn_font,
                 width = small_btn_width,
                 bordersize = 0,
                 show_parent = touch_menu.show_parent,
@@ -592,26 +602,18 @@ local function apply_quick_settings()
                     end
                 end,
             })
-            local fl_max_btn = Button:new{
-                text = _("Max"),
-                width = max_btn_width,
-                face = medium_font,
-                show_parent = touch_menu.show_parent,
-                callback = function() setBrightness(fl.max) end,
-            }
-
             local row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }
-            local label_width = inner_width - toggle_width - max_btn_width
+            local label_width = inner_width - 2 * toggle_width
 
-            -- Cap row: [Toggle]  [Frontlight: N]  [Max]
+            -- Cap row: [Toggle]  [Frontlight: N]  [spacer]
             local fl_cap_row = HorizontalGroup:new{
                 align = "center",
                 fl_toggle,
                 CenterContainer:new{
-                    dimen = Geom:new{ w = label_width, h = fl_max_btn:getSize().h },
+                    dimen = Geom:new{ w = label_width, h = fl_toggle:getSize().h },
                     fl_label,
                 },
-                fl_max_btn,
+                HorizontalSpan:new{ width = toggle_width },
             }
             -- Slider row: [−] [slider] [+]
             local fl_row = HorizontalGroup:new{
@@ -687,7 +689,12 @@ local function apply_quick_settings()
                 powerd:setWarmth(powerd:fromNativeWarmth(v))
                 nl.cur = v
                 if nl.cur > nl.min then nl.prev_non_min = nl.cur end
-                UIManager:setDirty(touch_menu.show_parent, "ui")
+                UIManager:setDirty(touch_menu.show_parent, function()
+                    if nl_progress.hide_knob and nl_progress.dimen then
+                        return "ui", nl_progress.dimen
+                    end
+                    return "ui"
+                end)
                 if nl_label_fn then UIManager:unschedule(nl_label_fn) end
                 nl_label_fn = function()
                     nl_label_fn = nil
@@ -699,6 +706,7 @@ local function apply_quick_settings()
 
             local nl_minus = Button:new{
                 text = "−",
+                face = small_btn_font,
                 width = small_btn_width,
                 bordersize = 0,
                 show_parent = touch_menu.show_parent,
@@ -706,6 +714,7 @@ local function apply_quick_settings()
             }
             local nl_plus = Button:new{
                 text = "＋",
+                face = small_btn_font,
                 width = small_btn_width,
                 bordersize = 0,
                 show_parent = touch_menu.show_parent,
@@ -726,26 +735,18 @@ local function apply_quick_settings()
                     end
                 end,
             })
-            local nl_max_btn = Button:new{
-                text = _("Max"),
-                width = max_btn_width,
-                face = medium_font,
-                show_parent = touch_menu.show_parent,
-                callback = function() setWarmth(nl.max) end,
-            }
-
             local nl_row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }
-            local nl_label_width = inner_width - toggle_width - max_btn_width
+            local nl_label_width = inner_width - 2 * toggle_width
 
-            -- Cap row: [Toggle]  [Warmth: N]  [Max]
+            -- Cap row: [Toggle]  [Warmth: N]  [spacer]
             local nl_cap_row = HorizontalGroup:new{
                 align = "center",
                 nl_toggle,
                 CenterContainer:new{
-                    dimen = Geom:new{ w = nl_label_width, h = nl_max_btn:getSize().h },
+                    dimen = Geom:new{ w = nl_label_width, h = nl_toggle:getSize().h },
                     nl_label,
                 },
-                nl_max_btn,
+                HorizontalSpan:new{ width = toggle_width },
             }
             -- Slider row: [−] [slider] [+]
             local nl_row = HorizontalGroup:new{
@@ -846,7 +847,13 @@ local function apply_quick_settings()
         for _, sr in ipairs(refs.sliders or {}) do
             if sr.dragging or (sr.slider.dimen and ges.pos:intersectWith(sr.slider.dimen)) then
                 sr.dragging = not is_release
+                sr.slider.hide_knob = sr.dragging
                 sr.slider:applyPosition(ges.pos.x)
+                -- On release, always repaint so the knob reappears even if the
+                -- value didn't change (applyPosition only calls on_change on delta).
+                if is_release then
+                    UIManager:setDirty(touch_menu.show_parent, "ui")
+                end
                 return true
             end
         end
@@ -1030,6 +1037,7 @@ local function apply_quick_settings()
                 if sr.dragging or (sr.slider.dimen and ges_ev.pos:intersectWith(sr.slider.dimen)) then
                     local was_dragging = sr.dragging
                     sr.dragging = false
+                    sr.slider.hide_knob = false
                     if not was_dragging then
                         -- Pure quick-swipe (no preceding pan events): apply end position.
                         local dist = ges_ev.distance or 0
@@ -1040,6 +1048,9 @@ local function apply_quick_settings()
                             end_x = end_x - dist
                         end
                         sr.slider:applyPosition(end_x)
+                    else
+                        -- Was dragging: pan events placed the knob, just repaint to show it.
+                        UIManager:setDirty(self.show_parent, "ui")
                     end
                     -- If was_dragging: pan events already placed the knob correctly.
                     return true

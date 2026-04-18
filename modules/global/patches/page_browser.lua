@@ -986,11 +986,12 @@ local function apply_page_browser()
             local btn_zone_y = panel_abs_y
                 + zen_panel_pad_top
                 + chap_label:getSize().h
-                + pad_v
 
             -- Only add slider height if slider exists
             if zen_slider then
-                btn_zone_y = btn_zone_y + zen_slider:getSize().h + pad_v
+                btn_zone_y = btn_zone_y + pad_v + zen_slider:getSize().h + zen_panel_pad_btn
+            else
+                btn_zone_y = btn_zone_y + zen_panel_pad_btn
             end
 
             -- btn_row is CenterContainer'd horizontally in grid_w

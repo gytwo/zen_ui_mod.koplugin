@@ -413,7 +413,8 @@ local function apply_page_browser()
         local zen_icon_pad_h = Screen:scaleBySize(20)  -- horizontal padding (wider buttons)
         local zen_icon_pad_v = Screen:scaleBySize(10)  -- vertical padding (taller buttons)
         local zen_panel_pad_v = Screen:scaleBySize(6)  -- panel vertical padding (between elements)
-        local zen_panel_pad_top = Screen:scaleBySize(12)  -- extra top padding
+        local zen_panel_pad_btn = Screen:scaleBySize(12) -- gap above button group
+        local zen_panel_pad_top = Screen:scaleBySize(6)   -- top padding (label to grid)
         local zen_panel_pad_bottom = Screen:scaleBySize(12)  -- extra bottom padding
 
         local function zen_measure_panel_h(nb_pages)
@@ -430,9 +431,9 @@ local function apply_page_browser()
             -- top_pad + panel_pads + 1× label + (optional slider) + 1× icon row + bottom_pad
             -- Only include slider height and spacing if there's more than 1 page
             if nb_pages and nb_pages > 1 then
-                return zen_panel_pad_top + 2 * zen_panel_pad_v + lh + slider_h + btn_h + zen_panel_pad_bottom
+                return zen_panel_pad_top + zen_panel_pad_v + zen_panel_pad_btn + lh + slider_h + btn_h + zen_panel_pad_bottom
             else
-                return zen_panel_pad_top + zen_panel_pad_v + lh + btn_h + zen_panel_pad_bottom
+                return zen_panel_pad_top + zen_panel_pad_btn + lh + btn_h + zen_panel_pad_bottom
             end
         end
 
@@ -597,7 +598,7 @@ local function apply_page_browser()
                 return self.ui.toc:getTocTitleByPage(pg) or ""
             end
 
-            local label_face = Font:getFace("cfont", 14)
+            local label_face = Font:getFace("cfont", 18)
             local pad_v      = zen_panel_pad_v
 
             -- Use focus_page consistently so slider position doesn't jump when switching views
@@ -668,12 +669,12 @@ local function apply_page_browser()
             -- draw the static borders (they never move).  On subsequent calls,
             -- only erase + repaint the small badge area at the bottom of each
             -- cell — the borders stay untouched in the framebuffer.
-            local badge_face_s = Font:getFace("cfont", 11)
+            local badge_face_s = Font:getFace("cfont", 13)
             local ph_s         = Screen:scaleBySize(4)
             local pv_s         = Screen:scaleBySize(2)
             local bg_color_s   = Blitbuffer.gray(0x33)
             local fg_color_s   = Blitbuffer.gray(0xFF)
-            local gap_bot_s    = Screen:scaleBySize(6)
+            local gap_bot_s    = Screen:scaleBySize(3)
             local bs_s         = Size.border.thin
 
             -- Pre-measure the maximum badge height (constant for all cells).
@@ -1048,7 +1049,7 @@ local function apply_page_browser()
             end
 
             -- Add button group
-            table.insert(panel_content, VerticalSpan:new{ width = pad_v })
+            table.insert(panel_content, VerticalSpan:new{ width = zen_panel_pad_btn })
             table.insert(panel_content, CenterContainer:new{
                 dimen = Geom:new{ w = grid_w, h = btn_row:getSize().h },
                 btn_row,
@@ -1188,12 +1189,12 @@ local function apply_page_browser()
             local gx      = x
             local gy      = y + title_h + Screen:scaleBySize(6) -- top_pad
 
-            local badge_face = Font:getFace("cfont", 11)
+            local badge_face = Font:getFace("cfont", 13)
             local ph         = Screen:scaleBySize(4)   -- badge horiz padding
             local pv         = Screen:scaleBySize(2)   -- badge vert  padding
             local bg_color   = Blitbuffer.gray(0x33)   -- dark badge fill
             local fg_color   = Blitbuffer.gray(0xFF)   -- white badge text
-            local gap_bot    = Screen:scaleBySize(6)   -- badge offset from thumb bottom
+            local gap_bot    = Screen:scaleBySize(3)   -- badge offset from thumb bottom
 
             -- paintPill: horizontal capsule (rounded left/right, flat top/bottom).
             -- Ported from browser_page_count.lua.

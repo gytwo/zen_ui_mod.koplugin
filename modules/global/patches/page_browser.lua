@@ -657,19 +657,7 @@ local function apply_page_browser()
                     local label_x = sl.dimen.x + math.floor((slider_w - new_w) / 2)
                     label:paintTo(Screen.bb, label_x, label_y)
                 end
-                -- A2 refresh scoped to slider + chapter label so the grid's
-                -- large area A2 doesn't flash the thin track ends.
-                local sl_dimen = sl.dimen
-                if label then
-                    local lh = label:getSize().h
-                    sl_dimen = Geom:new{
-                        x = sl.dimen.x,
-                        y = sl.dimen.y - pad_v - lh,
-                        w = math.max(sl.dimen.w, slider_w),
-                        h = sl.dimen.h + pad_v + lh,
-                    }
-                end
-                UIManager:setDirty(nil, "fast", sl_dimen)
+                -- No A2 here — the caller pushes one consolidated refresh.
             end
 
             -- Paint blank placeholders with page-number badges directly to
@@ -789,10 +777,11 @@ local function apply_page_browser()
                 -- Paint slider + chapter label
                 directPaintSlider(sl, clbl, chap_text)
 
-                -- A2 refresh on grid only — slider has its own A2 call
-                -- inside directPaintSlider (scoped to sl.dimen, matching
-                -- the brightness/warmth slider pattern).
-                UIManager:setDirty(nil, "fast", pbw._zen_grid_dimen or pbw.dimen)
+                -- Single A2 refresh covering grid + label + slider
+                -- (buttons are excluded via the tightened scrub_dimen).
+                -- One call avoids the double-flash that two separate A2
+                -- regions produce on e-ink, especially in single-page mode.
+                UIManager:setDirty(nil, "fast", pbw._zen_scrub_dimen or pbw.dimen)
             end
 
             -- Deferred scrub dirty: fires the throttled setDirty at the end

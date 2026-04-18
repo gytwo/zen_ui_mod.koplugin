@@ -207,6 +207,9 @@ msgstr "Delete"
 msgid "Description"
 msgstr "Description"
 
+msgid "Developer"
+msgstr "Developer"
+
 msgid "Detailed list with cover images and filenames"
 msgstr "Detailed list with cover images and filenames"
 
@@ -602,6 +605,12 @@ msgstr "Show frontlight"
 
 msgid "Show frontlight slider"
 msgstr "Show frontlight slider"
+
+msgid "Show hidden files outside home folder"
+msgstr "Show hidden files outside home folder"
+
+msgid "Show hidden and unsupported files outside home folder"
+msgstr "Show hidden and unsupported files outside home folder"
 
 msgid "Show in standalone views"
 msgstr "Show in standalone views"

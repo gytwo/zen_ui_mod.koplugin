@@ -207,6 +207,9 @@ msgstr "Verwijderen"
 msgid "Description"
 msgstr "Beschrijving"
 
+msgid "Developer"
+msgstr "Ontwikkelaar"
+
 msgid "Detailed list with cover images and filenames"
 msgstr "Gedetailleerde lijst met omslagen en bestandsnamen"
 
@@ -602,6 +605,12 @@ msgstr "Voorlicht weergeven"
 
 msgid "Show frontlight slider"
 msgstr "Voorlicht-schuifregelaar weergeven"
+
+msgid "Show hidden files outside home folder"
+msgstr "Verborgen bestanden buiten thuismap weergeven"
+
+msgid "Show hidden and unsupported files outside home folder"
+msgstr "Verborgen en niet-ondersteunde bestanden buiten thuismap weergeven"
 
 msgid "Show in standalone views"
 msgstr "Weergeven in zelfstandige weergaven"

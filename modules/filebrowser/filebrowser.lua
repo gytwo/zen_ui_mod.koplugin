@@ -22,6 +22,7 @@ local PATCH_MODULES = {
     browser_hide_underline = "modules/filebrowser/patches/browser_hide_underline",
     browser_hide_up_folder = "modules/filebrowser/patches/browser_hide_up_folder",
     browser_cover_badges = "modules/filebrowser/patches/browser_cover_badges",
+    browser_show_hidden = "modules/filebrowser/patches/browser_show_hidden",
 }
 
 local function is_feature_enabled(plugin, key)
@@ -97,6 +98,13 @@ function M.init(logger, plugin)
     local browser_cover_badges_fn = load_patch("browser_cover_badges")
     if browser_cover_badges_fn then
         run_feature(logger, plugin, "browser_cover_badges", browser_cover_badges_fn)
+    end
+
+    -- Always apply: dynamically enforce show_hidden based on home dir boundary
+    -- when the developer option is enabled.
+    local browser_show_hidden_fn = load_patch("browser_show_hidden")
+    if browser_show_hidden_fn then
+        run_feature(logger, plugin, "browser_show_hidden", browser_show_hidden_fn)
     end
 
     for _, feature in ipairs(FEATURES) do

@@ -207,6 +207,9 @@ msgstr "Elimina"
 msgid "Description"
 msgstr "Descrizione"
 
+msgid "Developer"
+msgstr "Sviluppatore"
+
 msgid "Detailed list with cover images and filenames"
 msgstr "Lista dettagliata con copertine e nomi file"
 
@@ -602,6 +605,12 @@ msgstr "Mostra luce frontale"
 
 msgid "Show frontlight slider"
 msgstr "Mostra cursore luce frontale"
+
+msgid "Show hidden files outside home folder"
+msgstr "Mostra file nascosti fuori dalla cartella home"
+
+msgid "Show hidden and unsupported files outside home folder"
+msgstr "Mostra file nascosti e non supportati fuori dalla cartella home"
 
 msgid "Show in standalone views"
 msgstr "Mostra nelle viste standalone"

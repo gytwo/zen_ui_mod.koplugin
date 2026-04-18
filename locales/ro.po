@@ -207,6 +207,9 @@ msgstr "Șterge"
 msgid "Description"
 msgstr "Descriere"
 
+msgid "Developer"
+msgstr "Dezvoltator"
+
 msgid "Detailed list with cover images and filenames"
 msgstr "Listă detaliată cu coperte și nume de fișier"
 
@@ -602,6 +605,12 @@ msgstr "Afișează lumina frontală"
 
 msgid "Show frontlight slider"
 msgstr "Afișează cursorul luminii frontale"
+
+msgid "Show hidden files outside home folder"
+msgstr "Afișează fișierele ascunse în afara folderului de acasă"
+
+msgid "Show hidden and unsupported files outside home folder"
+msgstr "Afișează fișierele ascunse și neacceptate în afara folderului de acasă"
 
 msgid "Show in standalone views"
 msgstr "Afișează în vederi independente"

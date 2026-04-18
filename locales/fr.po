@@ -207,6 +207,9 @@ msgstr "Supprimer"
 msgid "Description"
 msgstr "Description"
 
+msgid "Developer"
+msgstr "Développeur"
+
 msgid "Detailed list with cover images and filenames"
 msgstr "Liste détaillée avec couvertures et noms de fichiers"
 
@@ -602,6 +605,12 @@ msgstr "Afficher l'éclairage avant"
 
 msgid "Show frontlight slider"
 msgstr "Afficher le curseur d'éclairage avant"
+
+msgid "Show hidden files outside home folder"
+msgstr "Afficher les fichiers cachés en dehors du dossier personnel"
+
+msgid "Show hidden and unsupported files outside home folder"
+msgstr "Afficher les fichiers cachés et non pris en charge en dehors du dossier personnel"
 
 msgid "Show in standalone views"
 msgstr "Afficher dans les vues autonomes"

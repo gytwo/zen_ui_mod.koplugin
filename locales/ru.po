@@ -207,6 +207,9 @@ msgstr "Удалить"
 msgid "Description"
 msgstr "Описание"
 
+msgid "Developer"
+msgstr "Разработчик"
+
 msgid "Detailed list with cover images and filenames"
 msgstr "Подробный список с обложками и именами файлов"
 
@@ -602,6 +605,12 @@ msgstr "Показать подсветку"
 
 msgid "Show frontlight slider"
 msgstr "Показать ползунок подсветки"
+
+msgid "Show hidden files outside home folder"
+msgstr "Показывать скрытые файлы вне домашней папки"
+
+msgid "Show hidden and unsupported files outside home folder"
+msgstr "Показывать скрытые и неподдерживаемые файлы вне домашней папки"
 
 msgid "Show in standalone views"
 msgstr "Показать в отдельных представлениях"

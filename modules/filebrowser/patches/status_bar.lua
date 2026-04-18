@@ -329,7 +329,12 @@ local function apply_status_bar()
                 callback = function()
                     local parent = ffiUtil.dirname(path)
                     if file_manager and file_manager.file_chooser and parent then
-                        file_manager.file_chooser:changeToPath(parent)
+                        -- Defer the path change to avoid button dimen crash during feedback highlight
+                        UIManager:scheduleIn(0.1, function()
+                            if file_manager.file_chooser then
+                                file_manager.file_chooser:changeToPath(parent)
+                            end
+                        end)
                     end
                 end,
             }
@@ -540,6 +545,8 @@ local function apply_status_bar()
                     t.right_icon          = nil
                     t.right_icon_tap_callback  = nil
                     t.right_icon_hold_callback = nil
+                    t.title_tap_callback  = nil
+                    t.title_hold_callback = nil
                     t.bottom_v_padding    = 0
                 end
                 return orig_new(cls, t)
@@ -557,6 +564,21 @@ local function apply_status_bar()
             -- Restore subtitle path only when subtitle widget exists
             if not config.hide_browser_bar and fm.file_chooser and fm.file_chooser.path then
                 fm:updateTitleBarPath(fm.file_chooser.path)
+            end
+
+            -- Disable page_info_text to prevent ghost search dialog when tapping title area
+            if config.hide_browser_bar and fm.file_chooser then
+                -- Completely hide page_info by collapsing its dimensions
+                if fm.file_chooser.page_info then
+                    fm.file_chooser.page_info.dimen = Geom:new{w = 0, h = 0}
+                    -- Make it ignore all input
+                    fm.file_chooser.page_info.handleEvent = function() return false end
+                end
+                -- Also disable the text button itself as extra safety
+                if fm.file_chooser.page_info_text then
+                    fm.file_chooser.page_info_text.readonly = true
+                    fm.file_chooser.page_info_text.dimen = Geom:new{w = 0, h = 0}
+                end
             end
         end)
 

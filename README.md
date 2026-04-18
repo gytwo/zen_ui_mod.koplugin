@@ -1,16 +1,23 @@
-# Zen UI
+<div align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./icons/zen_ui_light.svg" />
+      <source media="(prefers-color-scheme: light)" srcset="./icons/zen_ui.svg" />
+      <img width="300" src="./icons/zen_ui.svg" />
+    </picture>
+</div>
 
-A clean, minimal UI overhaul for [KOReader](https://github.com/koreader/koreader). Zen UI removes visual clutter and replaces it with a focused, distraction-free reading experience — without touching the KOReader core.
+<br>
+<br>
 
----
+<h1 align="center">Zen UI</h1>
+
+A clean, minimal UI overhaul for [KOReader](https://github.com/koreader/koreader). Zen UI removes visual clutter and replaces it with a streamlined, intuitive, and distraction-free e-reader experience.
 
 ## Philosophy
 
-Zen UI is built on one idea: **less is more.** Every feature either removes noise or adds something genuinely useful. All settings conveniently live in one place. This UI loads fast, stays out of the way, and cleans up visual clutter.  
+Zen UI is built on one idea: **less is more.** Every feature either removes noise or adds something genuinely useful. All settings are conveniently organized in one place. The minimal UI loads fast, stays out of the way, and aims to make your reading more enjoyable.  
 
-Throughout development, three things were non-negotiable: **performance**, **stability**, and **battery life**. Patches are applied lazily and only when their feature is enabled. No background timers, no unnecessary redraws. On e-ink devices where every refresh costs power and every frame counts, that matters.
-
----
+Throughout development, three things were non-negotiable: **performance**, **stability**, and **battery life**. Patches are applied only when their feature is enabled. On e-ink devices where every refresh costs power and every frame counts, that matters.
 
 ## Features
 
@@ -48,8 +55,6 @@ Check for and install new Zen UI releases directly from the settings menu, witho
 ### Safe Mode
 If a patch causes a crash or conflict, Zen UI's safe mode disables all hooks so you can get back into KOReader and fix the issue.
 
----
-
 ## Installation
 
 1. Go to the [Releases](https://github.com/AnthonyGress/zen_ui.koplugin/releases) page and download `zen_ui.koplugin.zip` from the latest release.
@@ -70,13 +75,9 @@ If a patch causes a crash or conflict, Zen UI's safe mode disables all hooks so 
 
 > The final path should look like: `.../plugins/zen_ui.koplugin/main.lua`  
 
----
-
 ## Settings
 
 Settings are grouped by feature area (File Browser, Navbar, Quick Settings, Status Bar, Reader). Most features can be toggled independently, some reasonable defaults have been selected. Changes that require a restart will prompt you automatically.
-
----
 
 ## Localization
 
@@ -98,20 +99,16 @@ Zen UI is fully translated into:
 
 To contribute a translation or fix an existing one, see [locales/README.md](locales/README.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
----
-
 ## Credits
 
-Zen UI is original work, but it wouldn't exist without the broader KOReader community. Several open source projects provided direct inspiration, reference implementations, or code that was adapted and built upon:
+Zen UI is original work, but it wouldn't exist without the broader KOReader community. Several open source projects provided components, inspiration, reference implementations, or code that was adapted and built upon:
 
-- **[sebdelsol/KOReader.patches](https://github.com/sebdelsol/KOReader.patches)** — Patches and UI techniques that informed several of Zen UI's features.
-- **[qewer33/koreader-patches](https://github.com/qewer33/koreader-patches)** — The bottom navbar and quicksettings components. Additional patch approaches and ideas, particularly around UI customization.
 - **[joshuacant/ProjectTitle](https://github.com/joshuacant/ProjectTitle)** — The OG plugin that started it all for me. This was my first experience with KOReader plugins and an alternative UI.
+- **[qewer33/koreader-patches](https://github.com/qewer33/koreader-patches)** — The bottom navbar and quicksettings components. Additional patch approaches and ideas, particularly around UI customization.
+- **[sebdelsol/KOReader.patches](https://github.com/sebdelsol/KOReader.patches)** — Patches and UI techniques that informed several of Zen UI's features.
 - **[doctorhetfield-cmd/simpleui.koplugin](https://github.com/doctorhetfield-cmd/simpleui.koplugin)** — A fellow KOReader UI plugin that served as an inspiration as well as a model for how to apply language translations throughout the plugin.
 
 Thank you to everyone who published their KOReader work openly.
-
----
 
 ## Contributing
 

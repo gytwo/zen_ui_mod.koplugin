@@ -206,7 +206,8 @@ msgstr "刪除"
 
 msgid "Description"
 msgstr "簡介"
-
+msgid "Developer"
+msgstr "開發者"
 msgid "Detailed list with cover images and filenames"
 msgstr "含封面與檔名的詳細清單"
 
@@ -602,6 +603,12 @@ msgstr "顯示前燈"
 
 msgid "Show frontlight slider"
 msgstr "顯示前燈滑桿"
+
+msgid "Show hidden files outside home folder"
+msgstr "在主資料夾外顯示隱藏檔案"
+
+msgid "Show hidden and unsupported files outside home folder"
+msgstr "在主資料夾外顯示隱藏和不支援的檔案"
 
 msgid "Show in standalone views"
 msgstr "在獨立檢視中顯示"

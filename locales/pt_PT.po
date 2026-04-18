@@ -207,6 +207,9 @@ msgstr "Apagar"
 msgid "Description"
 msgstr "Descrição"
 
+msgid "Developer"
+msgstr "Programador"
+
 msgid "Detailed list with cover images and filenames"
 msgstr "Lista detalhada com capas e nomes de ficheiro"
 
@@ -602,6 +605,12 @@ msgstr "Mostrar luz frontal"
 
 msgid "Show frontlight slider"
 msgstr "Mostrar controlo deslizante de luz frontal"
+
+msgid "Show hidden files outside home folder"
+msgstr "Mostrar ficheiros ocultos fora da pasta pessoal"
+
+msgid "Show hidden and unsupported files outside home folder"
+msgstr "Mostrar ficheiros ocultos e não suportados fora da pasta pessoal"
 
 msgid "Show in standalone views"
 msgstr "Mostrar em vistas autónomas"

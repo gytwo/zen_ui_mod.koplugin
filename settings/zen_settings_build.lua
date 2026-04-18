@@ -1375,6 +1375,23 @@ function M.build(plugin)
     })
 
     table.insert(filebrowser_items, {
+        text = _("Show page count on covers and in list"),
+        checked_func = function()
+            return type(config.browser_page_count) == "table"
+                and config.browser_page_count.show_page_count == true
+        end,
+        callback = function()
+            if type(config.browser_page_count) ~= "table" then
+                config.browser_page_count = {}
+            end
+            config.browser_page_count.show_page_count =
+                not (config.browser_page_count.show_page_count == true)
+            plugin:saveConfig()
+            UIManager:setDirty(nil, "full")
+        end,
+    })
+
+    table.insert(filebrowser_items, {
         text = _("Rounded corners on mosaic covers"),
         checked_func = function()
             return type(config.features) == "table"
@@ -1926,6 +1943,22 @@ function M.build(plugin)
     -- -------------------------------------------------------------------------
 
     local global_items = {}
+
+    table.insert(global_items, {
+        text = _("Preload book metadata"),
+        checked_func = function()
+            return not (type(config.browser_preload_bookinfo) == "table"
+                and config.browser_preload_bookinfo.preload_bookinfo == false)
+        end,
+        callback = function()
+            if type(config.browser_preload_bookinfo) ~= "table" then
+                config.browser_preload_bookinfo = {}
+            end
+            local cur = not (config.browser_preload_bookinfo.preload_bookinfo == false)
+            config.browser_preload_bookinfo.preload_bookinfo = not cur
+            plugin:saveConfig()
+        end,
+    })
 
     table.insert(global_items, {
         text = _("Night mode schedule"),

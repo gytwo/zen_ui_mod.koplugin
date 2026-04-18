@@ -1,4 +1,9 @@
 local function apply_browser_list_item_layout()
+    -- Capture plugin reference while __ZEN_UI_PLUGIN is still set by run_feature.
+    -- Also re-check the global at render time (same robustness pattern as
+    -- browser_cover_rounded_corners) so live config changes take effect immediately.
+    local _plugin_ref = rawget(_G, "__ZEN_UI_PLUGIN")
+
     local BD = require("ui/bidi")
     local Blitbuffer = require("ffi/blitbuffer")
     local CenterContainer = require("ui/widget/container/centercontainer")
@@ -299,6 +304,24 @@ local function apply_browser_list_item_layout()
                 wright_w = math.max(status_nat_w, wright_w)
             end
 
+            -- ── Page count (below tags) ──────────────────────────────────────
+            -- Optional "N pp" line at the bottom of the right column.
+            -- Shares the same column width as status/tags so it never expands it.
+            local wright_pages
+            local _p = _plugin_ref or rawget(_G, "__ZEN_UI_PLUGIN")
+            local show_page_count = _p
+                and type(_p.config.browser_page_count) == "table"
+                and _p.config.browser_page_count.show_page_count == true
+            if show_page_count and pages and pages > 0 and not self.do_filename_only then
+                wright_pages = TextWidget:new{
+                    text      = tostring(pages) .. "p",
+                    face      = Font:getFace("cfont", math.max(7, fs_right - 2)),
+                    fgcolor   = Blitbuffer.COLOR_GRAY_3,
+                    padding   = 0,
+                    max_width = wright_w,
+                }
+            end
+
             -- Final main_w: left gets its space; only shrinks if tags > status width
             local main_w = math.max(1, self.width - left_offset - wright_w - 2 * pad_right)
 
@@ -367,10 +390,11 @@ local function apply_browser_list_item_layout()
                 table.insert(widget, 1, wleft)
             end
 
-            if wright_status or wright_tags then
+            if wright_status or wright_tags or wright_pages then
                 local right_stack = VerticalGroup:new{ align = "right" }
                 if wright_status then table.insert(right_stack, wright_status) end
                 if wright_tags   then table.insert(right_stack, wright_tags)   end
+                if wright_pages  then table.insert(right_stack, wright_pages)  end
                 table.insert(widget, RightContainer:new{
                     dimen = row_dimen,
                     HorizontalGroup:new{

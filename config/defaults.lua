@@ -118,6 +118,12 @@ local defaults = {
     browser_cover_badges = {
         show_mosaic_progress = true,
     },
+    browser_page_count = {
+        show_page_count = false,
+    },
+    browser_preload_bookinfo = {
+        preload_bookinfo = true,
+    },
     context_menu = {
         allow_delete = false,
     },

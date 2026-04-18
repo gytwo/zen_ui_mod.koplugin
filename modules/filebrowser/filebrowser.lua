@@ -25,6 +25,8 @@ local PATCH_MODULES = {
     browser_cover_mosaic_uniform = "modules/filebrowser/patches/browser_cover_mosaic_uniform",
     browser_cover_rounded_corners = "modules/filebrowser/patches/browser_cover_rounded_corners",
     browser_show_hidden = "modules/filebrowser/patches/browser_show_hidden",
+    browser_preload_bookinfo = "modules/filebrowser/patches/browser_preload_bookinfo",
+    browser_page_count = "modules/filebrowser/patches/browser_page_count",
 }
 
 local function is_feature_enabled(plugin, key)
@@ -121,6 +123,26 @@ function M.init(logger, plugin)
     local browser_show_hidden_fn = load_patch("browser_show_hidden")
     if browser_show_hidden_fn then
         run_feature(logger, plugin, "browser_show_hidden", browser_show_hidden_fn)
+    end
+
+    -- Conditionally apply: pre-populate BookInfoManager's SQLite cache for all
+    -- books in the current directory.  Controlled by the "Preload book metadata"
+    -- toggle in global settings (default on).  Requires CoverBrowser plugin.
+    local _preload_cfg = type(plugin.config.browser_preload_bookinfo) == "table"
+        and plugin.config.browser_preload_bookinfo or {}
+    if _preload_cfg.preload_bookinfo ~= false then
+        local browser_preload_bookinfo_fn = load_patch("browser_preload_bookinfo")
+        if browser_preload_bookinfo_fn then
+            run_feature(logger, plugin, "browser_preload_bookinfo", browser_preload_bookinfo_fn)
+        end
+    end
+
+    -- Always apply: page-count badge on mosaic covers (bottom-left pill).
+    -- List mode page count is rendered inside browser_list_item_layout (reads the
+    -- same config flag).  Requires CoverBrowser; silently inert without it.
+    local browser_page_count_fn = load_patch("browser_page_count")
+    if browser_page_count_fn then
+        run_feature(logger, plugin, "browser_page_count", browser_page_count_fn)
     end
 
     -- Ensure the runtime-patches registry exists (zen_settings_apply.lua creates

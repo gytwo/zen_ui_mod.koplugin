@@ -19,7 +19,6 @@ local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
 local ZenSlider       = require("common/zen_slider")
-local ZenToggle       = require("common/zen_toggle")
 local _               = require("gettext")
 local Screen          = Device.screen
 
@@ -105,33 +104,11 @@ local function build_brightness_slider(touch_menu, opts)
         callback    = function() setBrightness(fl.cur + 1) end,
     }
 
-    local fl_toggle = ZenToggle:new{
-        width      = toggle_width,
-        value_func = function() return fl.cur > fl.min end,
-    }
-    table.insert(refs.toggles, {
-        toggle   = fl_toggle,
-        callback = function()
-            if fl.cur > fl.min then
-                fl.prev_non_min = fl.cur
-                setBrightness(fl.min)
-            else
-                setBrightness(fl.prev_non_min or math.min(fl.max, fl.min + 1))
-            end
-        end,
-    })
+    local row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }
 
-    local row_gap     = VerticalSpan:new{ width = Screen:scaleBySize(10) }
-    local label_width = inner_width - 2 * toggle_width
-
-    local fl_cap_row = HorizontalGroup:new{
-        align = "center",
-        fl_toggle,
-        CenterContainer:new{
-            dimen = Geom:new{ w = label_width, h = fl_toggle:getSize().h },
-            fl_label,
-        },
-        HorizontalSpan:new{ width = toggle_width },
+    local fl_cap_row = CenterContainer:new{
+        dimen = Geom:new{ w = inner_width, h = fl_label:getSize().h },
+        fl_label,
     }
     local fl_row = HorizontalGroup:new{
         align = "center",

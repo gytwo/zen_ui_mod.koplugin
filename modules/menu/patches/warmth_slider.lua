@@ -19,7 +19,6 @@ local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
 local ZenSlider       = require("common/zen_slider")
-local ZenToggle       = require("common/zen_toggle")
 local _               = require("gettext")
 local Screen          = Device.screen
 
@@ -103,33 +102,11 @@ local function build_warmth_slider(touch_menu, opts)
         callback    = function() setWarmth(nl.cur + 1) end,
     }
 
-    local nl_toggle = ZenToggle:new{
-        width      = toggle_width,
-        value_func = function() return nl.cur > nl.min end,
-    }
-    table.insert(refs.toggles, {
-        toggle   = nl_toggle,
-        callback = function()
-            if nl.cur > nl.min then
-                nl.prev_non_min = nl.cur
-                setWarmth(nl.min)
-            else
-                setWarmth(nl.prev_non_min or math.min(nl.max, nl.min + 1))
-            end
-        end,
-    })
+    local row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }
 
-    local row_gap     = VerticalSpan:new{ width = Screen:scaleBySize(10) }
-    local label_width = inner_width - 2 * toggle_width
-
-    local nl_cap_row = HorizontalGroup:new{
-        align = "center",
-        nl_toggle,
-        CenterContainer:new{
-            dimen = Geom:new{ w = label_width, h = nl_toggle:getSize().h },
-            nl_label,
-        },
-        HorizontalSpan:new{ width = toggle_width },
+    local nl_cap_row = CenterContainer:new{
+        dimen = Geom:new{ w = inner_width, h = nl_label:getSize().h },
+        nl_label,
     }
     local nl_row = HorizontalGroup:new{
         align = "center",

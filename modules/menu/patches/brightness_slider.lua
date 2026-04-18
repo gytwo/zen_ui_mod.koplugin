@@ -29,7 +29,7 @@ local function build_brightness_slider(touch_menu, opts)
     local toggle_width    = opts.toggle_width
     local slider_gap      = opts.slider_gap
     local medium_font     = opts.medium_font
-    local small_btn_font  = opts.small_btn_font
+    local small_btn_size  = opts.small_btn_size
     local powerd          = opts.powerd
     local refs            = opts.refs
     local show_parent     = touch_menu.show_parent
@@ -55,12 +55,14 @@ local function build_brightness_slider(touch_menu, opts)
     }
 
     local fl_minus = Button:new{
-        text        = "−",
-        face        = small_btn_font,
-        width       = small_btn_width,
-        bordersize  = 0,
-        show_parent = show_parent,
-        callback    = function() end, -- placeholder, wired below
+        text           = "−",
+        text_font_face = "infofont",
+        text_font_size = small_btn_size,
+        text_font_bold = false,
+        width          = small_btn_width,
+        bordersize     = 0,
+        show_parent    = show_parent,
+        callback       = function() end, -- placeholder, wired below
     }
 
     local fl_label_fn = nil
@@ -96,12 +98,14 @@ local function build_brightness_slider(touch_menu, opts)
 
     fl_minus.callback = function() setBrightness(fl.cur - 1) end
     local fl_plus = Button:new{
-        text        = "＋",
-        face        = small_btn_font,
-        width       = small_btn_width,
-        bordersize  = 0,
-        show_parent = show_parent,
-        callback    = function() setBrightness(fl.cur + 1) end,
+        text           = "＋",
+        text_font_face = "infofont",
+        text_font_size = small_btn_size,
+        text_font_bold = false,
+        width          = small_btn_width,
+        bordersize     = 0,
+        show_parent    = show_parent,
+        callback       = function() setBrightness(fl.cur + 1) end,
     }
 
     local row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }

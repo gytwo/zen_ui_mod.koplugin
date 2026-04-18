@@ -512,7 +512,7 @@ local function apply_quick_settings()
         -- ----- Frontlight / warmth sliders -----
 
         local medium_font     = Font:getFace("ffont")
-        local small_btn_font  = Font:getFace("cfont")
+        local small_btn_size  = Screen:scaleBySize(14)
         local small_btn_width = Screen:scaleBySize(56)
         local toggle_width    = Screen:scaleBySize(56)
         local slider_gap      = Screen:scaleBySize(4)
@@ -525,7 +525,7 @@ local function apply_quick_settings()
             toggle_width    = toggle_width,
             slider_gap      = slider_gap,
             medium_font     = medium_font,
-            small_btn_font  = small_btn_font,
+            small_btn_size  = small_btn_size,
             powerd          = powerd,
             refs            = refs,
         }

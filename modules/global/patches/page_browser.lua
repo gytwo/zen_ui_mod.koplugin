@@ -505,6 +505,10 @@ local function apply_page_browser()
                 end
             end
 
+            -- Reset cached tile size; the new layout will re-seed it on
+            -- the first showTile call.
+            self._zen_tile_size = nil
+
             _orig_updateLayout(self)
 
             logger.dbg("ZenUI page_browser: after orig nb_cols="..tostring(self.nb_cols).." nb_rows="..tostring(self.nb_rows).." nb_grid_items="..tostring(self.nb_grid_items))
@@ -550,6 +554,28 @@ local function apply_page_browser()
             --  self.grid         = OverlapGroup sized to grid_height (correct)
             --  self.row          = CenterContainer (kept detached)
 
+            -- Cache the grid screen region for targeted dirty calls while
+            -- scrubbing.  Expand by Size.border.thin on the top edge so that
+            -- the first row's border overflow is included in every screen flush.
+            local _gd_bs = Size.border.thin
+            local _scrub_top = math.max(0, self.dimen.y + (self.title_bar_h or 0) + top_pad - _gd_bs)
+            self._zen_grid_dimen = Geom:new{
+                x = self.dimen.x,
+                y = _scrub_top,
+                w = self.grid_width or self.dimen.w,
+                h = (self.grid_height or 0) + _gd_bs,
+            }
+            -- Combined region covering grid + panel (including the slider).
+            -- Using one dirty call with the correct waveform is crucial: the
+            -- "fast" (A2) waveform is black/white-only and corrupts the gray
+            -- badge backgrounds; "ui" (GL16) handles gray correctly.
+            self._zen_scrub_dimen = Geom:new{
+                x = self.dimen.x,
+                y = _scrub_top,
+                w = self.dimen.w,
+                h = self.dimen.h + self.dimen.y - _scrub_top,
+            }
+
             local nb_pages  = self.nb_pages  or 1
             local cur_page  = self.focus_page or self.cur_page or 1
             local grid_w    = self.grid_width or Screen:getWidth()
@@ -579,6 +605,15 @@ local function apply_page_browser()
                 padding   = 0,
             }
 
+            -- Deferred full update used to debounce thumbnail re-render during drag.
+            -- Fires after 250 ms of slider inactivity regardless of whether the
+            -- finger is still down; if the user resumes dragging, on_change will
+            -- re-enable scrubbing and reschedule.
+            self._zen_deferred_update = function()
+                self._zen_scrubbing = false
+                self:update()
+            end
+
             -- Only create slider if there's more than 1 page
             local zen_slider
             if nb_pages > 1 then
@@ -589,7 +624,22 @@ local function apply_page_browser()
                     value_max   = math.max(nb_pages, 1),
                     on_change   = function(v)
                         if self:updateFocusPage(v, false) then
-                            self:update()
+                            if self._zen_slider and self._zen_slider._dragging then
+                                self._zen_scrubbing = true
+                                UIManager:unschedule(self._zen_deferred_update)
+                                UIManager:scheduleIn(0.25, self._zen_deferred_update)
+                                -- One "ui" (GL16) dirty covering grid + panel.
+                                -- "ui" handles gray badge backgrounds correctly;
+                                -- "fast" (A2) is pure B&W and inverts gray pixels.
+                                -- One combined call avoids two competing waveform
+                                -- cycles per pan event.
+                                UIManager:setDirty(self, "ui",
+                                    self._zen_scrub_dimen or self.dimen)
+                            else
+                                UIManager:unschedule(self._zen_deferred_update)
+                                self._zen_scrubbing = false
+                                self:update()
+                            end
                         end
                     end,
                 }
@@ -901,6 +951,21 @@ local function apply_page_browser()
         end
 
         -- ----------------------------------------------------------------
+        -- 3a. showTile: cache actual tile pixel dimensions so scrubbing
+        --     placeholders can draw borders at the correct centred position.
+        -- ----------------------------------------------------------------
+        local _orig_showTile = PageBrowserWidget.showTile
+        PageBrowserWidget.showTile = function(self, grid_idx, page, tile, do_refresh)
+            if tile and tile.bb and not self._zen_tile_size then
+                self._zen_tile_size = {
+                    w = tile.bb:getWidth(),
+                    h = tile.bb:getHeight(),
+                }
+            end
+            return _orig_showTile(self, grid_idx, page, tile, do_refresh)
+        end
+
+        -- ----------------------------------------------------------------
         -- 4. paintTo: suppress the viewfinder overlay; page-number badges
         -- ----------------------------------------------------------------
         PageBrowserWidget.paintTo = function(self, bb, x, y)
@@ -952,6 +1017,27 @@ local function apply_page_browser()
                         local oy = item.overlap_offset[2]
                         local sz = item:getSize()
 
+                        -- While scrubbing: blank the cell then draw a bordered
+                        -- placeholder sized to match the actual thumbnail.
+                        if self._zen_scrubbing then
+                            local bs = Size.border.thin
+                            -- Erase full cell + overflow so stale thumbnail +
+                            -- its border are completely hidden.
+                            bb:paintRect(gx + ox - bs, gy + oy - bs,
+                                         sz.w + 2 * bs, sz.h + 2 * bs,
+                                         Blitbuffer.COLOR_WHITE)
+                            -- Border sized to the cached tile pixel dimensions,
+                            -- centred in the cell exactly as CenterContainer would.
+                            -- Falls back to full cell until the first tile is seen.
+                            local tw = (self._zen_tile_size and self._zen_tile_size.w) or sz.w
+                            local th = (self._zen_tile_size and self._zen_tile_size.h) or sz.h
+                            local pdx = math.floor((sz.w - tw) / 2)
+                            local pdy = math.floor((sz.h - th) / 2)
+                            bb:paintBorder(gx + ox + pdx - bs, gy + oy + pdy - bs,
+                                           tw + 2 * bs, th + 2 * bs,
+                                           bs, Blitbuffer.COLOR_BLACK, 0)
+                        end
+
                         local label = TextWidget:new{
                             text    = tostring(page_num),
                             face    = badge_face,
@@ -981,9 +1067,8 @@ local function apply_page_browser()
         PageBrowserWidget.onTap = function(self, arg, ges)
             logger.dbg("ZenUI page_browser: onTap at "..ges.pos.x..","..ges.pos.y)
             -- 1. Slider tap → navigate to that page.
-            if self._zen_slider and self._zen_slider:hitTest(ges.pos) then
+            if self._zen_slider and self._zen_slider:handleTap(ges) then
                 logger.dbg("ZenUI page_browser: onTap → slider")
-                self._zen_slider:applyPosition(ges.pos.x)
                 return true
             end
             -- 2. View-toggle buttons: fallback for taps before the first paintTo,
@@ -1018,29 +1103,27 @@ local function apply_page_browser()
 
         PageBrowserWidget.onPan = function(self, arg, ges)
             if self._zen_slider and not self._zen_slider_locked then
-                local sp = ges.startpos or ges.pos
-                if self._zen_slider_dragging
-                   or (sp and self._zen_slider:hitTest(sp)) then
-                    self._zen_slider_dragging = true
-                    self._zen_slider.hide_knob = true
-                    self._zen_slider:applyPosition(ges.pos.x)
-                    return true
-                end
+                if self._zen_slider:handlePan(ges) then return true end
             end
             return true  -- swallow all other pans
         end
 
         PageBrowserWidget.onPanRelease = function(self, arg, ges)
-            if self._zen_slider_dragging then
-                self._zen_slider_dragging = false
-                if self._zen_slider then
-                    self._zen_slider.hide_knob = false
-                    self._zen_slider:applyPosition(ges.pos.x)
+            if self._zen_slider
+               and self._zen_slider:handlePanRelease(ges, self, self.dimen) then
+                -- handlePanRelease fires on_change only when the slider value
+                -- actually changes; if the release lands on the same page as
+                -- the last pan, on_change won't fire and _zen_scrubbing would
+                -- stay true until the 250 ms deferred fires.  Always clean up
+                -- here so thumbnails reload immediately on finger lift.
+                if self._zen_scrubbing then
+                    UIManager:unschedule(self._zen_deferred_update)
+                    self._zen_scrubbing = false
+                    self:update()
                 end
-                UIManager:setDirty(self, function() return "partial", self.dimen end)
                 return true
             end
-            -- Prevent close when releasing in panel area (e.g., near button group)
+            -- Swallow releases in the panel strip (e.g. near button group).
             local panel_h = self._zen_panel_h or 0
             if panel_h > 0 and self.dimen
                and ges.pos.y >= (self.dimen.y + self.dimen.h - panel_h) then
@@ -1054,27 +1137,15 @@ local function apply_page_browser()
         -- ----------------------------------------------------------------
         PageBrowserWidget.onSwipe = function(self, _arg, ges)
             -- A fast drag on the slider is classified as a swipe rather than
-            -- pan + pan_release.  Handle it here so the knob reappears.
+            -- pan + pan_release; ZenSlider.handleSwipe covers both cases.
             if self._zen_slider and not self._zen_slider_locked then
-                local was_dragging = self._zen_slider_dragging
-                local on_slider = self._zen_slider.dimen
-                    and ges.pos:intersectWith(self._zen_slider.dimen)
-                if was_dragging or on_slider then
-                    self._zen_slider_dragging = false
-                    self._zen_slider.hide_knob = false
-                    if not was_dragging then
-                        -- Pure quick-swipe: ges.pos is start; compute end from distance.
-                        local dist  = ges.distance or 0
-                        local end_x = ges.pos.x
-                        if ges.direction == "east" then
-                            end_x = end_x + dist
-                        elseif ges.direction == "west" then
-                            end_x = end_x - dist
-                        end
-                        self._zen_slider:applyPosition(end_x)
-                    else
-                        -- Pan events already placed the knob; just repaint.
-                        UIManager:setDirty(self, function() return "partial", self.dimen end)
+                if self._zen_slider:handleSwipe(ges, self, self.dimen) then
+                    -- When was_dragging=true, handleSwipe skips applyPosition so
+                    -- on_change never fires; clean up scrubbing here instead.
+                    if self._zen_scrubbing then
+                        UIManager:unschedule(self._zen_deferred_update)
+                        self._zen_scrubbing = false
+                        self:update()
                     end
                     return true
                 end
@@ -1105,11 +1176,14 @@ local function apply_page_browser()
         PageBrowserWidget.onPinch  = function() return true end
         PageBrowserWidget.onSpread = function() return true end
         PageBrowserWidget.onMultiSwipe = function(self, arg, ges)
-            -- Clear any in-progress slider drag so the knob reappears.
             if self._zen_slider then
-                self._zen_slider_dragging = false
-                self._zen_slider.hide_knob = false
-                UIManager:setDirty(self, function() return "partial", self.dimen end)
+                self._zen_slider:handleMultiSwipe(ges, self, self.dimen)
+            end
+            -- handleMultiSwipe can also terminate a drag without firing on_change.
+            if self._zen_scrubbing then
+                UIManager:unschedule(self._zen_deferred_update)
+                self._zen_scrubbing = false
+                self:update()
             end
             -- Swallow all multiswipes; never close the page browser.
             return true

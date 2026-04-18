@@ -29,7 +29,7 @@ local function build_warmth_slider(touch_menu, opts)
     local toggle_width    = opts.toggle_width
     local slider_gap      = opts.slider_gap
     local medium_font     = opts.medium_font
-    local small_btn_font  = opts.small_btn_font
+    local small_btn_size  = opts.small_btn_size
     local powerd          = opts.powerd
     local refs            = opts.refs
     local show_parent     = touch_menu.show_parent
@@ -86,20 +86,24 @@ local function build_warmth_slider(touch_menu, opts)
     end
 
     local nl_minus = Button:new{
-        text        = "−",
-        face        = small_btn_font,
-        width       = small_btn_width,
-        bordersize  = 0,
-        show_parent = show_parent,
-        callback    = function() setWarmth(nl.cur - 1) end,
+        text           = "−",
+        text_font_face = "infofont",
+        text_font_size = small_btn_size,
+        text_font_bold = false,
+        width          = small_btn_width,
+        bordersize     = 0,
+        show_parent    = show_parent,
+        callback       = function() setWarmth(nl.cur - 1) end,
     }
     local nl_plus = Button:new{
-        text        = "＋",
-        face        = small_btn_font,
-        width       = small_btn_width,
-        bordersize  = 0,
-        show_parent = show_parent,
-        callback    = function() setWarmth(nl.cur + 1) end,
+        text           = "＋",
+        text_font_face = "infofont",
+        text_font_size = small_btn_size,
+        text_font_bold = false,
+        width          = small_btn_width,
+        bordersize     = 0,
+        show_parent    = show_parent,
+        callback       = function() setWarmth(nl.cur + 1) end,
     }
 
     local row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }

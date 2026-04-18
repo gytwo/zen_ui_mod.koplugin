@@ -1,13 +1,14 @@
--- touch_menu_close_footer.lua
+-- touch_menu_footer.lua
 -- Redesigns the TouchMenu footer for all menu tabs:
 --   LEFT slot   ← pagination (page_info: chevrons + page text).
 --                 Previously held the "back/up" chevron button.
---   CENTER slot ← wide close button using icons/large_chevron_up.svg
---                 (2× icon width, same height). Always calls closeMenu().
+--   CENTER slot ← wide button using icons/large_chevron_up.svg
+--                 (2× icon width, same height). Goes up a level when
+--                 in a sub-menu, or closes when at the top level.
 --   RIGHT slot  ← cleared (time/battery shown in the panel status row instead).
 -- Applies to every TouchMenu instance (reader, file manager, all tabs).
 
-local function apply_touch_menu_close_footer()
+local function apply_touch_menu_footer()
     local Device         = require("device")
     local Geom           = require("ui/geometry")
     local GestureRange   = require("ui/gesturerange")
@@ -77,7 +78,7 @@ local function apply_touch_menu_close_footer()
             icon_name = "chevron.up",   -- fallback if file not found
             width     = icon_width * 2,
             height    = icon_height,
-            callback  = function() self:closeMenu() end,
+            callback  = function() self:backToUpperMenu() end,
         }
 
         -- Move page_info (pagination) to the LEFT slot.
@@ -99,4 +100,4 @@ local function apply_touch_menu_close_footer()
     end
 end
 
-return apply_touch_menu_close_footer
+return apply_touch_menu_footer

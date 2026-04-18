@@ -369,7 +369,7 @@ local function apply_status_bar()
         return #group > 0 and group or nil
     end
 
-    local function createStatusRow(path, file_manager)
+    local function createStatusRow(path, file_manager, nav_title)
         local CenterContainer = require("ui/widget/container/centercontainer")
 
         -- Detect whether we are inside a subfolder of, or at, the home directory
@@ -429,9 +429,15 @@ local function apply_status_bar()
         local left_content  = _buildGroup(config.left_order   or {})
         local right_content = _buildGroup(config.right_order  or {})
 
-        -- Center: folder name when in subfolder takes priority over configured center items
+        -- Center: nav_title override > folder name when in subfolder > configured center items
         local center_content = nil
-        if in_subfolder and folder_name then
+        if nav_title then
+            center_content = TextWidget:new{
+                text = nav_title,
+                face = getBarFont(),
+                bold = true,
+            }
+        elseif in_subfolder and folder_name then
             center_content = TextWidget:new{
                 text = folder_name,
                 face = getBarFont(),

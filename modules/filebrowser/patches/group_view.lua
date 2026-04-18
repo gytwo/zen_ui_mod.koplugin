@@ -580,7 +580,7 @@ local function clean_nav(menu, tab_label, back_callback)
 
     local function makeRow()
         if back_callback and createStatusRowCB then
-            return createStatusRowCB(back_callback)
+            return createStatusRowCB(back_callback, tab_label)
         elseif createStatusRow then
             local FileManager = require("apps/filemanager/filemanager")
             return createStatusRow(nil, FileManager.instance)
@@ -1131,7 +1131,7 @@ local function showDetailView(group_item, injectNavbar, tab_id)
         local repaintTB2  = _zen_shared and _zen_shared.repaintTitleBar
         local tb2 = detail_menu.title_bar
         if tb2 and createSR2 and tb2.title_group and #tb2.title_group >= 2 then
-            tb2.title_group[2] = createSR2(back_to_group)
+            tb2.title_group[2] = createSR2(back_to_group, group_name)
             tb2.title_group:resetLayout()
             if repaintTB2 then repaintTB2(tb2) end
         end
@@ -1320,5 +1320,5 @@ return function()
     if not zen_plugin._zen_shared then zen_plugin._zen_shared = {} end
     _zen_shared  = zen_plugin._zen_shared
     _zen_plugin  = zen_plugin  -- keep reference; __ZEN_UI_PLUGIN is cleared after init
-    zen_plugin._zen_shared.authors_series = M
+    zen_plugin._zen_shared.group_view = M
 end

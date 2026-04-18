@@ -333,13 +333,13 @@ local function apply_navbar()
     end
 
     local function onTabAuthors()
-        local AuthorsSeries = zen_plugin._zen_shared and zen_plugin._zen_shared.authors_series
-        if AuthorsSeries then AuthorsSeries.showAuthorsView(injectStandaloneNavbar) end
+        local GroupView = zen_plugin._zen_shared and zen_plugin._zen_shared.group_view
+        if GroupView then GroupView.showAuthorsView(injectStandaloneNavbar) end
     end
 
     local function onTabSeries()
-        local AuthorsSeries = zen_plugin._zen_shared and zen_plugin._zen_shared.authors_series
-        if AuthorsSeries then AuthorsSeries.showSeriesView(injectStandaloneNavbar) end
+        local GroupView = zen_plugin._zen_shared and zen_plugin._zen_shared.group_view
+        if GroupView then GroupView.showSeriesView(injectStandaloneNavbar) end
     end
 
     local function onTabSearch()

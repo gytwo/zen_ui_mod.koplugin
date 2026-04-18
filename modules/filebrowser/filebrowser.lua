@@ -39,7 +39,7 @@ local PATCH_MODULES = {
     browser_series_badge = "modules/filebrowser/patches/browser_series_badge",
     browser_display_mode_by_path = "modules/filebrowser/patches/browser_display_mode_by_path",
     search = "modules/filebrowser/patches/search",
-    authors_series = "modules/filebrowser/patches/authors_series",
+    group_view = "modules/filebrowser/patches/group_view",
 }
 
 local function is_feature_enabled(plugin, key)
@@ -155,9 +155,9 @@ function M.init(logger, plugin)
         run_feature(logger, plugin, "browser_series_badge", browser_series_badge_fn)
     end
 
-    local authors_series_fn = load_patch("authors_series")
-    if authors_series_fn then
-        run_feature(logger, plugin, "authors_series", authors_series_fn)
+    local group_view_fn = load_patch("group_view")
+    if group_view_fn then
+        run_feature(logger, plugin, "group_view", group_view_fn)
     end
 
     local zen_scroll_bar_fn = load_patch("zen_scroll_bar")

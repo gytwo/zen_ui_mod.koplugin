@@ -30,9 +30,16 @@ end
 -- setup_display_mode: mirror fi CoverMenu/MosaicMenu/ListMenu onto menu
 -- Returns "mosaic", "list", or "classic"
 -------------------------------------------------------------------------------
-local function setup_display_mode(menu, is_group_view)
+local function setup_display_mode(menu, is_group_view, tab_id)
     local BookInfoManager = require("bookinfomanager")
-    local display_mode = BookInfoManager:getSetting("filemanager_display_mode")
+    local display_mode
+    if tab_id then
+        local g_settings = rawget(_G, "G_reader_settings")
+        display_mode = g_settings and g_settings:readSetting("zen_" .. tab_id .. "_display_mode")
+            or "list_image_meta"
+    else
+        display_mode = BookInfoManager:getSetting("filemanager_display_mode")
+    end
     if is_group_view then
         menu._zen_group_view = true
     end
@@ -665,7 +672,7 @@ local showGroupView
 -- showDisplayModeDialog: show display mode selection dialog
 -- menu: optional Menu instance to refresh after mode change
 -------------------------------------------------------------------------------
-local function showDisplayModeDialog(menu)
+local function showDisplayModeDialog(menu, tab_id)
     local _ = require("gettext")
     local ButtonDialog = require("ui/widget/buttondialog")
     local UIManager = require("ui/uimanager")
@@ -674,7 +681,11 @@ local function showDisplayModeDialog(menu)
     local fm = ok_fm and FM and FM.instance
     local ok_bim, bim = pcall(require, "bookinfomanager")
     local cur_mode
-    if ok_bim and bim then
+    if tab_id then
+        local g_settings = rawget(_G, "G_reader_settings")
+        cur_mode = (g_settings and g_settings:readSetting("zen_" .. tab_id .. "_display_mode"))
+            or "list_image_meta"
+    elseif ok_bim and bim then
         local ok3, m = pcall(function()
             return bim:getSetting("filemanager_display_mode")
         end)
@@ -682,20 +693,26 @@ local function showDisplayModeDialog(menu)
     end
 
     local function apply_mode(mode)
-        -- Use FM:onSetDisplayMode to update CoverBrowser state and save to BIM.
-        -- Falls back to direct BIM save if FM/coverbrowser not available.
-        local via_fm = false
-        if fm and type(fm.onSetDisplayMode) == "function" then
-            via_fm = pcall(fm.onSetDisplayMode, fm, mode)
-        end
-        if not via_fm and ok_bim and bim then
-            pcall(bim.saveSetting, bim, "filemanager_display_mode", mode)
+        if tab_id then
+            local g_settings = rawget(_G, "G_reader_settings")
+            if g_settings then
+                g_settings:saveSetting("zen_" .. tab_id .. "_display_mode", mode)
+            end
+        else
+            -- Use FM:onSetDisplayMode to update CoverBrowser state and save to BIM.
+            local via_fm = false
+            if fm and type(fm.onSetDisplayMode) == "function" then
+                via_fm = pcall(fm.onSetDisplayMode, fm, mode)
+            end
+            if not via_fm and ok_bim and bim then
+                pcall(bim.saveSetting, bim, "filemanager_display_mode", mode)
+            end
         end
 
         -- Rebuild in-place: swap methods for the new mode, then redraw once.
         if menu then
             local is_group = menu._zen_group_view or false
-            local new_mode_type = setup_display_mode(menu, is_group)
+            local new_mode_type = setup_display_mode(menu, is_group, tab_id)
             if new_mode_type == "mosaic" then
                 patch_mosaic_item()
             elseif new_mode_type == "list" then
@@ -1040,7 +1057,7 @@ local function showDetailView(group_item, injectNavbar, tab_id)
     TitleBar.new = orig_tb_new
 
     -- Install same display mode as the library (mosaic/list/classic)
-    local mode_type = setup_display_mode(detail_menu, false)
+    local mode_type = setup_display_mode(detail_menu, false, tab_id)
     if mode_type == "mosaic" then
         patch_mosaic_item()
     elseif mode_type == "list" then
@@ -1099,7 +1116,7 @@ local function showDetailView(group_item, injectNavbar, tab_id)
                         showDetailSortDialog(group_name, tab_id, self, files)
                     end,
                     _zen_display_cb  = function()
-                        showDisplayModeDialog(self)
+                        showDisplayModeDialog(self, tab_id)
                     end,
                 })
             end
@@ -1190,7 +1207,7 @@ showGroupView = function(tab_id, injectNavbar, groups)
     TitleBar.new = orig_tb_new
 
     -- Install display mode (mosaic/list) and set _zen_group_view sentinel
-    local mode_type = setup_display_mode(menu, true)
+    local mode_type = setup_display_mode(menu, true, tab_id)
     if mode_type == "mosaic" then
         patch_mosaic_item()
     elseif mode_type == "list" then
@@ -1255,7 +1272,7 @@ showGroupView = function(tab_id, injectNavbar, groups)
                     _zen_group_name     = tab_id == "authors" and _("Authors") or _("Series"),
                     _zen_group_subtitle = subtitle,
                     _zen_sort_cb        = function() showGroupSortDialog(tab_id, self) end,
-                    _zen_display_cb     = function() showDisplayModeDialog(self) end,
+                    _zen_display_cb     = function() showDisplayModeDialog(self, tab_id) end,
                 })
             end
             return true

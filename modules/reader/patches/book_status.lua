@@ -54,7 +54,7 @@ local function apply_book_status()
             allow_flash = false,
         }
         local home_btn = IconButton:new{
-            icon = "home",
+            icon = "library",
             width = home_size, height = home_size,
             padding = btn_pad,
             show_parent = self,

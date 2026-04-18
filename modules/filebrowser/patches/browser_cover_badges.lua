@@ -68,19 +68,6 @@ local function apply_browser_cover_badges()
         drawLine(lx1, ly1, rx1, ry1)
     end
 
-    -- Draw two vertical pause bars.
-    local function paintPauseBars(bb, bx, by, bw, bh, color)
-        local bar_w = math.max(2, math.floor(bw * 0.12))
-        local bar_h = math.floor(bh * 0.68)
-        local gap   = math.max(2, math.floor(bw * 0.18))
-        local total = 2 * bar_w + gap
-        local bar1x = bx + math.floor((bw - total) / 2)
-        local bar2x = bar1x + bar_w + gap
-        local bar_y = by + math.floor((bh - bar_h) / 2)
-        bb:paintRect(bar1x, bar_y, bar_w, bar_h, color)
-        bb:paintRect(bar2x, bar_y, bar_w, bar_h, color)
-    end
-
     -- Draw a filled circle using scanline paintRect.
     local function paintCircle(bb, cx, cy, r, color)
         for row = -r, r do
@@ -261,7 +248,19 @@ local function apply_browser_cover_badges()
                         local sq_y = icon_y + math.floor((icon_h - sq) / 2)
                         paintCheck(bb, sq_x, sq_y, sq, sq, Blitbuffer.COLOR_BLACK)
                     elseif do_pause then
-                        paintPauseBars(bb, icon_x, icon_y, icon_w, icon_h, Blitbuffer.COLOR_BLACK)
+                        local font_sz = math.max(7, math.floor(corner_mark_size * 0.40))
+                        local tw = TextWidget:new{
+                            text    = "\u{F0150}",  -- nf-md-clock_outline
+                            face    = Font:getFace("cfont", font_sz),
+                            fgcolor = Blitbuffer.COLOR_BLACK,
+                            padding = 0,
+                        }
+                        local tw_sz = tw:getSize()
+                        tw:paintTo(bb,
+                            bdg_x + math.floor((bw     - tw_sz.w) / 2),
+                            bdg_y + math.floor((rect_h - tw_sz.h) / 2)
+                        )
+                        if tw.free then tw:free() end
                     else
                         local pct     = math.floor(100 * self.percent_finished)
                         local pct_str = pct .. "%"

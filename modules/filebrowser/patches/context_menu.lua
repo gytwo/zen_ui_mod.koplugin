@@ -116,6 +116,41 @@ local function apply_context_menu()
 
         local orig_showFileDialog = file_chooser.showFileDialog
 
+        -- Shared sort-order dialog: icons defined here once, called from
+        -- authors/series, collections, and this context menu.
+        file_chooser.showSortOrderDialog = function(self_fc, opts)
+            local UIManager_sod    = require("ui/uimanager")
+            local ButtonDialog_sod = require("ui/widget/buttondialog")
+            local _sod             = require("gettext")
+            local cur_rev          = opts.current_reverse or false
+            local order_dialog
+            order_dialog = ButtonDialog_sod:new{
+                title       = opts.title or _sod("Sort order"),
+                title_align = "center",
+                buttons     = {
+                    {{
+                        text     = "\u{F04BC}  " .. _sod("Ascending") .. (not cur_rev and "  \u{2713}" or ""),
+                        align    = "left",
+                        enabled  = cur_rev,
+                        callback = function()
+                            UIManager_sod:close(order_dialog)
+                            opts.on_select(false)
+                        end,
+                    }},
+                    {{
+                        text     = "\u{F04BD}  " .. _sod("Descending") .. (cur_rev and "  \u{2713}" or ""),
+                        align    = "left",
+                        enabled  = not cur_rev,
+                        callback = function()
+                            UIManager_sod:close(order_dialog)
+                            opts.on_select(true)
+                        end,
+                    }},
+                },
+            }
+            UIManager_sod:show(order_dialog)
+        end
+
         file_chooser.showFileDialog = function(self_fc, item)
             -- Delegate to stock KOReader dialog outside home directory.
             local g_settings = rawget(_G, "G_reader_settings")
@@ -131,6 +166,211 @@ local function apply_context_menu()
                 end
             end
 
+            -- ── Group context menu (authors/series views) ─────────────────────────────
+            if item._zen_group_files then
+                local group_files = item._zen_group_files
+                local group_name  = item._zen_group_name or ""
+                local sort_cb     = item._zen_sort_cb
+                local display_cb  = item._zen_display_cb
+                local Screen   = Device.screen
+                local SizeR    = require("ui/size")
+                local border   = SizeR.border.thin
+                local gap      = Screen:scaleBySize(8)
+                local dlg_w    = math.floor(math.min(Screen:getWidth(), Screen:getHeight()) * 0.9)
+                local avail_w  = dlg_w - 2 * (SizeR.border.window + SizeR.padding.button)
+                                        - 2 * (SizeR.padding.default + SizeR.margin.default)
+                local cover_max_w = Screen:scaleBySize(90)
+                local cover_max_h = Screen:scaleBySize(140)
+                local Blitbuffer      = require("ffi/blitbuffer")
+                local CenterContainer = require("ui/widget/container/centercontainer")
+                local Font            = require("ui/font")
+                local FrameContainer  = require("ui/widget/container/framecontainer")
+                local Geom            = require("ui/geometry")
+                local HorizontalGroup = require("ui/widget/horizontalgroup")
+                local HorizontalSpan  = require("ui/widget/horizontalspan")
+                local ImageWidget     = require("ui/widget/imagewidget")
+                local LeftContainer   = require("ui/widget/container/leftcontainer")
+                local LineWidget      = require("ui/widget/linewidget")
+                local TextWidget      = require("ui/widget/textwidget")
+                local VerticalGroup   = require("ui/widget/verticalgroup")
+                local VerticalSpan    = require("ui/widget/verticalspan")
+                local covers = {}
+                local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
+                if ok_bim then
+                    for _, fpath in ipairs(group_files) do
+                        local bi = BookInfoManager:getBookInfo(fpath, true)
+                        if bi and bi.has_cover and bi.cover_bb and not bi.ignore_cover then
+                            table.insert(covers, { data = bi.cover_bb:copy() })
+                            if #covers >= 4 then break end
+                        end
+                    end
+                end
+                local sep     = 1
+                local half_w  = math.floor((cover_max_w - sep) / 2)
+                local half_w2 = cover_max_w - sep - half_w
+                local half_h  = math.floor((cover_max_h - sep) / 2)
+                local half_h2 = cover_max_h - sep - half_h
+                local cell_dims = {
+                    { w = half_w,  h = half_h  },
+                    { w = half_w2, h = half_h  },
+                    { w = half_w,  h = half_h2 },
+                    { w = half_w2, h = half_h2 },
+                }
+                local cells = {}
+                for i = 1, 4 do
+                    local c  = covers[i]
+                    local cd = cell_dims[i]
+                    if c then
+                        cells[i] = CenterContainer:new{
+                            dimen = Geom:new{ w = cd.w, h = cd.h },
+                            ImageWidget:new{
+                                image            = c.data,
+                                image_disposable = true,
+                                width            = cd.w,
+                                height           = cd.h,
+                            },
+                        }
+                    else
+                        cells[i] = CenterContainer:new{
+                            dimen = Geom:new{ w = cd.w, h = cd.h },
+                            VerticalSpan:new{ width = 1 },
+                        }
+                    end
+                end
+                local framed_gallery = FrameContainer:new{
+                    padding    = 0,
+                    bordersize = border,
+                    width      = cover_max_w + 2 * border,
+                    height     = cover_max_h + 2 * border,
+                    background = Blitbuffer.COLOR_LIGHT_GRAY,
+                    CenterContainer:new{
+                        dimen = Geom:new{ w = cover_max_w, h = cover_max_h },
+                        VerticalGroup:new{
+                            HorizontalGroup:new{
+                                cells[1],
+                                LineWidget:new{
+                                    background = Blitbuffer.COLOR_WHITE,
+                                    dimen      = Geom:new{ w = sep, h = half_h },
+                                },
+                                cells[2],
+                            },
+                            LineWidget:new{
+                                background = Blitbuffer.COLOR_WHITE,
+                                dimen      = Geom:new{ w = cover_max_w, h = sep },
+                            },
+                            HorizontalGroup:new{
+                                cells[3],
+                                LineWidget:new{
+                                    background = Blitbuffer.COLOR_WHITE,
+                                    dimen      = Geom:new{ w = sep, h = half_h2 },
+                                },
+                                cells[4],
+                            },
+                        },
+                    },
+                }
+                -- Apply rounded corners consistent with the file browser cover
+                local plug = zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+                if plug and type(plug.config) == "table"
+                    and type(plug.config.features) == "table"
+                    and plug.config.features.browser_cover_rounded_corners == true
+                then
+                    local r       = Screen:scaleBySize(6)
+                    local r_inner = r - border
+                    local orig_pt = framed_gallery.paintTo
+                    framed_gallery.paintTo = function(self, bb, x, y)
+                        orig_pt(self, bb, x, y)
+                        if not (self.dimen and self.dimen.x) then return end
+                        local tx, ty = self.dimen.x, self.dimen.y
+                        local tw, th = self.dimen.w, self.dimen.h
+                        local wh  = Blitbuffer.COLOR_WHITE
+                        local blk = Blitbuffer.COLOR_BLACK
+                        for j = 0, r - 1 do
+                            local inner = math.sqrt(r * r - (r - j) * (r - j))
+                            local cut   = math.ceil(r - inner)
+                            if cut > 0 then
+                                bb:paintRect(tx,            ty + j,           cut, 1, wh)
+                                bb:paintRect(tx + tw - cut, ty + j,           cut, 1, wh)
+                                bb:paintRect(tx,            ty + th - 1 - j,  cut, 1, wh)
+                                bb:paintRect(tx + tw - cut, ty + th - 1 - j,  cut, 1, wh)
+                            end
+                        end
+                        for j = 0, r - 1 do
+                            for c = 0, r - 1 do
+                                local dx, dy = r - c - 0.5, r - j - 0.5
+                                local dist = math.sqrt(dx * dx + dy * dy)
+                                if dist >= r_inner and dist <= r then
+                                    bb:paintRect(tx + c,          ty + j,           1, 1, blk)
+                                    bb:paintRect(tx + tw - 1 - c, ty + j,           1, 1, blk)
+                                    bb:paintRect(tx + c,          ty + th - 1 - j,  1, 1, blk)
+                                    bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j,  1, 1, blk)
+                                end
+                            end
+                        end
+                    end
+                end
+                local framed_h   = cover_max_h + 2 * border
+                local text_col_w = math.max(avail_w - cover_max_w - 2 * border - gap, Screen:scaleBySize(60))
+                local n_files    = #group_files
+                local subtitle   = item._zen_group_subtitle
+                    or (n_files == 1 and _("1 book") or (tostring(n_files) .. " " .. _("books")))
+                local vstack = VerticalGroup:new{ align = "left" }
+                table.insert(vstack, TextWidget:new{
+                    text      = BD.auto(group_name),
+                    face      = Font:getFace("cfont", 20),
+                    bold      = true,
+                    max_width = text_col_w,
+                })
+                table.insert(vstack, VerticalSpan:new{ width = Screen:scaleBySize(2) })
+                table.insert(vstack, TextWidget:new{
+                    text      = subtitle,
+                    face      = Font:getFace("cfont", 17),
+                    max_width = text_col_w,
+                })
+                local header_widget = LeftContainer:new{
+                    dimen = Geom:new{ w = avail_w, h = framed_h },
+                    HorizontalGroup:new{
+                        align = "top",
+                        framed_gallery,
+                        HorizontalSpan:new{ width = gap },
+                        vstack,
+                    },
+                }
+                local buttons = {}
+                if sort_cb then
+                    table.insert(buttons, {{
+                        text     = "\u{F04BF}  " .. _("Sort  \u{25B8}"),
+                        align    = "left",
+                        callback = function()
+                            UIManager:close(self_fc.file_dialog)
+                            sort_cb()
+                        end,
+                    }})
+                end
+                if display_cb then
+                    table.insert(buttons, {{
+                        text     = "\u{F06D0}  " .. _("Display  \u{25B8}"),
+                        align    = "left",
+                        callback = function()
+                            UIManager:close(self_fc.file_dialog)
+                            display_cb()
+                        end,
+                    }})
+                end
+                -- Caller-supplied extra buttons (e.g. collection-specific actions)
+                if item._zen_extra_buttons then
+                    for _, row in ipairs(item._zen_extra_buttons) do
+                        table.insert(buttons, row)
+                    end
+                end
+                self_fc.file_dialog = ButtonDialog:new{
+                    buttons        = buttons,
+                    _added_widgets = { header_widget },
+                }
+                UIManager:show(self_fc.file_dialog)
+                return true
+            end
+
             local file               = item.path
             local is_file            = item.is_file
             local is_not_parent_folder = not item.is_go_up
@@ -142,7 +382,9 @@ local function apply_context_menu()
             end
 
             local function refresh()
-                self_fc:refreshPath()
+                UIManager:nextTick(function()
+                    self_fc:refreshPath()
+                end)
             end
 
             -- Build dialog header: cover+text when cover available, text-only otherwise.
@@ -704,7 +946,7 @@ local function apply_context_menu()
                     edit_dialog = ButtonDialog:new{
                         buttons = {
                             {{
-                                text     = "\u{F0EA}  " .. C_("File", "Paste"),
+                                text     = "\u{F0192}  " .. C_("File", "Paste"),
                                 align    = "left",
                                 enabled  = file_manager.clipboard and true or false,
                                 callback = function()
@@ -721,7 +963,7 @@ local function apply_context_menu()
                 local edit_buttons = {
                     {
                         {
-                            text     = "\u{F14A}  " .. _("Select"),
+                            text     = "\u{F0486}  " .. _("Select"),
                             align    = "left",
                             callback = function()
                                 UIManager:close(edit_dialog)
@@ -736,7 +978,7 @@ local function apply_context_menu()
                     },
                     {
                         {
-                            text     = "\u{F0C4}  " .. _("Cut"),
+                            text     = "\u{F0190}  " .. _("Cut"),
                             align    = "left",
                             enabled  = is_not_parent_folder,
                             callback = function()
@@ -747,7 +989,7 @@ local function apply_context_menu()
                     },
                     {
                         {
-                            text     = "\u{F0C5}  " .. C_("File", "Copy"),
+                            text     = "\u{F018F}  " .. C_("File", "Copy"),
                             align    = "left",
                             enabled  = is_not_parent_folder,
                             callback = function()
@@ -758,7 +1000,7 @@ local function apply_context_menu()
                     },
                     {
                         {
-                            text     = "\u{F0EA}  " .. C_("File", "Paste"),
+                            text     = "\u{F0192}  " .. C_("File", "Paste"),
                             align    = "left",
                             enabled  = file_manager.clipboard and true or false,
                             callback = function()
@@ -775,7 +1017,7 @@ local function apply_context_menu()
                 if allow_delete then
                     table.insert(edit_buttons, {
                         {
-                            text     = "\u{F1F8}  " .. _("Delete"),
+                            text     = "\u{F0B89}  " .. _("Delete"),
                             align    = "left",
                             enabled  = is_not_parent_folder,
                             callback = function()
@@ -799,7 +1041,7 @@ local function apply_context_menu()
             if is_file and is_not_parent_folder and book_description then
                 table.insert(buttons, {
                     {
-                        text     = "\u{F129}  " .. _("Description"),
+                        text     = "\u{F02FD}  " .. _("Description"),
                         align    = "left",
                         callback = function()
                             close_dialog()
@@ -819,7 +1061,7 @@ local function apply_context_menu()
             if not is_file and is_not_parent_folder and not is_home_dir then
                 table.insert(buttons, {
                     {
-                        text     = "\u{F031}  " .. _("Rename"),
+                        text     = "\u{F0CB6}  " .. _("Rename"),
                         align    = "left",
                         callback = function()
                             close_dialog()
@@ -834,7 +1076,7 @@ local function apply_context_menu()
             if item._is_current_dir then
                 table.insert(buttons, {
                     {
-                        text     = "\u{F07B}  " .. _("New folder"),
+                        text     = "\u{F0B9D}  " .. _("New folder"),
                         align    = "left",
                         callback = function()
                             close_dialog()
@@ -848,7 +1090,7 @@ local function apply_context_menu()
                 -- Move: open a folder picker then immediately execute the move
                 table.insert(buttons, {
                     {
-                        text     = "\u{F047}  " .. _("Move"),
+                        text     = "\u{F1031}  " .. _("Move"),
                         align    = "left",
                         callback = function()
                             close_dialog()
@@ -943,7 +1185,7 @@ local function apply_context_menu()
 
                 table.insert(buttons, {
                     {
-                        text = is_fav and ("\u{F006}  " .. _("Remove from favorites")) or ("\u{F005}  " .. _("Add to favorites")),
+                        text = is_fav and ("\u{F04D2}  " .. _("Remove from favorites")) or ("\u{F04D2}  " .. _("Add to favorites")),
                         align    = "left",
                         callback = function()
                             close_dialog()
@@ -962,7 +1204,7 @@ local function apply_context_menu()
                 -- Read status submenu
                 table.insert(buttons, {
                     {
-                        text     = "\u{F02D}  " .. _("Read status  ▶"),
+                        text     = "\u{F0B64}  " .. _("Read status  ▶"),
                         align    = "left",
                         callback = function()
                             close_dialog()
@@ -1006,10 +1248,10 @@ local function apply_context_menu()
                                 title       = _("Read status"),
                                 title_align = "center",
                                 buttons     = {
-                                    statusBtn("\u{F02D}", _("Unread"),   nil),
-                                    statusBtn("\u{F02E}", _("Reading"),  "reading"),
-                                    statusBtn("\u{F04C}", _("On hold"),  "abandoned"),
-                                    statusBtn("\u{F00C}", _("Finished"), "complete"),
+                                    statusBtn("\u{F0B64}", _("Unread"),      nil),
+                                    statusBtn("\u{F0B63}", _("Reading"),     "reading"),
+                                    statusBtn("\u{F0150}", _("To Be Read"),  "abandoned"),
+                                    statusBtn("\u{F012C}", _("Finished"),    "complete"),
                                 },
                             }
                             UIManager:show(status_dialog)
@@ -1021,11 +1263,11 @@ local function apply_context_menu()
             -- ── Sort (folders only) ───────────────────────────────────────────────────
             if not is_file and is_not_parent_folder then
                 local SORT_OPTIONS = {
-                    { key = "title",    text = "\u{F031}  " .. _("Title")         },
-                    { key = "authors",  text = "\u{F007}  " .. _("Authors")       },
-                    { key = "series",   text = "\u{F0CB}  " .. _("Series")        },
-                    { key = "access",   text = "\u{F073}  " .. _("Recently read") },
-                    { key = "keywords", text = "\u{F02C}  " .. _("Keywords")      },
+                    { key = "title",    text = "\u{F04BB}  " .. _("Title")         },
+                    { key = "authors",  text = "\u{F0013}  " .. _("Authors")       },
+                    { key = "series",   text = "\u{F0436}  " .. _("Series")        },
+                    { key = "access",   text = "\u{F02DA}  " .. _("Recently read") },
+                    { key = "keywords", text = "\u{F12F7}  " .. _("Keywords")      },
                 }
 
                 if is_home_dir then
@@ -1034,7 +1276,7 @@ local function apply_context_menu()
                     if g_sort then
                         table.insert(buttons, {
                             {
-                                text     = "\u{F0DC}  " .. _("Sort library  ▶"),
+                                text     = "\u{F04BF}  " .. _("Sort library  ▶"),
                                 align    = "left",
                                 callback = function()
                                     close_dialog()
@@ -1063,40 +1305,21 @@ local function apply_context_menu()
                                     end
                                     -- Order submenu
                                     table.insert(sort_buttons, {{
-                                        text     = "\u{F0DC}  " .. _("Order  ▶"),
+                                        text     = "\u{F04BF}  " .. _("Order  ▶"),
                                         align    = "left",
                                         callback = function()
-                                            local order_dialog
-                                            local order_buttons = {
-                                                {{
-                                                    text     = "\u{F15D}  " .. _("Ascending") .. (not cur_reverse and "  \u{2713}" or ""),
-                                                    align    = "left",
-                                                    enabled  = cur_reverse,
-                                                    callback = function()
-                                                        g_sort:delSetting("reverse_collate")
-                                                        UIManager:close(order_dialog)
-                                                        UIManager:close(sort_dialog)
-                                                        self_fc:refreshPath()
-                                                    end,
-                                                }},
-                                                {{
-                                                    text     = "\u{F15E}  " .. _("Descending") .. (cur_reverse and "  \u{2713}" or ""),
-                                                    align    = "left",
-                                                    enabled  = not cur_reverse,
-                                                    callback = function()
+                                            UIManager:close(sort_dialog)
+                                            self_fc:showSortOrderDialog({
+                                                current_reverse = cur_reverse,
+                                                on_select       = function(reverse)
+                                                    if reverse then
                                                         g_sort:saveSetting("reverse_collate", true)
-                                                        UIManager:close(order_dialog)
-                                                        UIManager:close(sort_dialog)
-                                                        self_fc:refreshPath()
-                                                    end,
-                                                }},
-                                            }
-                                            order_dialog = ButtonDialog:new{
-                                                title       = _("Sort order"),
-                                                title_align = "center",
-                                                buttons     = order_buttons,
-                                            }
-                                            UIManager:show(order_dialog)
+                                                    else
+                                                        g_sort:delSetting("reverse_collate")
+                                                    end
+                                                    self_fc:refreshPath()
+                                                end,
+                                            })
                                         end,
                                     }})
                                     sort_dialog = ButtonDialog:new{
@@ -1118,7 +1341,7 @@ local function apply_context_menu()
 
                         table.insert(buttons, {
                             {
-                                text     = "\u{F0DC}  " .. _("Sort folder  ▶"),
+                                text     = "\u{F04BF}  " .. _("Sort folder  ▶"),
                                 align    = "left",
                                 callback = function()
                                     close_dialog()
@@ -1141,49 +1364,25 @@ local function apply_context_menu()
                                     end
                                     -- Order submenu
                                     table.insert(sort_buttons, {{
-                                        text     = "\u{F0DC}  " .. _("Order  ▶"),
+                                        text     = "\u{F04BF}  " .. _("Order  ▶"),
                                         align    = "left",
                                         callback = function()
-                                            local order_dialog
-                                            local order_buttons = {
-                                                {{
-                                                    text     = "\u{F15D}  " .. _("Ascending") .. (not cur_reverse and "  \u{2713}" or ""),
-                                                    align    = "left",
-                                                    enabled  = not cur_reverse,
-                                                    callback = function()
-                                                        if cur_collate then
-                                                            fsd_api.set(real_folder, cur_collate, false)
-                                                            UIManager:close(order_dialog)
-                                                            UIManager:close(sort_dialog)
-                                                        end
-                                                    end,
-                                                }},
-                                                {{
-                                                    text     = "\u{F15E}  " .. _("Descending") .. (cur_reverse and "  \u{2713}" or ""),
-                                                    align    = "left",
-                                                    enabled  = cur_reverse,
-                                                    callback = function()
-                                                        if cur_collate then
-                                                            fsd_api.set(real_folder, cur_collate, true)
-                                                            UIManager:close(order_dialog)
-                                                            UIManager:close(sort_dialog)
-                                                        end
-                                                    end,
-                                                }},
-                                            }
-                                            order_dialog = ButtonDialog:new{
-                                                title       = _("Sort order"),
-                                                title_align = "center",
-                                                buttons     = order_buttons,
-                                            }
-                                            UIManager:show(order_dialog)
+                                            UIManager:close(sort_dialog)
+                                            self_fc:showSortOrderDialog({
+                                                current_reverse = cur_reverse,
+                                                on_select       = function(reverse)
+                                                    if cur_collate then
+                                                        fsd_api.set(real_folder, cur_collate, reverse)
+                                                    end
+                                                end,
+                                            })
                                         end,
                                     }})
                                     -- "Clear" row — only shown when an override is active
                                     if current_override then
                                         table.insert(sort_buttons, {})
                                         table.insert(sort_buttons, {{
-                                            text     = "\u{F0E2}  " .. _("Clear"),
+                                            text     = "\u{F099B}  " .. _("Clear"),
                                             align    = "left",
                                             callback = function()
                                                 fsd_api.clear(real_folder)
@@ -1242,9 +1441,9 @@ local function apply_context_menu()
                         title       = _("Display mode"),
                         title_align = "center",
                         buttons     = {
-                            viewBtn(_("Mosaic"),          "\u{F00A}", "mosaic_image"),
-                            viewBtn(_("List (detailed)"), "\u{F03A}", "list_image_meta"),
-                            viewBtn(_("List (basic)"),    "\u{F0CA}", "list_image_filename"),
+                            viewBtn(_("Mosaic"),          "\u{F11D9}", "mosaic_image"),
+                            viewBtn(_("List (detailed)"), "\u{F148B}", "list_image_meta"),
+                            viewBtn(_("List (basic)"),    "\u{F0279}", "list_image_filename"),
                         },
                     }
                     UIManager:show(view_dialog)
@@ -1252,7 +1451,7 @@ local function apply_context_menu()
 
                 table.insert(buttons, {
                     {
-                        text     = "\u{F06E}  " .. _("Display  ▶"),
+                        text     = "\u{F06D0}  " .. _("Display  ▶"),
                         align    = "left",
                         callback = showViewSubmenu,
                     },
@@ -1261,7 +1460,7 @@ local function apply_context_menu()
 
             table.insert(buttons, {
                 {
-                    text     = "\u{F040}  " .. _("Edit  ▶"),
+                    text     = "\u{F090C}  " .. _("Edit  ▶"),
                     align    = "left",
                     callback = showEditSubmenu,
                 },

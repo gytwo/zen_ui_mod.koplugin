@@ -544,8 +544,8 @@ msgstr "NotionSync"
 msgid "Off"
 msgstr "Éteint"
 
-msgid "On hold"
-msgstr "En pause"
+msgid "To Be Read"
+msgstr "À lire"
 
 msgid "OPDS"
 msgstr "OPDS"

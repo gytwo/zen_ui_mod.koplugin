@@ -278,10 +278,10 @@ local function apply_browser_list_item_layout()
             local status_label, progress_str
             if status == "complete" then
                 status_label = _("Finished")
-                progress_str = "\u{F012C}"  -- md-check
+                progress_str = "\u{F00C}"  -- FA check
             elseif status == "abandoned" then
-                status_label = _("On hold")
-                progress_str = "\u{F03E4}"  -- md-pause
+                status_label = _("To Be Read")
+                progress_str = "\u{F017}"  -- FA clock-o
             elseif status == "reading" or percent_finished then
                 if percent_finished then
                     status_label = string.format(_("%d%% Read"), math.floor(100 * percent_finished))
@@ -318,10 +318,9 @@ local function apply_browser_list_item_layout()
             local wright_status, status_nat_w = nil, 0
             if status_label then
                 if progress_str then
-                    -- Render icon with our bundled Nerd Font, label with regular font.
                     local icon_w = TextWidget:new{
                         text    = progress_str,
-                        face    = Font:getFace("zen_icons", fs_right),
+                        face    = Font:getFace("cfont", fs_right),
                         fgcolor = fgcolor,
                         padding = 0,
                     }

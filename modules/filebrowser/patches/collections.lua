@@ -590,242 +590,6 @@ local function apply_collections()
     -- Context menus
     ---------------------------------------------------------------------------
 
-    -- Build a cover header widget for a collection (gallery of up to 4 covers
-    -- with collection name + book count beside it — same aesthetic as the
-    -- folder header in context_menu.lua).
-    local function build_coll_cover_header(coll_name, book_count, display_name)
-        local BookInfoManager  = require("bookinfomanager")
-        local Blitbuffer       = require("ffi/blitbuffer")
-        local CenterContainer  = require("ui/widget/container/centercontainer")
-        local Device           = require("device")
-        local Font             = require("ui/font")
-        local FrameContainer   = require("ui/widget/container/framecontainer")
-        local Geom             = require("ui/geometry")
-        local HorizontalGroup  = require("ui/widget/horizontalgroup")
-        local HorizontalSpan   = require("ui/widget/horizontalspan")
-        local ImageWidget      = require("ui/widget/imagewidget")
-        local LeftContainer    = require("ui/widget/container/leftcontainer")
-        local LineWidget       = require("ui/widget/linewidget")
-        local ReadCollection   = require("readcollection")
-        local Size             = require("ui/size")
-        local TextWidget       = require("ui/widget/textwidget")
-        local VerticalGroup    = require("ui/widget/verticalgroup")
-        local VerticalSpan     = require("ui/widget/verticalspan")
-        local util             = require("util")
-        local _                = require("gettext")
-
-        local Screen = Device.screen
-        local border = Size.border.thin
-        local gap    = Screen:scaleBySize(8)
-        local dlg_w  = math.floor(math.min(Screen:getWidth(), Screen:getHeight()) * 0.9)
-        local avail_w = dlg_w - 2 * (Size.border.window + Size.padding.button)
-                              - 2 * (Size.padding.default + Size.margin.default)
-        local cover_max_w = Screen:scaleBySize(90)
-        local cover_max_h = Screen:scaleBySize(140)
-
-        local function apply_rounded_corners(frame_widget, bsz)
-            local plug = zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")
-            if not (plug
-                and type(plug.config) == "table"
-                and type(plug.config.features) == "table"
-                and plug.config.features.browser_cover_rounded_corners == true)
-            then
-                return
-            end
-            local r       = Screen:scaleBySize(6)
-            local r_inner = r - bsz
-            local orig_pt = frame_widget.paintTo
-            frame_widget.paintTo = function(self, bb, x, y)
-                orig_pt(self, bb, x, y)
-                if not (self.dimen and self.dimen.x) then return end
-                local tx, ty = self.dimen.x, self.dimen.y
-                local tw, th = self.dimen.w, self.dimen.h
-                local wh  = Blitbuffer.COLOR_WHITE
-                local blk = Blitbuffer.COLOR_BLACK
-                for j = 0, r - 1 do
-                    local inner = math.sqrt(r * r - (r - j) * (r - j))
-                    local cut   = math.ceil(r - inner)
-                    if cut > 0 then
-                        bb:paintRect(tx,            ty + j,           cut, 1, wh)
-                        bb:paintRect(tx + tw - cut, ty + j,           cut, 1, wh)
-                        bb:paintRect(tx,            ty + th - 1 - j,  cut, 1, wh)
-                        bb:paintRect(tx + tw - cut, ty + th - 1 - j,  cut, 1, wh)
-                    end
-                end
-                for j = 0, r - 1 do
-                    for c = 0, r - 1 do
-                        local dx   = r - c - 0.5
-                        local dy   = r - j - 0.5
-                        local dist = math.sqrt(dx * dx + dy * dy)
-                        if dist >= r_inner and dist <= r then
-                            bb:paintRect(tx + c,          ty + j,           1, 1, blk)
-                            bb:paintRect(tx + tw - 1 - c, ty + j,           1, 1, blk)
-                            bb:paintRect(tx + c,          ty + th - 1 - j,  1, 1, blk)
-                            bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j,  1, 1, blk)
-                        end
-                    end
-                end
-            end
-        end
-
-        -- Collect covers from the collection
-        local gallery_mode = BookInfoManager:getSetting("folder_gallery_mode")
-        local max_covers = gallery_mode and 4 or 1
-        local coll = ReadCollection.coll[coll_name]
-        local covers = {}
-        if coll then
-            local sorted = {}
-            for _, it in pairs(coll) do table.insert(sorted, it) end
-            table.sort(sorted, function(a, b) return (a.order or 0) < (b.order or 0) end)
-            for i = 1, #sorted do
-                local bi = BookInfoManager:getBookInfo(sorted[i].file, true)
-                if bi and bi.has_cover and bi.cover_bb and not bi.ignore_cover then
-                    table.insert(covers, { data = bi.cover_bb:copy() })
-                    if #covers >= max_covers then break end
-                end
-            end
-        end
-
-        local cover_widget
-        if gallery_mode and #covers > 0 then
-            -- 2×2 gallery mosaic
-            local sep     = 1
-            local half_w  = math.floor((cover_max_w - sep) / 2)
-            local half_w2 = cover_max_w - sep - half_w
-            local half_h  = math.floor((cover_max_h - sep) / 2)
-            local half_h2 = cover_max_h - sep - half_h
-            local cell_dims = {
-                { w = half_w,  h = half_h  },
-                { w = half_w2, h = half_h  },
-                { w = half_w,  h = half_h2 },
-                { w = half_w2, h = half_h2 },
-            }
-            local cells = {}
-            for i = 1, 4 do
-                local c  = covers[i]
-                local cd = cell_dims[i]
-                if c then
-                    cells[i] = CenterContainer:new{
-                        dimen = Geom:new{ w = cd.w, h = cd.h },
-                        ImageWidget:new{
-                            image            = c.data,
-                            image_disposable = true,
-                            width            = cd.w,
-                            height           = cd.h,
-                        },
-                    }
-                else
-                    cells[i] = CenterContainer:new{
-                        dimen = Geom:new{ w = cd.w, h = cd.h },
-                        VerticalSpan:new{ width = 1 },
-                    }
-                end
-            end
-            cover_widget = FrameContainer:new{
-                padding    = 0,
-                bordersize = border,
-                width      = cover_max_w + 2 * border,
-                height     = cover_max_h + 2 * border,
-                background = Blitbuffer.COLOR_LIGHT_GRAY,
-                CenterContainer:new{
-                    dimen = Geom:new{ w = cover_max_w, h = cover_max_h },
-                    VerticalGroup:new{
-                        HorizontalGroup:new{
-                            cells[1],
-                            LineWidget:new{
-                                background = Blitbuffer.COLOR_WHITE,
-                                dimen = Geom:new{ w = sep, h = half_h },
-                            },
-                            cells[2],
-                        },
-                        LineWidget:new{
-                            background = Blitbuffer.COLOR_WHITE,
-                            dimen = Geom:new{ w = cover_max_w, h = sep },
-                        },
-                        HorizontalGroup:new{
-                            cells[3],
-                            LineWidget:new{
-                                background = Blitbuffer.COLOR_WHITE,
-                                dimen = Geom:new{ w = sep, h = half_h2 },
-                            },
-                            cells[4],
-                        },
-                    },
-                },
-            }
-        elseif not gallery_mode and #covers > 0 then
-            -- Single cover (first book)
-            local bb = covers[1].data
-            local src_w = bb:getWidth()
-            local src_h = bb:getHeight()
-            local sf    = math.min(cover_max_w / src_w, cover_max_h / src_h)
-            local img_w = math.floor(src_w * sf)
-            local img_h = math.floor(src_h * sf)
-            cover_widget = FrameContainer:new{
-                padding    = 0,
-                bordersize = border,
-                width      = cover_max_w + 2 * border,
-                height     = cover_max_h + 2 * border,
-                background = Blitbuffer.COLOR_LIGHT_GRAY,
-                CenterContainer:new{
-                    dimen = Geom:new{ w = cover_max_w, h = cover_max_h },
-                    ImageWidget:new{
-                        image            = bb,
-                        image_disposable = true,
-                        width            = img_w,
-                        height           = img_h,
-                    },
-                },
-            }
-        else
-            -- Placeholder (empty collection) — matches browser_folder_cover blank
-            cover_widget = FrameContainer:new{
-                padding    = 0,
-                bordersize = border,
-                width      = cover_max_w + 2 * border,
-                height     = cover_max_h + 2 * border,
-                background = Blitbuffer.COLOR_LIGHT_GRAY,
-                CenterContainer:new{
-                    dimen = Geom:new{ w = cover_max_w, h = cover_max_h },
-                    VerticalSpan:new{ width = 1 },
-                },
-            }
-        end
-
-        apply_rounded_corners(cover_widget, border)
-
-        -- Text column: collection name + book count
-        local framed_h   = cover_max_h + 2 * border
-        local text_col_w = math.max(avail_w - cover_max_w - 2 * border - gap,
-                                    Screen:scaleBySize(60))
-        local vstack = VerticalGroup:new{ align = "left" }
-        table.insert(vstack, TextWidget:new{
-            text      = display_name or coll_name,
-            face      = Font:getFace("cfont", 20),
-            bold      = true,
-            max_width = text_col_w,
-        })
-        local count_str = book_count == 1
-            and "1 " .. _("book")
-            or  tostring(book_count) .. " " .. _("books")
-        table.insert(vstack, VerticalSpan:new{ width = Screen:scaleBySize(2) })
-        table.insert(vstack, TextWidget:new{
-            text      = count_str,
-            face      = Font:getFace("cfont", 17),
-            max_width = text_col_w,
-        })
-
-        return LeftContainer:new{
-            dimen = Geom:new{ w = avail_w, h = framed_h },
-            HorizontalGroup:new{
-                align = "top",
-                cover_widget,
-                HorizontalSpan:new{ width = gap },
-                vstack,
-            },
-        }
-    end
-
     local function show_coll_item_menu(fm_coll, item, coll_list)
         if not item then return false end
         local ReadCollection = require("readcollection")
@@ -839,26 +603,27 @@ local function apply_collections()
         local display_name = is_favorites and _("Favorites") or coll_name
         local coll         = ReadCollection.coll[coll_name]
         local book_count   = coll and util.tableSize(coll) or 0
-        local button_dialog
 
-        local function close_dialog()
-            UIManager_cm:close(button_dialog)
+        -- Build ordered file list for cover gallery
+        local files = {}
+        if coll then
+            local sorted = {}
+            for _, it in pairs(coll) do table.insert(sorted, it) end
+            table.sort(sorted, function(a, b) return (a.order or 0) < (b.order or 0) end)
+            for _, it in ipairs(sorted) do table.insert(files, it.file) end
         end
 
-        -- Cover header
-        local cover_header = build_coll_cover_header(coll_name, book_count, display_name)
-
-        -- Sort submenu
+        -- Sort submenu (collections-specific collate fields)
         local SORT_OPTIONS = {
-            { key = "title",    text = "\u{F031}  " .. _("Title")         },
-            { key = "authors",  text = "\u{F007}  " .. _("Authors")       },
-            { key = "series",   text = "\u{F0CB}  " .. _("Series")        },
-            { key = "access",   text = "\u{F073}  " .. _("Recently read") },
-            { key = "keywords", text = "\u{F02C}  " .. _("Keywords")      },
+            { key = "title",    text = "\u{F04BB}  " .. _("Title")         },
+            { key = "authors",  text = "\u{F0013}  " .. _("Authors")       },
+            { key = "series",   text = "\u{F0436}  " .. _("Series")        },
+            { key = "access",   text = "\u{F02DA}  " .. _("Recently read") },
+            { key = "keywords", text = "\u{F12F7}  " .. _("Keywords")      },
         }
 
-        local function showSortSubmenu()
-            close_dialog()
+        local function showSortSubmenu(close_parent)
+            close_parent()
             local sort_dialog
             local sort_buttons = {}
             local coll_settings = ReadCollection.coll_settings[coll_name]
@@ -879,10 +644,9 @@ local function apply_collections()
                     end,
                 }})
             end
-            -- Manual (default ordering)
             local manual_active = current == nil
             table.insert(sort_buttons, {{
-                text     = "\u{F0C9}  " .. _("Manual") .. (manual_active and "  \u{2713}" or ""),
+                text     = "\u{F035B}  " .. _("Manual") .. (manual_active and "  \u{2713}" or ""),
                 align    = "left",
                 enabled  = not manual_active,
                 callback = function()
@@ -893,7 +657,26 @@ local function apply_collections()
                     end
                 end,
             }})
-
+            -- Order submenu
+            table.insert(sort_buttons, {{
+                text     = "\u{F04BF}  " .. _("Order  ▶"),
+                align    = "left",
+                callback = function()
+                    UIManager_cm:close(sort_dialog)
+                    local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+                    local fm = ok_fm and FM and FM.instance
+                    if not fm then return end
+                    local cur_rev = coll_settings and coll_settings.collate_reverse or false
+                    fm.file_chooser:showSortOrderDialog({
+                        current_reverse = cur_rev,
+                        on_select       = function(reverse)
+                            if coll_settings then
+                                coll_settings.collate_reverse = reverse or nil
+                            end
+                        end,
+                    })
+                end,
+            }})
             sort_dialog = ButtonDialog:new{
                 title       = _("Sort collection by"),
                 title_align = "center",
@@ -902,44 +685,68 @@ local function apply_collections()
             UIManager_cm:show(sort_dialog)
         end
 
-        local buttons = {
+        -- Extra buttons appended after Sort in the shared showFileDialog dialog
+        local extra_buttons = {
             {{
-                text     = "\u{F0DC}  " .. _("Sort  \u{25B8}"),
-                align    = "left",
-                callback = showSortSubmenu,
-            }},
-            {{
-                text     = "\u{F0C1}  " .. _("Connect folders"),
+                text     = "\u{F0337}  " .. _("Connect folders"),
                 align    = "left",
                 callback = function()
-                    close_dialog()
+                    local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+                    local fm = ok_fm and FM and FM.instance
+                    if fm then UIManager_cm:close(fm.file_chooser.file_dialog) end
                     fm_coll:showCollFolderList(item)
                 end,
             }},
         }
         if not is_favorites then
-            table.insert(buttons, {{
-                text     = "\u{F031}  " .. _("Rename"),
+            table.insert(extra_buttons, {{
+                text     = "\u{F0CB6}  " .. _("Rename"),
                 align    = "left",
                 callback = function()
-                    close_dialog()
+                    local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+                    local fm = ok_fm and FM and FM.instance
+                    if fm then UIManager_cm:close(fm.file_chooser.file_dialog) end
                     fm_coll:renameCollection(item)
                 end,
             }})
-            table.insert(buttons, {{
-                text     = "\u{F1F8}  " .. _("Remove"),
+            table.insert(extra_buttons, {{
+                text     = "\u{F0B89}  " .. _("Remove"),
                 align    = "left",
                 callback = function()
-                    close_dialog()
+                    local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+                    local fm = ok_fm and FM and FM.instance
+                    if fm then UIManager_cm:close(fm.file_chooser.file_dialog) end
                     fm_coll:removeCollection(item)
                 end,
             }})
         end
-        button_dialog = ButtonDialog:new{
-            buttons        = buttons,
-            _added_widgets = { cover_header },
-        }
-        UIManager_cm:show(button_dialog)
+
+        local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+        local fm = ok_fm and FM and FM.instance
+        if fm and fm.file_chooser and fm.file_chooser.showFileDialog then
+            fm.file_chooser:showFileDialog({
+                _zen_group_files    = files,
+                _zen_group_name     = display_name,
+                _zen_group_subtitle = book_count == 1 and _("1 book")
+                                      or (tostring(book_count) .. " " .. _("books")),
+                -- dialog closed before sort_cb fires, so close_parent is a no-op
+                _zen_sort_cb        = function() showSortSubmenu(function() end) end,
+                _zen_extra_buttons  = extra_buttons,
+            })
+        else
+            -- FM not available: show without cover gallery
+            local button_dialog
+            local buttons = {
+                {{
+                    text     = "\u{F04BF}  " .. _("Sort  \u{25B8}"),
+                    align    = "left",
+                    callback = function() showSortSubmenu(function() UIManager_cm:close(button_dialog) end) end,
+                }},
+            }
+            for _, row in ipairs(extra_buttons) do table.insert(buttons, row) end
+            button_dialog = ButtonDialog:new{ buttons = buttons }
+            UIManager_cm:show(button_dialog)
+        end
         return true
     end
 
@@ -1001,7 +808,7 @@ local function apply_collections()
 
         local buttons = {
             {{
-                text     = "\u{F07B}\u{207A}  " .. _("New collection"),
+                text     = "\u{F0B9D}  " .. _("New collection"),
                 align    = "left",
                 callback = function()
                     UIManager_bm:close(button_dialog)
@@ -1009,7 +816,7 @@ local function apply_collections()
                 end,
             }},
             {{
-                text     = "\u{F0DC}  " .. _("Arrange"),
+                text     = "\u{F04BF}  " .. _("Arrange"),
                 align    = "left",
                 callback = function()
                     UIManager_bm:close(button_dialog)
@@ -1017,7 +824,7 @@ local function apply_collections()
                 end,
             }},
             {{
-                text     = "\u{F002}  " .. _("Search"),
+                text     = "\u{F0349}  " .. _("Search"),
                 align    = "left",
                 callback = function()
                     UIManager_bm:close(button_dialog)
@@ -1025,7 +832,7 @@ local function apply_collections()
                 end,
             }},
             {{
-                text     = "\u{F06E}  " .. _("Display  \u{25B8}"),
+                text     = "\u{F06D0}  " .. _("Display  \u{25B8}"),
                 align    = "left",
                 callback = showDisplaySubmenu,
             }},

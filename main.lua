@@ -37,15 +37,16 @@ if _plugin_root then
         ["notice-info"]     = zen_icon,
         ["notice-question"] = zen_icon,
     })
-end
-
--- Register bundled Nerd Font (v3.4.0) so modules can use Font:getFace("zen_icons", size).
-if _plugin_root then
-    local Font = require("ui/font")
-    local FontList = require("fontlist")
-    local font_path = _plugin_root .. "/fonts/SymbolsNerdFont-Regular.ttf"
-    table.insert(FontList:getFontList(), font_path)
-    Font.fontmap["zen_icons"] = "SymbolsNerdFont-Regular.ttf"
+    -- Register bundled SymbolsNerdFont as last-resort fallback for MDI glyphs.
+    -- Append (not prepend) so KOReader's own icon fonts resolve first; our
+    -- custom PUA codepoints are unique enough that they'll still reach this.
+    local ok_font, Font = pcall(require, "ui/font")
+    local ok_fl, FontList = pcall(require, "fontlist")
+    if ok_font and Font and Font.fallbacks and ok_fl and FontList then
+        FontList:getFontList() -- ensure fontlist is populated before we inject
+        table.insert(FontList.fontlist, _plugin_root .. "/fonts/SymbolsNerdFont-Regular.ttf")
+        table.insert(Font.fallbacks, "SymbolsNerdFont-Regular.ttf")
+    end
 end
 
 -- Holds the single plugin instance so the FileManagerMenu patch can reach it.

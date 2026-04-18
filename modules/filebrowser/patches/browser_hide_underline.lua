@@ -17,42 +17,79 @@ local function apply_browser_hide_underline()
     end
 
     local function patchCoverBrowser(plugin)
+        -- Patch MosaicMenuItem (mosaic display modes)
         local MosaicMenu = require("mosaicmenu")
         local MosaicMenuItem = get_upvalue(MosaicMenu._updateItemsBuildUI, "MosaicMenuItem")
-        if not MosaicMenuItem then
-            return
-        end
-        if MosaicMenuItem._zen_hide_underline_patched then
-            return
-        end
-        MosaicMenuItem._zen_hide_underline_patched = true
+        if MosaicMenuItem and not MosaicMenuItem._zen_hide_underline_patched then
+            MosaicMenuItem._zen_hide_underline_patched = true
 
-        local BookInfoManager = get_upvalue(MosaicMenuItem.update, "BookInfoManager")
+            local BookInfoManager = get_upvalue(MosaicMenuItem.update, "BookInfoManager")
+            if BookInfoManager and BookInfoManager.getSetting and BookInfoManager.toggleSetting then
+                local setting = BookInfoManager:getSetting("folder_hide_underline")
+                if setting == true then
+                    BookInfoManager:toggleSetting("folder_hide_underline")
+                end
+            end
 
-        -- Ensure hidden-by-default behavior in coverbrowser persisted settings.
-        -- In coverbrowser, default true means: nil/false => hidden, true => visible.
-        if BookInfoManager and BookInfoManager.getSetting and BookInfoManager.toggleSetting then
-            local setting = BookInfoManager:getSetting("folder_hide_underline")
-            if setting == true then
-                BookInfoManager:toggleSetting("folder_hide_underline")
+            local orig_mosaic_update = MosaicMenuItem.update
+            function MosaicMenuItem:update(...)
+                orig_mosaic_update(self, ...)
+                if self._underline_container then
+                    self._underline_container.color = Blitbuffer.COLOR_WHITE
+                end
+            end
+
+            function MosaicMenuItem:onFocus()
+                if self._underline_container then
+                    self._underline_container.color = Blitbuffer.COLOR_WHITE
+                end
+                return true
             end
         end
 
-        local orig_update = MosaicMenuItem.update
+        -- Patch ListMenuItem (list display modes)
+        local ok_lm, ListMenu = pcall(require, "listmenu")
+        if ok_lm then
+            local ListMenuItem = get_upvalue(ListMenu._updateItemsBuildUI, "ListMenuItem")
+            if ListMenuItem and not ListMenuItem._zen_hide_underline_patched then
+                ListMenuItem._zen_hide_underline_patched = true
 
-        function MosaicMenuItem:update(...)
-            orig_update(self, ...)
-            if self._underline_container then
-                self._underline_container.color = Blitbuffer.COLOR_WHITE
+                local orig_list_update = ListMenuItem.update
+                function ListMenuItem:update(...)
+                    orig_list_update(self, ...)
+                    if self._underline_container then
+                        self._underline_container.color = Blitbuffer.COLOR_WHITE
+                    end
+                end
+
+                function ListMenuItem:onFocus()
+                    if self._underline_container then
+                        self._underline_container.color = Blitbuffer.COLOR_WHITE
+                    end
+                    return true
+                end
             end
         end
+    end
 
-        -- Match known-working behavior: force hide on focus and don't delegate.
-        function MosaicMenuItem:onFocus()
-            if self._underline_container then
-                self._underline_container.color = Blitbuffer.COLOR_WHITE
+    -- Export shared utilities for other patches (e.g. collections classic mode)
+    local zen_plugin = rawget(_G, "__ZEN_UI_PLUGIN")
+    if zen_plugin then
+        if not zen_plugin._zen_shared then zen_plugin._zen_shared = {} end
+        zen_plugin._zen_shared.hide_underline_active = true
+        zen_plugin._zen_shared.patchMenuHideUnderline = function(menu)
+            local Menu_class = require("ui/widget/menu")
+            local base_updateItems = menu.updateItems or Menu_class.updateItems
+            menu.updateItems = function(self_m, ...)
+                base_updateItems(self_m, ...)
+                if self_m.item_group then
+                    for _, w in ipairs(self_m.item_group) do
+                        if w._underline_container then
+                            w._underline_container.color = Blitbuffer.COLOR_WHITE
+                        end
+                    end
+                end
             end
-            return true
         end
     end
 
@@ -68,6 +105,5 @@ local function apply_browser_hide_underline()
         end
     end
 end
-
 
 return apply_browser_hide_underline

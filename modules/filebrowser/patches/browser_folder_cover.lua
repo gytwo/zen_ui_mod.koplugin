@@ -139,7 +139,7 @@ local function apply_browser_folder_cover()
     local function capitalize(sentence)
         local words = {}
         for word in sentence:gmatch("%S+") do
-            table.insert(words, word:sub(1, 1):upper() .. word:sub(2):lower())
+            table.insert(words, word:sub(1, 1):upper() .. word:sub(2))
         end
         return table.concat(words, " ")
     end

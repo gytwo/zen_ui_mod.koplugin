@@ -712,52 +712,6 @@ local function apply_navbar()
         return orig_fc_onMenuHold and orig_fc_onMenuHold(self, item)
     end
 
-    -- Height of the status bar row that gets injected above Rakuyomi's content.
-    -- Computed once and cached so Menu:init can reserve space before layout.
-    local _cached_status_row_h = nil
-
-    local function getStatusRowHeight()
-        if _cached_status_row_h ~= nil then
-            return _cached_status_row_h
-        end
-        local shared = zen_plugin and zen_plugin._zen_shared
-        if shared and shared.buildStatusRow then
-            local row = shared.buildStatusRow(Screen:getWidth())
-            if row then
-                _cached_status_row_h = row:getSize().h
-                row:free()
-                return _cached_status_row_h
-            end
-        end
-        _cached_status_row_h = 0
-        return 0
-    end
-
-    -- Top padding for the status bar in Rakuyomi's library_view, matching the
-    -- filebrowser titlebar's title_top_padding so the two look aligned.
-    local _cached_status_top_pad = nil
-
-    local function getStatusTopPadding()
-        if _cached_status_top_pad ~= nil then
-            return _cached_status_top_pad
-        end
-        -- Read the title_top_padding from the FileManager's title bar
-        local fm = FileManager.instance
-        if fm and fm.title_bar and fm.title_bar.title_group then
-            local first = fm.title_bar.title_group[1]
-            if first then
-                local s = first:getSize()
-                if s and s.h > 0 then
-                    _cached_status_top_pad = s.h
-                    return _cached_status_top_pad
-                end
-            end
-        end
-        -- Fallback: approximate KOReader's TitleBar title_top_padding
-        _cached_status_top_pad = Screen:scaleBySize(11)
-        return _cached_status_top_pad
-    end
-
     local orig_menu_init = Menu.init
 
     function Menu:init()
@@ -766,10 +720,6 @@ local function apply_navbar()
         elseif not _skip_standalone_navbar and isStandaloneNavbarView(self) then
             -- Override height even if already set (e.g. Rakuyomi sets height = screen_h)
             local reserve = getNavbarHeight()
-            -- Rakuyomi also gets the status bar above its content
-            if self.name == "library_view" then
-                reserve = reserve + getStatusTopPadding() + getStatusRowHeight()
-            end
             self.height = Screen:getHeight() - reserve
             -- Force borderless for plugin views that forgot to set it (e.g. Rakuyomi)
             if not self.is_borderless then
@@ -954,24 +904,10 @@ local function apply_navbar()
         -- after updateItems on initial load — the UIManager:show() paint already covers it.
         menu._zen_no_forced_repaint = true
 
-        -- Rakuyomi-specific: build status bar widget (height already reserved in Menu:init)
-        local status_row_widget = nil
-        if menu.name == "library_view" and not menu._zen_status_injected then
-            menu._zen_status_injected = true
-            local shared = zen_plugin and zen_plugin._zen_shared
-            if shared and shared.buildStatusRow then
-                status_row_widget = shared.buildStatusRow(Screen:getWidth())
-            end
-        end
-
-        -- Wrap with navbar below (and optional status bar above for Rakuyomi),
+        -- Wrap with navbar below,
         -- opaque background to prevent FM navbar bleed-through
         local FrameContainer = require("ui/widget/container/framecontainer")
         local vg_children = { align = "left" }
-        if status_row_widget then
-            table.insert(vg_children, VerticalSpan:new{ width = getStatusTopPadding() })
-            table.insert(vg_children, status_row_widget)
-        end
         table.insert(vg_children, menu[1])
         table.insert(vg_children, navbar)
 

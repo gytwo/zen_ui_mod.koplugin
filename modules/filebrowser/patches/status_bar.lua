@@ -599,14 +599,95 @@ local function apply_status_bar()
         end
     end
 
+    -- Builds a status row identical to createStatusRow but with a custom back
+    -- button that always shows and calls back_callback when tapped.  Used by
+    -- collections.lua for named-collection views so the chevron goes back to
+    -- the collections list rather than navigating the filesystem.
+    local function createStatusRowCustomBack(back_callback)
+        local CenterContainer = require("ui/widget/container/centercontainer")
+        local Button = require("ui/widget/button")
+        local icon_size = Screen:scaleBySize(28)
+        local back_widget = Button:new{
+            icon        = "chevron.left",
+            icon_width  = icon_size,
+            icon_height = icon_size,
+            bordersize  = 0,
+            padding     = 0,
+            callback    = back_callback or function() end,
+        }
+        local left_content   = _buildGroup(config.left_order   or {})
+        local right_content  = _buildGroup(config.right_order  or {})
+        local center_content = _buildGroup(config.center_order or {})
+        local row_height = Screen:scaleBySize(18)
+        local function updateRowHeight(w)
+            if w then
+                local sz = w:getSize()
+                if sz and sz.h > row_height then row_height = sz.h end
+            end
+        end
+        updateRowHeight(back_widget)
+        updateRowHeight(left_content)
+        updateRowHeight(center_content)
+        updateRowHeight(right_content)
+
+        local chevron_gap = Screen:scaleBySize(6)
+        local screen_w    = Screen:getWidth()
+        local inner_w     = screen_w - h_padding * 2
+        local left_group  = HorizontalGroup:new{}
+        table.insert(left_group, HorizontalSpan:new{ width = h_padding })
+        table.insert(left_group, back_widget)
+        if left_content then
+            table.insert(left_group, HorizontalSpan:new{ width = chevron_gap })
+            table.insert(left_group, left_content)
+        end
+
+        local row = OverlapGroup:new{
+            dimen = Geom:new{ w = screen_w, h = row_height },
+            LeftContainer:new{
+                dimen = Geom:new{ w = screen_w, h = row_height },
+                left_group,
+            },
+        }
+        if center_content then
+            table.insert(row, CenterContainer:new{
+                dimen = Geom:new{ w = screen_w, h = row_height },
+                center_content,
+            })
+        end
+        if right_content then
+            table.insert(row, RightContainer:new{
+                dimen = Geom:new{ w = screen_w, h = row_height },
+                HorizontalGroup:new{
+                    right_content,
+                    HorizontalSpan:new{ width = h_padding },
+                },
+            })
+        end
+
+        if not config.show_bottom_border then
+            return row
+        end
+        local border = LineWidget:new{
+            dimen      = Geom:new{ w = inner_w, h = Size.line.medium },
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+        }
+        local vg = VerticalGroup:new{ align = "center", row }
+        table.insert(vg, CenterContainer:new{
+            dimen = Geom:new{ w = screen_w, h = Size.line.medium },
+            border,
+        })
+        return vg
+    end
+
     -- Expose for cross-patch use. Stored on the plugin table so it is naturally
     -- scoped to when this feature is active and cleaned up on plugin reload.
     if type(zen_plugin) == "table" then
         if not zen_plugin._zen_shared then zen_plugin._zen_shared = {} end
-        zen_plugin._zen_shared.createStatusRow    = createStatusRow
-        zen_plugin._zen_shared.buildStatusRow     = buildStatusRow
-        zen_plugin._zen_shared.schedulePanelRefresh = schedulePanelRefresh
-        zen_plugin._zen_shared.cancelPanelRefresh   = cancelPanelRefresh
+        zen_plugin._zen_shared.createStatusRow         = createStatusRow
+        zen_plugin._zen_shared.createStatusRowCustomBack = createStatusRowCustomBack
+        zen_plugin._zen_shared.buildStatusRow          = buildStatusRow
+        zen_plugin._zen_shared.schedulePanelRefresh    = schedulePanelRefresh
+        zen_plugin._zen_shared.cancelPanelRefresh      = cancelPanelRefresh
     end
 
     -- === Replace title content and reposition buttons ===
@@ -762,16 +843,23 @@ local function apply_status_bar()
                 fm:_updateStatusBar()
             end
 
-            -- Refresh favorites titlebar when it is open.
+            -- Refresh favorites or named-collection titlebar when it is open.
             -- BookList is a separate overlay so fm is never "on top" then;
             -- we update it unconditionally whenever the menu exists.
             local fav_menu = fm.collections and fm.collections.booklist_menu
             if fav_menu then
-                local fav_tb = fav_menu.title_bar
-                if fav_tb and fav_tb.title_group and #fav_tb.title_group >= 2 then
-                    fav_tb.title_group[2] = createStatusRow(nil, fm)
-                    fav_tb.title_group:resetLayout()
-                    UIManager:setDirty(fav_menu, "ui", fav_tb.dimen)
+                if fav_menu._zen_status_refresh then
+                    -- Named collection patched by collections.lua — delegate to
+                    -- its own refresh function (which includes the back button).
+                    fav_menu._zen_status_refresh()
+                else
+                    -- Favorites (or any booklist_menu without a custom refresh).
+                    local fav_tb = fav_menu.title_bar
+                    if fav_tb and fav_tb.title_group and #fav_tb.title_group >= 2 then
+                        fav_tb.title_group[2] = createStatusRow(nil, fm)
+                        fav_tb.title_group:resetLayout()
+                        UIManager:setDirty(fav_menu, "ui", fav_tb.dimen)
+                    end
                 end
             end
 

@@ -66,7 +66,7 @@ local function apply_favorites()
         end
     end
 
-    local function clean_nav(menu)
+    local function clean_nav(menu, show_back)
         if not menu then return end
 
         -- === Fix partial-row left-alignment ===
@@ -126,17 +126,25 @@ local function apply_favorites()
         -- === Title-bar content ===
         local createStatusRow = zen_plugin._zen_shared
             and zen_plugin._zen_shared.createStatusRow
+        local createStatusRowCustomBack = zen_plugin._zen_shared
+            and zen_plugin._zen_shared.createStatusRowCustomBack
 
-        if createStatusRow and tb.title_group and #tb.title_group >= 2 then
-            local FileManager = require("apps/filemanager/filemanager")
+        if tb.title_group and #tb.title_group >= 2
+                and (createStatusRow or createStatusRowCustomBack) then
+            local status_row
+            if show_back and createStatusRowCustomBack then
+                local back_callback = menu.onReturn and function() menu.onReturn() end
+                                   or function() end
+                status_row = createStatusRowCustomBack(back_callback)
+            elseif createStatusRow then
+                local FileManager = require("apps/filemanager/filemanager")
+                status_row = createStatusRow(nil, FileManager.instance)
+            end
 
-            -- Build the status row (nil path → no back-chevron / folder name).
-            local status_row = createStatusRow(nil, FileManager.instance)
-
-            -- Replace the title widget with the status row in-place, same as
-            -- FileManager:_updateStatusBar() does for the library view.
-            tb.title_group[2] = status_row
-            tb.title_group:resetLayout()
+            if status_row then
+                tb.title_group[2] = status_row
+                tb.title_group:resetLayout()
+            end
 
             -- Remove icon buttons from the TitleBar OverlapGroup so they no
             -- longer paint or intercept touches (they may be nil when the
@@ -195,7 +203,20 @@ local function apply_favorites()
         end
         orig_onShowColl(self, collection_name)
         if not is_enabled() then return end
-        clean_nav(self.booklist_menu)
+        -- Only apply favorites customisations when actually viewing the favorites
+        -- collection.  Named collections are handled exclusively by collections.lua.
+        -- Calling clean_nav here for named collections would interfere with
+        -- collections.lua's own clean_nav (which runs after us in the wrapper chain)
+        -- and cause the title/swipe overrides to be applied twice with wrong content.
+        local ok, ReadCollection = pcall(require, "readcollection")
+        local resolved_name = collection_name or (ok and ReadCollection.default_collection_name)
+        local is_favorites_coll = not ok
+            or resolved_name == nil
+            or (ok and resolved_name == ReadCollection.default_collection_name)
+        if not is_favorites_coll then return end
+        -- collection_name is nil when accessed from navbar, explicit when from collections list
+        local from_coll_list = collection_name ~= nil
+        clean_nav(self.booklist_menu, from_coll_list)
     end
 
     -- Replace the default hold dialog with the zen context menu.

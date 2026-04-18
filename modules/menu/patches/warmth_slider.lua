@@ -70,19 +70,22 @@ local function build_warmth_slider(touch_menu, opts)
 
     nl.prev_non_min = nl.cur > nl.min and nl.cur or math.min(nl.max, nl.min + 1)
 
-    -- Wire slider: hardware updates every pan frame; label debounces 100ms
+    -- During drag: paint directly to Screen.bb and push A2 refresh via
+    -- setDirty(nil) — bypasses the widget tree entirely, so no competing
+    -- GL16 from other widgets can cause flicker.
+    -- On release / tap: full menu GL16 refresh to update label + slider.
     nl_progress.on_change = function(v)
         powerd:setWarmth(powerd:fromNativeWarmth(v))
         nl.cur = v
         if nl.cur > nl.min then nl.prev_non_min = nl.cur end
-        UIManager:setDirty(show_parent, "ui", touch_menu.dimen)
-        if nl_label_fn then UIManager:unschedule(nl_label_fn) end
-        nl_label_fn = function()
-            nl_label_fn = nil
+        if nl_progress._dragging then
+            nl_progress:paintTo(Screen.bb, nl_progress.dimen.x, nl_progress.dimen.y)
+            UIManager:setDirty(nil, "fast", nl_progress.dimen)
+        else
+            if nl_label_fn then UIManager:unschedule(nl_label_fn) ; nl_label_fn = nil end
             nl_label:setText(_("Warmth") .. ": " .. tostring(nl.cur))
             UIManager:setDirty(show_parent, "ui", touch_menu.dimen)
         end
-        UIManager:scheduleIn(0.1, nl_label_fn)
     end
 
     local nl_minus = Button:new{

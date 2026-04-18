@@ -81,19 +81,23 @@ local function build_brightness_slider(touch_menu, opts)
 
     fl.prev_non_min = fl.cur > fl.min and fl.cur or math.min(fl.max, fl.min + 1)
 
-    -- Wire slider: hardware updates every pan frame; label debounces 100ms
+    -- During drag: paint directly to Screen.bb and push A2 refresh via
+    -- setDirty(nil) — bypasses the widget tree entirely, so no competing
+    -- GL16 from other widgets can cause flicker.  A2 completes in ~60ms
+    -- and renders the pure B/W slider content without ghosting.
+    -- On release / tap: full menu GL16 refresh to update label + slider.
     fl_progress.on_change = function(v)
         powerd:setIntensity(v)
         fl.cur = v
         if fl.cur > fl.min then fl.prev_non_min = fl.cur end
-        UIManager:setDirty(show_parent, "ui", touch_menu.dimen)
-        if fl_label_fn then UIManager:unschedule(fl_label_fn) end
-        fl_label_fn = function()
-            fl_label_fn = nil
+        if fl_progress._dragging then
+            fl_progress:paintTo(Screen.bb, fl_progress.dimen.x, fl_progress.dimen.y)
+            UIManager:setDirty(nil, "fast", fl_progress.dimen)
+        else
+            if fl_label_fn then UIManager:unschedule(fl_label_fn) ; fl_label_fn = nil end
             fl_label:setText(_("Brightness") .. ": " .. tostring(fl.cur))
             UIManager:setDirty(show_parent, "ui", touch_menu.dimen)
         end
-        UIManager:scheduleIn(0.1, fl_label_fn)
     end
 
     fl_minus.callback = function() setBrightness(fl.cur - 1) end

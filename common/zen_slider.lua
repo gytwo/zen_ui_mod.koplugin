@@ -120,13 +120,36 @@ function ZenSlider:setValue(v)
 end
 
 --- Update value from an absolute screen X; fires on_change if value changed.
+--- During drag, also fires on_change when value is unchanged (e.g. to erase
+--- the knob on first contact).
 function ZenSlider:applyPosition(abs_x)
+    self._prev_knob_abs_x = self:_knobAbsX()
     local local_x = abs_x - (self.dimen and self.dimen.x or 0)
     local new_val = self:_xToValue(local_x)
     if new_val ~= self._value then
         self._value = new_val
         if self.on_change then self.on_change(new_val) end
+    elseif self._dragging and self.on_change then
+        self.on_change(new_val)
     end
+end
+
+--- Returns a narrow Geom rect covering only the pixels that changed between
+--- the previous and current knob positions.  Use as the dirty region during
+--- drag to avoid refreshing the entire slider area.
+function ZenSlider:dirtyDimen()
+    if not self.dimen or not self._prev_knob_abs_x then return self.dimen end
+    local cur_x  = self:_knobAbsX()
+    local prev_x = self._prev_knob_abs_x
+    local pad    = self.knob_radius + 1
+    local x0 = math.max(self.dimen.x, math.min(cur_x, prev_x) - pad)
+    local x1 = math.min(self.dimen.x + self.dimen.w, math.max(cur_x, prev_x) + pad)
+    return Geom:new{
+        x = x0,
+        y = self.dimen.y,
+        w = x1 - x0,
+        h = self.dimen.h,
+    }
 end
 
 --- Returns true if pos (Geom point) is inside the slider widget area.

@@ -611,6 +611,9 @@ msgstr "Lezerklok"
 msgid "Reading"
 msgstr "Aan het lezen"
 
+msgid "Recently read"
+msgstr "Recent gelezen"
+
 msgid "Red"
 msgstr "Rood"
 

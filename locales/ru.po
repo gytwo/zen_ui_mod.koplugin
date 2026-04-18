@@ -611,6 +611,9 @@ msgstr "Часы читателя"
 msgid "Reading"
 msgstr "Читается"
 
+msgid "Recently read"
+msgstr "Недавно читаемое"
+
 msgid "Red"
 msgstr "Красный"
 

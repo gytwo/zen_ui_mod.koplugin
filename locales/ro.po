@@ -611,6 +611,9 @@ msgstr "Ceas cititor"
 msgid "Reading"
 msgstr "Se citește"
 
+msgid "Recently read"
+msgstr "Citite recent"
+
 msgid "Red"
 msgstr "Roșu"
 

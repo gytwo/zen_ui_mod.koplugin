@@ -611,6 +611,9 @@ msgstr "Reader clock"
 msgid "Reading"
 msgstr "Reading"
 
+msgid "Recently read"
+msgstr "Recently read"
+
 msgid "Red"
 msgstr "Red"
 

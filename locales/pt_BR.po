@@ -611,6 +611,9 @@ msgstr "Relógio do leitor"
 msgid "Reading"
 msgstr "Lendo"
 
+msgid "Recently read"
+msgstr "Lido recentemente"
+
 msgid "Red"
 msgstr "Vermelho"
 

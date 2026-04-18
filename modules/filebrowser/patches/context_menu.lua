@@ -611,10 +611,11 @@ local function apply_context_menu()
                     local real_folder = ffiUtil_fsd.realpath(file) or file
 
                     local folder_sort_options = {
-                        { key = "title",   text = "\u{F031}  " .. _("Title")    },
-                        { key = "authors", text = "\u{F007}  " .. _("Authors")  },
-                        { key = "series",  text = "\u{F0CB}  " .. _("Series")   },
-                        { key = "keywords",text = "\u{F02C}  " .. _("Keywords") },
+                        { key = "title",   text = "\u{F031}  " .. _("Title")         },
+                        { key = "authors", text = "\u{F007}  " .. _("Authors")       },
+                        { key = "series",  text = "\u{F0CB}  " .. _("Series")        },
+                        { key = "access",  text = "\u{F073}  " .. _("Recently read") },
+                        { key = "keywords",text = "\u{F02C}  " .. _("Keywords")      },
                     }
 
                     table.insert(buttons, {

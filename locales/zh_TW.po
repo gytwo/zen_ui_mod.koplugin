@@ -609,6 +609,9 @@ msgstr "閱讀器時鐘"
 msgid "Reading"
 msgstr "閱讀中"
 
+msgid "Recently read"
+msgstr "最近閱讀"
+
 msgid "Red"
 msgstr "紅色"
 

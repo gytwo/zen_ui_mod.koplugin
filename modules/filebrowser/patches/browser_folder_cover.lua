@@ -696,10 +696,15 @@ local function apply_browser_folder_cover()
 
             -- Pass inner image dimensions; the FrameContainer (bordersize) brings the
             -- banner flush with the outer cover edge (dimen.w = size.w + 2*border_size).
-            local directory, nbitems = self:_getTextBoxes { w = size.w, h = size.h, book_count = img.book_count }
-            -- Fixed circle diameter, independent of font size.
-            local badge_d = Folder.face.nb_items_badge_size
-            local badge_offset = Folder.face.nb_items_offset
+            -- Badge sizing derived from portrait_h (cover height), which directly
+            -- reflects grid density: larger in 2×2, smaller in 4×3 etc.  This
+            -- guarantees the badge grows/shrinks with the grid just like all other
+            -- badge layers, but without relying on paintTo-time upvalue walks.
+            -- ~8 % of portrait height ≈ corner_mark_size on a typical KOReader grid.
+            local badge_d      = math.max(Screen:scaleBySize(14), math.floor(portrait_h * 0.08))
+            local badge_fs     = math.max(8, math.floor(badge_d * 0.38))
+            local badge_offset = math.floor(badge_d * 0.25)
+            local directory, nbitems = self:_getTextBoxes { w = size.w, h = size.h, book_count = img.book_count, badge_font_size = badge_fs }
 
             local folder_name_widget
             if settings.show_folder_name.get() then
@@ -857,9 +862,10 @@ local function apply_browser_folder_cover()
             else
                 nbitems_text = (self.mandatory and self.mandatory:match("(%d+) \u{F016}")) or ""
             end
+            local nb_font_size = dimen.badge_font_size or Folder.face.nb_items_font_size
             local nbitems = TextWidget:new {
                 text = nbitems_text, -- nb books
-                face = Font:getFace("cfont", Folder.face.nb_items_font_size),
+                face = Font:getFace("cfont", nb_font_size),
                 bold = true,
                 padding = 0,
             }
@@ -868,7 +874,7 @@ local function apply_browser_folder_cover()
             -- consistent whether the folder is empty or not.
             local badge_ref = TextWidget:new {
                 text = "0",
-                face = Font:getFace("cfont", Folder.face.nb_items_font_size),
+                face = Font:getFace("cfont", nb_font_size),
                 bold = true,
                 padding = 0,
             }

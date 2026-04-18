@@ -104,6 +104,19 @@ local function apply_context_menu()
     end
 
     function MoveChooser:onMenuHold() return true end
+
+    function MoveChooser:init()
+        PathChooser.init(self)
+        -- Remove the home icon that PathChooser sets; clear and rebuild TitleBar without it.
+        local tb = self.title_bar
+        if tb and tb.has_left_icon then
+            tb:clear()
+            tb.left_icon = nil
+            tb.has_left_icon = false
+            tb.left_button = nil
+            tb:init()
+        end
+    end
     -- ─────────────────────────────────────────────────────────────────────────
 
     local orig_setupLayout = FileManager.setupLayout

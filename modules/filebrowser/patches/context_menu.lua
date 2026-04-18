@@ -34,7 +34,10 @@ local function apply_context_menu()
     --     go-up row — the list is intentionally flat.
     --   • onMenuSelect fires immediately on single tap (no navigate-into behaviour).
     local _orig_fc_genItemTable = FileChooser.genItemTable
-    local MoveChooser = PathChooser:extend{}
+    -- _zen_no_forced_repaint: opt out of the partial_page_repaint forced flush.
+    -- MoveChooser is a transient overlay — the full-page E-ink flash it causes
+    -- when folder count < perpage is visually jarring and unnecessary.
+    local MoveChooser = PathChooser:extend{ _zen_no_forced_repaint = true }
 
     function MoveChooser:genItemTable(dirs, files, path)
         local ffiUtil3 = require("ffi/util")

@@ -19,6 +19,9 @@ local function apply_partial_page_repaint()
 
     local function schedule_repaint(self)
         if self.items_max_lines then return end
+        -- Skip transient overlay choosers (e.g. MoveChooser) that shouldn't
+        -- trigger a forced full repaint when their item count < perpage.
+        if self._zen_no_forced_repaint then return end
         local total   = #(self.item_table or {})
         if total == 0 then return end
         local perpage = self.perpage

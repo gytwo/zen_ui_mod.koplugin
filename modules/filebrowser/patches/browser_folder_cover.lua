@@ -487,8 +487,13 @@ local function apply_browser_folder_cover()
                 end
             end
 
-            local _chooser = self.menu.genItemTableFromPath and self.menu
-                or (require("apps/filemanager/filemanager").instance or {}).file_chooser
+            local _fm = require("apps/filemanager/filemanager").instance
+            local _main_chooser = _fm and _fm.file_chooser
+            -- Prefer the main file chooser so all files are visible regardless of
+            -- how the current menu was opened (e.g. move-dialog uses a dirs-only
+            -- chooser which returns zero book entries and a blank cover).
+            local _chooser = _main_chooser
+                or (self.menu.genItemTableFromPath and self.menu)
             if not _chooser then
                 self._foldercover_processed = true
                 return
@@ -499,6 +504,15 @@ local function apply_browser_folder_cover()
             if not entries then
                 self._foldercover_processed = true
                 return
+            end
+
+            -- Count actual books for the badge (works in search results and
+            -- move-dialog where mandatory has a different/absent glyph format).
+            local book_count = 0
+            for _, entry in ipairs(entries) do
+                if entry.is_file or entry.file then
+                    book_count = book_count + 1
+                end
             end
 
             if settings.gallery_mode.get() then
@@ -529,7 +543,7 @@ local function apply_browser_folder_cover()
                 -- _foldercover_processed nil so the next updateItems() re-scans
                 -- and fills the mosaic once extraction has completed.
                 if #covers > 0 then self._foldercover_processed = true end
-                self:_setFolderCover { gallery = covers }
+                self:_setFolderCover { gallery = covers, book_count = book_count }
             else
                 local found_cover = false
                 for _, entry in ipairs(entries) do
@@ -546,7 +560,7 @@ local function apply_browser_folder_cover()
                                 tryMigrateBookInfoPath(found_at, entry.path)
                             end
                             self._foldercover_processed = true
-                            self:_setFolderCover { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h }
+                            self:_setFolderCover { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h, book_count = book_count }
                             found_cover = true
                             break
                         end
@@ -558,7 +572,7 @@ local function apply_browser_folder_cover()
                     -- navigates into the folder, extracts covers, and returns) will
                     -- re-scan and find the newly available covers.  The directory
                     -- scan is cheap because getListItem results are cached.
-                    self:_setFolderCover { no_image = true }
+                    self:_setFolderCover { no_image = true, book_count = book_count }
                 end
             end
         end
@@ -682,7 +696,7 @@ local function apply_browser_folder_cover()
 
             -- Pass inner image dimensions; the FrameContainer (bordersize) brings the
             -- banner flush with the outer cover edge (dimen.w = size.w + 2*border_size).
-            local directory, nbitems = self:_getTextBoxes { w = size.w, h = size.h }
+            local directory, nbitems = self:_getTextBoxes { w = size.w, h = size.h, book_count = img.book_count }
             -- Fixed circle diameter, independent of font size.
             local badge_d = Folder.face.nb_items_badge_size
             local badge_offset = Folder.face.nb_items_offset
@@ -835,8 +849,16 @@ local function apply_browser_folder_cover()
         end
 
         function MosaicMenuItem:_getTextBoxes(dimen)
+            -- Use entry-counted books when available (correct in search results and
+            -- move-dialog folders where mandatory uses a different/absent glyph format).
+            local nbitems_text
+            if dimen.book_count ~= nil then
+                nbitems_text = dimen.book_count > 0 and tostring(dimen.book_count) or ""
+            else
+                nbitems_text = (self.mandatory and self.mandatory:match("(%d+) \u{F016}")) or ""
+            end
             local nbitems = TextWidget:new {
-                text = (self.mandatory and self.mandatory:match("(%d+) \u{F016}")) or "", -- nb books
+                text = nbitems_text, -- nb books
                 face = Font:getFace("cfont", Folder.face.nb_items_font_size),
                 bold = true,
                 padding = 0,
@@ -950,8 +972,10 @@ local function apply_browser_folder_cover()
                         end
                     end
 
-                    local _chooser = self.menu.genItemTableFromPath and self.menu
-                        or (require("apps/filemanager/filemanager").instance or {}).file_chooser
+                    local _fm_inst = require("apps/filemanager/filemanager").instance
+                    local _main_ch = _fm_inst and _fm_inst.file_chooser
+                    local _chooser = _main_ch
+                        or (self.menu.genItemTableFromPath and self.menu)
                     if not _chooser then
                         self._foldercover_processed = true
                         return
@@ -962,6 +986,13 @@ local function apply_browser_folder_cover()
                     if not entries then
                         self._foldercover_processed = true
                         return
+                    end
+
+                    local book_count_l = 0
+                    for _, entry in ipairs(entries) do
+                        if entry.is_file or entry.file then
+                            book_count_l = book_count_l + 1
+                        end
                     end
 
                     if settings.gallery_mode.get() then
@@ -980,7 +1011,7 @@ local function apply_browser_folder_cover()
                             end
                         end
                         if #covers > 0 then self._foldercover_processed = true end
-                        self:_setListFolderCover { gallery = covers }
+                        self:_setListFolderCover { gallery = covers, book_count = book_count_l }
                     else
                         self._foldercover_processed = true
                         local found_cover = false
@@ -996,14 +1027,14 @@ local function apply_browser_folder_cover()
                                     and not (self.menu.cover_specs and BookInfoManager.isCachedCoverInvalid
                                              and BookInfoManager.isCachedCoverInvalid(bookinfo, self.menu.cover_specs))
                                 then
-                                    self:_setListFolderCover { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h }
+                                    self:_setListFolderCover { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h, book_count = book_count_l }
                                     found_cover = true
                                     break
                                 end
                             end
                         end
                         if not found_cover then
-                            self:_setListFolderCover { no_image = true }
+                            self:_setListFolderCover { no_image = true, book_count = book_count_l }
                         end
                     end
                 end
@@ -1172,8 +1203,10 @@ local function apply_browser_folder_cover()
                     -- Right-side item count widget.
                     local pad = Screen:scaleBySize(10)
                     local wmain_left_pad = Screen:scaleBySize(5) -- narrower padding when cover present
-                    -- mandatory may contain a trailing icon glyph (e.g. "3 \u{F016}"), strip to digits only
-                    local count_num = tonumber((self.mandatory or "0"):match("^%s*(%d+)")) or 0
+                    -- Use entry-counted books when available; fall back to mandatory parsing
+                    -- for custom-cover items that skip entry enumeration.
+                    local count_num = img.book_count ~= nil and img.book_count
+                        or tonumber((self.mandatory or "0"):match("^%s*(%d+)")) or 0
                     local fs_right = _fontSize(16, 20)
                     local label_str = tostring(count_num) .. " " .. (count_num == 1 and _("Book") or _("Books"))
                     local wright = TextWidget:new{

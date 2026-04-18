@@ -158,7 +158,7 @@ local function apply_browser_page_count()
             -- 6. Measure text — font, height, padding all scale with corner_mark_size
             --    matching the cover badge proportions exactly.
             local font_size = math.max(7, math.floor(corner_mark_size * 0.24))
-            local page_str  = tostring(pages) .. "p"
+            local page_str  = tostring(pages) .. " p."
             local tw = TextWidget:new{
                 text    = page_str,
                 face    = Font:getFace("cfont", font_size),

@@ -323,7 +323,14 @@ function ZenSlider.installTouchMenuHooks(TouchMenu, opts)
 
     function TouchMenu:onPanCloseAllMenus(arg, ges_ev)
         if not in_panel(self) then return end
-        if is_locked(self) then return end
+        if is_locked(self) then
+            -- A pan arrived while the input lock is active (e.g. the same
+            -- gesture that opened the menu). Mark it so the release is also
+            -- consumed once the lock expires.
+            self._qs_opening_pan = true
+            return
+        end
+        self._qs_opening_pan = false  -- clear stale flag once unlocked
         for _, sl in ipairs(get_sl(self)) do
             if sl:handlePan(ges_ev) then return true end
         end
@@ -331,6 +338,12 @@ function ZenSlider.installTouchMenuHooks(TouchMenu, opts)
 
     function TouchMenu:onPanReleaseCloseAllMenus(arg, ges_ev)
         if not in_panel(self) then return end
+        -- Consume the release of the opening gesture whether the lock is still
+        -- active or just expired (tracked via _qs_opening_pan).
+        if is_locked(self) or self._qs_opening_pan then
+            self._qs_opening_pan = false
+            return
+        end
         for _, sl in ipairs(get_sl(self)) do
             if sl:handlePanRelease(ges_ev, self.show_parent, self.dimen) then return true end
         end
@@ -343,8 +356,11 @@ function ZenSlider.installTouchMenuHooks(TouchMenu, opts)
                 for _, sl in ipairs(get_sl(self)) do
                     if sl:handleSwipe(ges_ev, self.show_parent, self.dimen) then return true end
                 end
+                -- swipe_fb calls handlePanelGesture which can invoke handleTap;
+                -- only call it when not locked so the opening swipe can never
+                -- accidentally adjust a slider (dimen is {0,0} before paintTo).
+                if swipe_fb then swipe_fb(self, ges_ev) end
             end
-            if swipe_fb then swipe_fb(self, ges_ev) end
             return true
         end
         if orig_onSwipe then return orig_onSwipe(self, arg, ges_ev) end

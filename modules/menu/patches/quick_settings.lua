@@ -807,8 +807,9 @@ local function apply_quick_settings()
         if _shared and type(_shared.cancelPanelRefresh) == "function" then
             _shared.cancelPanelRefresh(self)
         end
-        -- Clear refs so the input lock fires again on the next open.
+        -- Clear refs and gesture-tracking state so they reset on next open.
         self._qs_refs = nil
+        self._qs_opening_pan = false
         if orig_onCloseWidget then orig_onCloseWidget(self) end
     end
 

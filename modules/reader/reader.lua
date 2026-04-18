@@ -10,6 +10,8 @@ local PATCH_MODULES = {
     margin_hold_guard = "modules/reader/patches/margin_hold_guard",
     bookmarks = "modules/reader/patches/bookmarks",
     page_browser = "modules/reader/patches/page_browser",
+    highlight_menu = "modules/reader/patches/highlight_menu",
+    dict_quick_lookup = "modules/reader/patches/dict_quick_lookup",
 }
 
 local function is_feature_enabled(plugin, key)
@@ -87,6 +89,20 @@ function M.init(logger, plugin)
     local bookmarks_fn = load_patch("bookmarks")
     if bookmarks_fn then
         run_feature(logger, plugin, "bookmarks", bookmarks_fn)
+    end
+
+    -- Always apply: icon-only DictQuickLookup buttons (self-disables when feature is off).
+    local dict_quick_lookup_fn = load_patch("dict_quick_lookup")
+    if dict_quick_lookup_fn then
+        run_feature(logger, plugin, "dict_quick_lookup", dict_quick_lookup_fn)
+    end
+
+    -- Always apply: custom highlight/lookup popup (self-disables when feature is off).
+    local highlight_menu_fn = load_patch("highlight_menu")
+    logger.warn("zen-ui[reader]: load_patch(highlight_menu)=", tostring(highlight_menu_fn))
+    if highlight_menu_fn then
+        local ok = run_feature(logger, plugin, "highlight_menu", highlight_menu_fn)
+        logger.warn("zen-ui[reader]: run_feature(highlight_menu) ok=", tostring(ok))
     end
 
     -- Ensure the runtime-patches registry exists.

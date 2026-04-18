@@ -42,6 +42,8 @@ local defaults = {
         warmth_schedule     = false,
         brightness_schedule = false,
         page_browser        = false,
+        highlight_lookup     = true,
+        dict_quick_lookup    = true,
     },
     navbar = {
         show_tabs = {
@@ -148,6 +150,12 @@ local defaults = {
         verbose_chapter_time = false,
         backup_preset = nil,
     },
+    highlight_lookup = {
+        allow_unknown_items = false,
+        show_wikipedia      = false,
+    },
+    dict_quick_lookup = {},
+
     night_mode_schedule = {
         night_on_h  = 22,
         night_on_m  = 0,

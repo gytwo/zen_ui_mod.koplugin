@@ -241,6 +241,9 @@ msgstr "Activer le menu bas"
 msgid "Enable bottom nav bar"
 msgstr "Activer la barre de navigation inférieure"
 
+msgid "Zen highlight menu"
+msgstr ""
+
 msgid "Enable custom status bar"
 msgstr "Activer la barre d'état personnalisée"
 
@@ -318,6 +321,9 @@ msgstr "Masquer le dossier parent"
 
 msgid "Hide list borders"
 msgstr "Masquer les bordures de liste"
+
+msgid "Highlight / Lookup"
+msgstr ""
 
 msgid "History"
 msgstr "Historique"
@@ -755,6 +761,15 @@ msgstr "Afficher la bordure supérieure"
 msgid "Show top gap"
 msgstr "Afficher l'espace supérieur"
 
+msgid "Show other items"
+msgstr ""
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr ""
+
+msgid "Show Wikipedia"
+msgstr ""
+
 msgid "Show warmth slider"
 msgstr "Afficher le curseur de chaleur"
 
@@ -878,6 +893,10 @@ msgstr "Zen"
 
 msgid "Zen Mode"
 msgstr "Mode Zen"
+
+
+msgid "Zen quick lookup"
+msgstr ""
 
 msgid "Zen UI"
 msgstr "Zen UI"

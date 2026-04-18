@@ -241,6 +241,9 @@ msgstr "Activează meniu inferior"
 msgid "Enable bottom nav bar"
 msgstr "Activează bara de navigare inferioară"
 
+msgid "Zen highlight menu"
+msgstr ""
+
 msgid "Enable custom status bar"
 msgstr "Activează bara de stare personalizată"
 
@@ -318,6 +321,9 @@ msgstr "Ascunde dosarul superior"
 
 msgid "Hide list borders"
 msgstr "Ascunde marginile listei"
+
+msgid "Highlight / Lookup"
+msgstr ""
 
 msgid "History"
 msgstr "Istoric"
@@ -755,6 +761,15 @@ msgstr "Afișează chenarul superior"
 msgid "Show top gap"
 msgstr "Afișează spațiul superior"
 
+msgid "Show other items"
+msgstr ""
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr ""
+
+msgid "Show Wikipedia"
+msgstr ""
+
 msgid "Show warmth slider"
 msgstr "Afișează cursorul de căldură"
 
@@ -878,6 +893,10 @@ msgstr "Zen"
 
 msgid "Zen Mode"
 msgstr "Mod Zen"
+
+
+msgid "Zen quick lookup"
+msgstr ""
 
 msgid "Zen UI"
 msgstr "Zen UI"

@@ -252,11 +252,47 @@ function M.build(ctx)
     })
 
     -- -------------------------------------------------------------------------
-    -- Feature toggles
+    -- Highlight / Lookup
     -- -------------------------------------------------------------------------
 
-    table.insert(items, make_enable_feature_item("reader_bottom_menu", _("Enable bottom menu")))
-    table.insert(items, make_enable_feature_item("page_browser", _("Enable page browser")))
+    table.insert(items, {
+        text = _("Highlight / Lookup"),
+        sub_item_table = {
+            make_enable_feature_item("dict_quick_lookup", _("Zen quick lookup")),
+            make_enable_feature_item("highlight_lookup", _("Zen highlight menu")),
+               {
+                text = _("Show Wikipedia"),
+                checked_func = function()
+                    return type(config.highlight_lookup) == "table"
+                        and config.highlight_lookup.show_wikipedia == true
+                end,
+                callback = function()
+                    if type(config.highlight_lookup) ~= "table" then
+                        config.highlight_lookup = {}
+                    end
+                    config.highlight_lookup.show_wikipedia =
+                        not (config.highlight_lookup.show_wikipedia == true)
+                    plugin:saveConfig()
+                end,
+            },
+            {
+                text = _("Show other items"),
+                help_text = _("Show other KOReader quick lookup options alongside Zen buttons."),
+                checked_func = function()
+                    return type(config.highlight_lookup) == "table"
+                        and config.highlight_lookup.allow_unknown_items == true
+                end,
+                callback = function()
+                    if type(config.highlight_lookup) ~= "table" then
+                        config.highlight_lookup = {}
+                    end
+                    config.highlight_lookup.allow_unknown_items =
+                        not (config.highlight_lookup.allow_unknown_items == true)
+                    plugin:saveConfig()
+                end,
+            },
+        },
+    })
 
     table.insert(items, {
         text = _("Verbose time to chapter end"),
@@ -273,6 +309,13 @@ function M.build(ctx)
             plugin:saveConfig()
         end,
     })
+
+    -- -------------------------------------------------------------------------
+    -- Feature toggles
+    -- -------------------------------------------------------------------------
+
+    table.insert(items, make_enable_feature_item("reader_bottom_menu", _("Enable bottom menu")))
+    table.insert(items, make_enable_feature_item("page_browser", _("Enable page browser")))
 
     -- -------------------------------------------------------------------------
     -- Bottom status bar (passthrough to KOReader's footer menu)

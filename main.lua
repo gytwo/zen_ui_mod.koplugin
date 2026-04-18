@@ -18,19 +18,10 @@ local _plugin_root = (function()
     return (src:sub(1, 1) == "@") and src:sub(2):match("^(.*)/[^/]+$") or nil
 end)()
 
--- Register local SVGs so short icon names resolve to our files at runtime.
+-- Register all plugin icons into KOReader's icon cache (copies to user icons dir).
+require("inject_icons")
 if _plugin_root then
     local utils = require("common/utils")
-    utils.registerPluginIcons(_plugin_root .. "/icons/", {
-        ["zen_settings"]        = "settings.svg",
-        ["zen_settings_update"] = "settings_update.svg",
-        ["quicksettings"]       = "quicksettings.svg",
-        ["zen_ui"]              = "zen_ui.svg",
-        ["zen_ui_light"]        = "zen_ui_light.svg",
-        ["library"]             = "library.svg",
-        ["zen_favorites"]       = "tab_favorites.svg",
-        ["zen_history"]         = "tab_history.svg",
-    }, true)
     -- Override KOReader's default dialog icons with the Zen UI logo.
     local zen_icon = _plugin_root .. "/icons/zen_ui.svg"
     utils.overrideIcons({

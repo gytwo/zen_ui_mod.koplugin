@@ -239,6 +239,9 @@ msgstr "启用底部菜单"
 msgid "Enable bottom nav bar"
 msgstr "启用底部导航栏"
 
+msgid "Zen highlight menu"
+msgstr ""
+
 msgid "Enable custom status bar"
 msgstr "启用自定义状态栏"
 
@@ -316,6 +319,9 @@ msgstr "隐藏上级文件夹"
 
 msgid "Hide list borders"
 msgstr "隐藏列表边框"
+
+msgid "Highlight / Lookup"
+msgstr ""
 
 msgid "History"
 msgstr "历史记录"
@@ -753,6 +759,15 @@ msgstr "显示顶部边框"
 msgid "Show top gap"
 msgstr "显示顶部间距"
 
+msgid "Show other items"
+msgstr ""
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr ""
+
+msgid "Show Wikipedia"
+msgstr ""
+
 msgid "Show warmth slider"
 msgstr "显示色温滑块"
 
@@ -876,6 +891,10 @@ msgstr "Zen"
 
 msgid "Zen Mode"
 msgstr "禅模式"
+
+
+msgid "Zen quick lookup"
+msgstr ""
 
 msgid "Zen UI"
 msgstr "Zen UI"

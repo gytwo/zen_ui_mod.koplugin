@@ -249,6 +249,9 @@ msgstr "Enable bottom menu"
 msgid "Enable bottom nav bar"
 msgstr "Enable bottom nav bar"
 
+msgid "Zen highlight menu"
+msgstr "Zen highlight menu"
+
 msgid "Enable custom status bar"
 msgstr "Enable custom status bar"
 
@@ -332,6 +335,9 @@ msgstr "Hide up folders"
 
 msgid "Hide list borders"
 msgstr "Hide list borders"
+
+msgid "Highlight / Lookup"
+msgstr "Highlight / Lookup"
 
 msgid "History"
 msgstr "History"
@@ -798,6 +804,18 @@ msgstr "Show top border"
 
 msgid "Show top gap"
 msgstr "Show top gap"
+
+msgid "Show other items"
+msgstr "Show other items"
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr "Show other KOReader quick lookup options alongside Zen buttons."
+
+msgid "Show Wikipedia"
+msgstr "Show Wikipedia"
+
+msgid "Zen quick lookup"
+msgstr "Zen quick lookup"
 
 msgid "Show warmth slider"
 msgstr "Show warmth slider"

@@ -241,6 +241,9 @@ msgstr "Включить нижнее меню"
 msgid "Enable bottom nav bar"
 msgstr "Включить нижнюю панель навигации"
 
+msgid "Zen highlight menu"
+msgstr ""
+
 msgid "Enable custom status bar"
 msgstr "Включить настраиваемую строку состояния"
 
@@ -318,6 +321,9 @@ msgstr "Скрыть родительскую папку"
 
 msgid "Hide list borders"
 msgstr "Скрыть границы списка"
+
+msgid "Highlight / Lookup"
+msgstr ""
 
 msgid "History"
 msgstr "История"
@@ -755,6 +761,15 @@ msgstr "Показать верхнюю границу"
 msgid "Show top gap"
 msgstr "Показать верхний отступ"
 
+msgid "Show other items"
+msgstr ""
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr ""
+
+msgid "Show Wikipedia"
+msgstr ""
+
 msgid "Show warmth slider"
 msgstr "Показать ползунок тепла"
 
@@ -878,6 +893,10 @@ msgstr "Zen"
 
 msgid "Zen Mode"
 msgstr "Режим Zen"
+
+
+msgid "Zen quick lookup"
+msgstr ""
 
 msgid "Zen UI"
 msgstr "Zen UI"

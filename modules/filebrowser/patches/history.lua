@@ -122,7 +122,7 @@ local function apply_history()
             if repaintTitleBar then repaintTitleBar(tb) end
         else
             -- Fallback when status_bar is not active: swap hamburger → history icon.
-            if tb.setLeftIcon then tb:setLeftIcon("zen_history") end
+            if tb.setLeftIcon then tb:setLeftIcon("history") end
         end
     end
 

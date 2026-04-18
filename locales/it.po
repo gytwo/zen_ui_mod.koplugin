@@ -241,6 +241,9 @@ msgstr "Abilita menu inferiore"
 msgid "Enable bottom nav bar"
 msgstr "Abilita barra di navigazione inferiore"
 
+msgid "Zen highlight menu"
+msgstr ""
+
 msgid "Enable custom status bar"
 msgstr "Abilita barra di stato personalizzata"
 
@@ -318,6 +321,9 @@ msgstr "Nascondi cartella superiore"
 
 msgid "Hide list borders"
 msgstr "Nascondi bordi lista"
+
+msgid "Highlight / Lookup"
+msgstr ""
 
 msgid "History"
 msgstr "Cronologia"
@@ -755,6 +761,15 @@ msgstr "Mostra bordo superiore"
 msgid "Show top gap"
 msgstr "Mostra spazio superiore"
 
+msgid "Show other items"
+msgstr ""
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr ""
+
+msgid "Show Wikipedia"
+msgstr ""
+
 msgid "Show warmth slider"
 msgstr "Mostra cursore calore"
 
@@ -878,6 +893,10 @@ msgstr "Zen"
 
 msgid "Zen Mode"
 msgstr "Modalità Zen"
+
+
+msgid "Zen quick lookup"
+msgstr ""
 
 msgid "Zen UI"
 msgstr "Zen UI"

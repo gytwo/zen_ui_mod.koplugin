@@ -1,0 +1,25 @@
+-- Zen UI: Register all plugin icons into KOReader's icon cache at startup.
+-- Copies SVGs to the user icons dir so they resolve on cold starts too.
+
+local utils = require("common/utils")
+
+local src = debug.getinfo(1, "S").source or ""
+local _plugin_root = (src:sub(1, 1) == "@") and src:sub(2):match("^(.*)/[^/]+$") or nil
+
+if _plugin_root then
+    utils.registerPluginIcons(_plugin_root .. "/icons/", {
+        -- App / settings UI
+        ["zen_settings"]        = "settings.svg",
+        ["zen_settings_update"] = "settings_update.svg",
+        ["quicksettings"]       = "quicksettings.svg",
+        ["zen_ui"]              = "zen_ui.svg",
+        ["zen_ui_light"]        = "zen_ui_light.svg",
+        ["library"]             = "library.svg",
+        -- Highlight / lookup popup (shared by highlight_menu + dict_quick_lookup)
+        ["lookup.highlight"]    = "lookup_highlight.svg",
+        ["lookup.dictionary"]   = "lookup_dictionary.svg",
+        ["lookup.search"]       = "lookup_search.svg",
+        ["lookup.translate"]    = "lookup_translate.svg",
+        ["lookup.wikipedia"]    = "lookup_wikipedia.svg",
+    }, true)
+end

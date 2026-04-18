@@ -167,7 +167,7 @@ local function apply_favorites()
             -- Clock refresh is handled centrally by status_bar.lua's autoRefresh.
         else
             -- Fallback when status_bar is not active: swap hamburger → star icon.
-            if tb.setLeftIcon then tb:setLeftIcon("zen_favorites") end
+            if tb.setLeftIcon then tb:setLeftIcon("favorites") end
         end
     end
 

@@ -193,8 +193,8 @@ local function apply_context_menu()
                 -- inner width available to _added_widgets inside ButtonDialog
                 local avail_w  = dlg_w - 2 * (SizeR.border.window + SizeR.padding.button)
                                        - 2 * (SizeR.padding.default + SizeR.margin.default)
-                local cover_max_w = Screen:scaleBySize(80)
-                local cover_max_h = Screen:scaleBySize(120)
+                local cover_max_w = Screen:scaleBySize(90)
+                local cover_max_h = Screen:scaleBySize(140)
 
                 -- ── Rounded cover corners ─────────────────────────────────────────────
                 -- Monkey-patches a FrameContainer instance's paintTo to paint white
@@ -248,7 +248,7 @@ local function apply_context_menu()
                 end
 
                 -- Build an OverlapGroup with cover at left edge, text stack at right edge.
-                local function makeSideBySide(cover_bb, src_w, src_h, sf, title_str, authors_str, tags_str_arg, pages_str_arg, on_cover_tap)
+                local function makeSideBySide(cover_bb, src_w, src_h, sf, title_str, authors_str, series_str_arg, tags_str_arg, pages_str_arg, on_cover_tap)
                     local rendered_w  = math.floor(src_w * sf)
                     local rendered_h  = math.floor(src_h * sf)
                     local framed_h    = rendered_h + 2 * border
@@ -283,6 +283,15 @@ local function apply_context_menu()
                         table.insert(vstack, TextWidget:new{
                             text      = authors_str,
                             face      = Font:getFace("cfont", fs_authors),
+                            max_width = text_col_w,
+                        })
+                    end
+                    if series_str_arg then
+                        table.insert(vstack, VerticalSpan:new{ width = Screen:scaleBySize(2) })
+                        table.insert(vstack, TextWidget:new{
+                            text      = series_str_arg,
+                            face      = Font:getFace("cfont", fs_authors),
+                            fgcolor   = Blitbuffer.COLOR_GRAY_3,
                             max_width = text_col_w,
                         })
                     end
@@ -352,7 +361,7 @@ local function apply_context_menu()
                     return LeftContainer:new{
                         dimen = Geom:new{ w = avail_w, h = framed_h },
                         HorizontalGroup:new{
-                            align = "top",
+                            align = "center",
                             cover_component,
                             HorizontalSpan:new{ width = gap },
                             vstack,
@@ -363,7 +372,7 @@ local function apply_context_menu()
                 local pages_str
                 if is_file then
                     local ok, BookInfoManager = pcall(require, "bookinfomanager")
-                    local title_str, authors_str, tags_str_local
+                    local title_str, authors_str, tags_str_local, series_str_local
                     if ok then
                         local bookinfo = BookInfoManager:getBookInfo(file, true)
                         if bookinfo then
@@ -371,6 +380,14 @@ local function apply_context_menu()
                                 if bookinfo.title then
                                     title_str   = BD.auto(bookinfo.title)
                                     authors_str = bookinfo.authors and BD.auto(bookinfo.authors) or nil
+                                end
+                                if bookinfo.series then
+                                    local s = BD.auto(bookinfo.series)
+                                    if bookinfo.series_index then
+                                        series_str_local = string.format("#%.4g – %s", bookinfo.series_index, s)
+                                    else
+                                        series_str_local = s
+                                    end
                                 end
                                 if bookinfo.keywords and bookinfo.keywords ~= "" then
                                     tags_str_local = bookinfo.keywords
@@ -410,6 +427,7 @@ local function apply_context_menu()
                                     sf,
                                     title_str or BD.filename(file:match("([^/]+)$")),
                                     authors_str,
+                                    series_str_local,
                                     tags_str_local,
                                     pages_str,
                                     function() showCoverFullscreen(file) end)
@@ -422,6 +440,7 @@ local function apply_context_menu()
                     if title_str then
                         text_str = title_str
                         if authors_str then text_str = text_str .. "\n" .. authors_str end
+                        if series_str_local then text_str = text_str .. "\n" .. series_str_local end
                     end
                     dialog_title = text_str or BD.filename(file:match("([^/]+)$"))
                 else
@@ -460,7 +479,7 @@ local function apply_context_menu()
                                 local src_h = cover_bb:getHeight()
                                 dialog_cover_widget = makeSideBySide(
                                     cover_bb, src_w, src_h, 1.0,
-                                    folder_name_str, folder_count_str, nil, nil, nil)
+                                    folder_name_str, folder_count_str, nil, nil, nil, nil)
                             end
                         end
                     end

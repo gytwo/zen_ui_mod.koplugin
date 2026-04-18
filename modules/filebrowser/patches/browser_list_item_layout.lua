@@ -12,9 +12,11 @@ local function apply_browser_list_item_layout()
     local FrameContainer = require("ui/widget/container/framecontainer")
     local HorizontalGroup = require("ui/widget/horizontalgroup")
     local HorizontalSpan = require("ui/widget/horizontalspan")
+    local IconWidget = require("ui/widget/iconwidget")
     local ImageWidget = require("ui/widget/imagewidget")
     local LeftContainer = require("ui/widget/container/leftcontainer")
     local OverlapGroup = require("ui/widget/overlapgroup")
+    local ReadCollection = require("readcollection")
     local RightContainer = require("ui/widget/container/rightcontainer")
     local Size = require("ui/size")
     local TextBoxWidget = require("ui/widget/textboxwidget")
@@ -251,10 +253,10 @@ local function apply_browser_list_item_layout()
             local status_label, progress_str
             if status == "complete" then
                 status_label = _("Finished")
-                progress_str = "\u{F00C}"
+                progress_str = "\u{F012C}"  -- md-check
             elseif status == "abandoned" then
                 status_label = _("On hold")
-                progress_str = "\u{F04C}"
+                progress_str = "\u{F03E4}"  -- md-pause
             elseif status == "reading" or percent_finished then
                 if percent_finished then
                     status_label = string.format(_("%d%% Read"), math.floor(100 * percent_finished))
@@ -290,14 +292,34 @@ local function apply_browser_list_item_layout()
             -- ── Step 1: build status widget at its natural width ─────────────
             local wright_status, status_nat_w = nil, 0
             if status_label then
-                local display_str = progress_str and (progress_str .. " " .. status_label) or status_label
-                wright_status = TextWidget:new{
-                    text    = display_str,
-                    face    = Font:getFace("cfont", fs_right),
-                    fgcolor = fgcolor,
-                    padding = 0,
-                }
-                status_nat_w = wright_status:getWidth()
+                if progress_str then
+                    -- Render icon with our bundled Nerd Font, label with regular font.
+                    local icon_w = TextWidget:new{
+                        text    = progress_str,
+                        face    = Font:getFace("zen_icons", fs_right),
+                        fgcolor = fgcolor,
+                        padding = 0,
+                    }
+                    local label_w = TextWidget:new{
+                        text    = " " .. status_label,
+                        face    = Font:getFace("cfont", fs_right),
+                        fgcolor = fgcolor,
+                        padding = 0,
+                    }
+                    wright_status = HorizontalGroup:new{
+                        icon_w,
+                        label_w,
+                    }
+                    status_nat_w = icon_w:getWidth() + label_w:getWidth()
+                else
+                    wright_status = TextWidget:new{
+                        text    = status_label,
+                        face    = Font:getFace("cfont", fs_right),
+                        fgcolor = fgcolor,
+                        padding = 0,
+                    }
+                    status_nat_w = wright_status:getWidth()
+                end
             end
 
             -- ── Step 2: main_w based on status only → left side takes priority
@@ -467,6 +489,26 @@ local function apply_browser_list_item_layout()
                         right_stack,
                         HorizontalSpan:new{ width = pad_right },
                     },
+                })
+            end
+
+            -- ── Favorite star overlay (top-right corner, absolute) ─────────
+            if self.menu.name ~= "collections"
+                and ReadCollection:isFileInCollection(filepath, "favorites") then
+                local star_sz = Screen:scaleBySize(22)
+                local star_pad = Screen:scaleBySize(3)
+                local star_icon = IconWidget:new{
+                    icon = "star.empty",
+                    width = star_sz,
+                    height = star_sz,
+                    alpha = true,
+                    overlap_align = "right",
+                }
+                -- overlap_align on the child positions it at the right edge of the parent OverlapGroup.
+                table.insert(widget, OverlapGroup:new{
+                    dimen = { w = row_dimen.w - star_pad, h = star_sz },
+                    allow_mirroring = false,
+                    star_icon,
                 })
             end
 

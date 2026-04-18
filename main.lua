@@ -34,6 +34,16 @@ if _plugin_root then
     }, true)
 end
 
+-- Register bundled Nerd Font (v3.4.0) so all modules can use
+-- Font:getFace("zen_icons", size) for thinner Material Design icons.
+if _plugin_root then
+    local Font = require("ui/font")
+    local FontList = require("fontlist")
+    local font_path = _plugin_root .. "/fonts/SymbolsNerdFont-Regular.ttf"
+    table.insert(FontList:getFontList(), font_path)
+    Font.fontmap["zen_icons"] = "SymbolsNerdFont-Regular.ttf"
+end
+
 -- Holds the single plugin instance so the FileManagerMenu patch can reach it
 -- without needing the __ZEN_UI_PLUGIN global (which is only set transiently).
 local _zen_plugin_ref = nil

@@ -30,8 +30,34 @@ local function apply_night_mode_schedule()
         _G.__ZEN_UI_NIGHT_SCHEDULE = state
     end
 
+    -- -------------------------------------------------------------------------
+    -- Device event hooks – ALWAYS (re-)install on the current plugin instance.
+    -- After a FileManager:reinit the old ZenUI widget is destroyed and a new
+    -- one is created.  The timer functions and reschedule() survive in `state`,
+    -- so we just reconnect them to the new plugin instance every time.
+    -- -------------------------------------------------------------------------
+    do
+        local orig_suspend = zen_plugin.onSuspend
+        zen_plugin.onSuspend = function(self, ...)
+            if state._on_suspend then state._on_suspend() end
+            if type(orig_suspend) == "function" then
+                return orig_suspend(self, ...)
+            end
+        end
+        local orig_resume = zen_plugin.onResume
+        zen_plugin.onResume = function(self, ...)
+            local result
+            if type(orig_resume) == "function" then
+                result = orig_resume(self, ...)
+            end
+            if state._on_resume then state._on_resume() end
+            return result
+        end
+    end
+
     -- Guard against double-init (e.g. after a package.loaded purge without a full
-    -- Lua VM restart).  The suspend/resume hooks must only be installed once.
+    -- Lua VM restart).  Timer functions and reschedule() only need to be created
+    -- once; the hooks above reconnect them to each new plugin instance.
     if state.initialized then
         return
     end
@@ -142,32 +168,14 @@ local function apply_night_mode_schedule()
     end
 
     state.reschedule  = reschedule
-    state.initialized = true
-
-    -- -------------------------------------------------------------------------
-    -- Device event hooks – installed once on the ZenUI plugin instance.
-    -- -------------------------------------------------------------------------
-
-    local orig_suspend = zen_plugin.onSuspend
-    zen_plugin.onSuspend = function(self, ...)
+    state._on_suspend = function()
         UIManager:unschedule(night_on_fn)
         UIManager:unschedule(night_off_fn)
-        if type(orig_suspend) == "function" then
-            return orig_suspend(self, ...)
-        end
     end
-
-    local orig_resume = zen_plugin.onResume
-    zen_plugin.onResume = function(self, ...)
-        local result
-        if type(orig_resume) == "function" then
-            result = orig_resume(self, ...)
-        end
-        -- Re-apply correct state immediately (transition may have occurred during
-        -- sleep) then re-arm both timers with fresh delays from the current time.
+    state._on_resume = function()
         reschedule()
-        return result
     end
+    state.initialized = true
 
     -- -------------------------------------------------------------------------
     -- Boot-time: apply the correct state now and arm the initial timers.

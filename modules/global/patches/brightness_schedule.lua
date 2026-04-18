@@ -25,6 +25,27 @@ local function apply_brightness_schedule()
         _G.__ZEN_UI_BRIGHTNESS_SCHEDULE = state
     end
 
+    -- Always (re-)install hooks on the current plugin instance so they survive
+    -- FileManager:reinit (which destroys and recreates the ZenUI widget).
+    do
+        local orig_suspend = zen_plugin.onSuspend
+        zen_plugin.onSuspend = function(self, ...)
+            if state._on_suspend then state._on_suspend() end
+            if type(orig_suspend) == "function" then
+                return orig_suspend(self, ...)
+            end
+        end
+        local orig_resume = zen_plugin.onResume
+        zen_plugin.onResume = function(self, ...)
+            local result
+            if type(orig_resume) == "function" then
+                result = orig_resume(self, ...)
+            end
+            if state._on_resume then state._on_resume() end
+            return result
+        end
+    end
+
     if state.initialized then return end
 
     -- -------------------------------------------------------------------------
@@ -121,30 +142,14 @@ local function apply_brightness_schedule()
     end
 
     state.reschedule  = reschedule
-    state.initialized = true
-
-    -- -------------------------------------------------------------------------
-    -- Suspend / resume hooks – chain onto any previously installed hooks
-    -- -------------------------------------------------------------------------
-
-    local orig_suspend = zen_plugin.onSuspend
-    zen_plugin.onSuspend = function(self, ...)
+    state._on_suspend = function()
         UIManager:unschedule(day_fn)
         UIManager:unschedule(night_fn)
-        if type(orig_suspend) == "function" then
-            return orig_suspend(self, ...)
-        end
     end
-
-    local orig_resume = zen_plugin.onResume
-    zen_plugin.onResume = function(self, ...)
-        local result
-        if type(orig_resume) == "function" then
-            result = orig_resume(self, ...)
-        end
+    state._on_resume = function()
         reschedule()
-        return result
     end
+    state.initialized = true
 
     -- -------------------------------------------------------------------------
     -- Boot-time: apply correct state and arm timers

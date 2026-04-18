@@ -4,7 +4,6 @@ local initialized = false
 local FEATURES = {
     "navbar",
     "status_bar",
-    "zen_pagination_bar",
     "browser_folder_cover",
     "browser_hide_underline",
     "browser_hide_up_folder",
@@ -143,6 +142,13 @@ function M.init(logger, plugin)
     local browser_page_count_fn = load_patch("browser_page_count")
     if browser_page_count_fn then
         run_feature(logger, plugin, "browser_page_count", browser_page_count_fn)
+    end
+
+    -- Always apply: pill-shaped horizontal scroll bar replacing the default
+    -- chevron/page-number pagination footer in the file browser.
+    local zen_pagination_bar_fn = load_patch("zen_pagination_bar")
+    if zen_pagination_bar_fn then
+        run_feature(logger, plugin, "zen_pagination_bar", zen_pagination_bar_fn)
     end
 
     -- Ensure the runtime-patches registry exists (zen_settings_apply.lua creates

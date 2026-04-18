@@ -24,7 +24,6 @@ local defaults = {
         quick_settings = true,
         zen_mode = true,
         status_bar = true,
-        zen_pagination_bar = true,
         disable_top_menu_swipe_zones = true,
         browser_folder_cover = true,
         browser_hide_underline = true,

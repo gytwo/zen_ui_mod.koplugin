@@ -829,9 +829,6 @@ msgstr "Zen"
 msgid "Zen Mode"
 msgstr "禪模式"
 
-msgid "Zen pagination bar"
-msgstr "Zen 分頁列"
-
 msgid "Zen UI"
 msgstr "Zen UI"
 

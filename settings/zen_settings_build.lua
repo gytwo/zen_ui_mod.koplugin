@@ -1352,11 +1352,6 @@ function M.build(plugin)
         end,
     })
 
-    table.insert(filebrowser_items, make_enable_feature_item(
-        "zen_pagination_bar",
-        _("Zen pagination bar")
-    ))
-
     table.insert(filebrowser_items, {
         text = _("Show progress % on mosaic covers"),
         checked_func = function()

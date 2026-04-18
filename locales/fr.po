@@ -831,9 +831,6 @@ msgstr "Zen"
 msgid "Zen Mode"
 msgstr "Mode Zen"
 
-msgid "Zen pagination bar"
-msgstr "Barre de pagination Zen"
-
 msgid "Zen UI"
 msgstr "Zen UI"
 

@@ -141,7 +141,8 @@ local function apply_brightness_schedule()
         UIManager:scheduleIn(seconds_until(cfg.night_h, cfg.night_m), night_fn)
     end
 
-    state.reschedule  = reschedule
+    state.reschedule       = reschedule
+    state.force_reschedule = reschedule  -- brightness always applies (no guard)
     state._on_suspend = function()
         UIManager:unschedule(day_fn)
         UIManager:unschedule(night_fn)

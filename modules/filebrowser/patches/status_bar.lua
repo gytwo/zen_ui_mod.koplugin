@@ -400,8 +400,9 @@ local function apply_status_bar()
         local home_locked = is_zen_mode
             or (g_settings ~= nil and g_settings:isTrue("lock_home_folder"))
 
-        -- Show back chevron in subfolders always; everywhere when home is not locked
-        local show_back = in_subfolder or not home_locked
+        -- Show back chevron in subfolders always; everywhere when home is not locked.
+        -- path must be non-nil — callers like collections pass nil for non-filesystem views.
+        local show_back = path ~= nil and (in_subfolder or not home_locked)
 
         -- Back chevron is always pinned to the far-left when navigation is available
         local back_widget = nil

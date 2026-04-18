@@ -396,6 +396,18 @@ function ZenTocWidget:_onSwipe(ges)
     local p = ges.startpos or ges.pos
     local L = self._L
 
+    -- Top 14% south swipe → open reader menu
+    if ges.direction == "south" and ges.pos.y < Device.screen:getHeight() * 0.14 then
+        local ok_rui, RUI = pcall(require, "apps/reader/readerui")
+        if ok_rui and RUI and RUI.instance then
+            local reader_menu = RUI.instance.menu
+            if reader_menu and reader_menu.activation_menu ~= "tap" then
+                reader_menu:onShowMenu(reader_menu:_getTabIndexFromLocation(ges))
+                return true
+            end
+        end
+    end
+
     -- Swipe anywhere inside or outside — swallow so page browser doesn't turn pages.
     if ges.direction == "west" and self._toc_page < self._nb_pages then
         self._toc_page = self._toc_page + 1

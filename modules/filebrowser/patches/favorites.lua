@@ -94,32 +94,6 @@ local function apply_favorites()
             arrow.dimen    = Geom:new{ w = 0, h = 0 }
         end
 
-        -- === Swipe south from top → open KOReader menu (mirrors library behavior) ===
-        -- The BookList is a standalone overlay so FileManager's FileManagerMenu
-        -- event handlers are never reached from here.  Intercept south swipes
-        -- that start in the top eighth of the screen and delegate to
-        -- FileManagerMenu:onShowMenu(), same as the library does.
-        local Device     = require("device")
-        local Menu_class = require("ui/widget/menu")
-        local orig_onSwipe = Menu_class.onSwipe
-        menu.onSwipe = function(self_m, arg, ges_ev)
-            if ges_ev.direction == "south" then
-                if ges_ev.pos.y < Device.screen:getHeight() / 8 then
-                    local fm = require("apps/filemanager/filemanager").instance
-                    if fm and fm.menu then
-                        local fm_menu = fm.menu
-                        if fm_menu.activation_menu ~= "tap" then
-                            fm_menu:onShowMenu(fm_menu:_getTabIndexFromLocation(ges_ev))
-                            return true
-                        end
-                    end
-                end
-                -- Swallow all other south swipes — do not close favorites.
-                return true
-            end
-            return orig_onSwipe(self_m, arg, ges_ev)
-        end
-
         local tb = menu.title_bar
         if not tb then return end
 

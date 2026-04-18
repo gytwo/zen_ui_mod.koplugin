@@ -9,7 +9,7 @@ local PATCH_MODULES = {
     reader_footer_time_format = "modules/reader/patches/reader_footer_time_format",
     margin_hold_guard = "modules/reader/patches/margin_hold_guard",
     bookmarks = "modules/reader/patches/bookmarks",
-    page_browser = "modules/global/patches/page_browser",
+    page_browser = "modules/reader/patches/page_browser",
 }
 
 local function is_feature_enabled(plugin, key)

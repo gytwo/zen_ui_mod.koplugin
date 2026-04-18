@@ -146,7 +146,8 @@ local function apply_warmth_schedule()
         UIManager:scheduleIn(seconds_until(cfg.night_h, cfg.night_m), night_fn)
     end
 
-    state.reschedule  = reschedule
+    state.reschedule       = reschedule
+    state.force_reschedule = reschedule  -- warmth always applies (no guard)
     state._on_suspend = function()
         UIManager:unschedule(day_fn)
         UIManager:unschedule(night_fn)

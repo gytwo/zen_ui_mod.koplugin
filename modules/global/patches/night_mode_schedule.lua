@@ -117,8 +117,12 @@ local function apply_night_mode_schedule()
     -- toggling) and checks Screen.night_mode (the real display state) instead
     -- of G_reader_settings, which can drift during suspend/resume or when the
     -- OS changes the HW inversion flag while KOReader is sleeping.
-    local function set_night_mode(enable)
-        if Screen.night_mode == enable then return end
+    --
+    -- When `force` is true the guard is skipped so the HW flag is always
+    -- re-written.  This is used on device resume where the OS may have
+    -- changed the EPDC inversion flag while KOReader was sleeping.
+    local function set_night_mode(enable, force)
+        if not force and Screen.night_mode == enable then return end
         Screen.night_mode = enable
         if type(Screen.setHWNightmode) == "function" then
             pcall(Screen.setHWNightmode, Screen, enable)
@@ -157,17 +161,18 @@ local function apply_night_mode_schedule()
     -- Exposed via state so settings callbacks can call it after config changes.
     -- -------------------------------------------------------------------------
 
-    local function reschedule()
+    local function reschedule(force)
         UIManager:unschedule(night_on_fn)
         UIManager:unschedule(night_off_fn)
         if not is_enabled() then return end
-        set_night_mode(is_night_now())
+        set_night_mode(is_night_now(), force)
         local cfg = get_config()
         UIManager:scheduleIn(seconds_until(cfg.night_on_h,  cfg.night_on_m),  night_on_fn)
         UIManager:scheduleIn(seconds_until(cfg.night_off_h, cfg.night_off_m), night_off_fn)
     end
 
-    state.reschedule  = reschedule
+    state.reschedule       = reschedule
+    state.force_reschedule = function() reschedule(true) end
     state._on_suspend = function()
         UIManager:unschedule(night_on_fn)
         UIManager:unschedule(night_off_fn)

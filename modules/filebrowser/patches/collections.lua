@@ -1075,28 +1075,6 @@ local function apply_collections()
     ---------------------------------------------------------------------------
     -- Shared: swipe override
     ---------------------------------------------------------------------------
-    local function override_swipe(menu)
-        local Device     = require("device")
-        local Menu_class = require("ui/widget/menu")
-        local orig_onSwipe = Menu_class.onSwipe
-        menu.onSwipe = function(self_m, arg, ges_ev)
-            if ges_ev.direction == "south" then
-                if ges_ev.pos.y < Device.screen:getHeight() * 0.14 then
-                    local fm = require("apps/filemanager/filemanager").instance
-                    if fm and fm.menu then
-                        local fm_menu = fm.menu
-                        if fm_menu.activation_menu ~= "tap" then
-                            fm_menu:onShowMenu(fm_menu:_getTabIndexFromLocation(ges_ev))
-                            return true
-                        end
-                    end
-                end
-                return true
-            end
-            return orig_onSwipe(self_m, arg, ges_ev)
-        end
-    end
-
     ---------------------------------------------------------------------------
     -- Shared: icon removal helper
     ---------------------------------------------------------------------------
@@ -1129,8 +1107,6 @@ local function apply_collections()
             arrow.showHide = function() end
             arrow.dimen    = Geom:new{ w = 0, h = 0 }
         end
-
-        override_swipe(menu)
 
         local tb = menu.title_bar
         if not tb then return end
@@ -1175,8 +1151,6 @@ local function apply_collections()
 
         local UIManager_mod = require("ui/uimanager")
         local Device        = require("device")
-
-        override_swipe(menu)
 
         -- ── Hide underlines if the feature is active ─────────────────────────
         local patchMenuHideUnderline = zen_plugin._zen_shared

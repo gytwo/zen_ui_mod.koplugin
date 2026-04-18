@@ -80,28 +80,6 @@ local function apply_history()
             arrow.dimen    = Geom:new{ w = 0, h = 0 }
         end
 
-        -- === Swipe south from top → open KOReader menu (mirrors library behavior) ===
-        local Device     = require("device")
-        local Menu_class = require("ui/widget/menu")
-        local orig_onSwipe = Menu_class.onSwipe
-        menu.onSwipe = function(self_m, arg, ges_ev)
-            if ges_ev.direction == "south" then
-                if ges_ev.pos.y < Device.screen:getHeight() / 8 then
-                    local fm = require("apps/filemanager/filemanager").instance
-                    if fm and fm.menu then
-                        local fm_menu = fm.menu
-                        if fm_menu.activation_menu ~= "tap" then
-                            fm_menu:onShowMenu(fm_menu:_getTabIndexFromLocation(ges_ev))
-                            return true
-                        end
-                    end
-                end
-                -- Swallow all other south swipes — do not close history.
-                return true
-            end
-            return orig_onSwipe(self_m, arg, ges_ev)
-        end
-
         local tb = menu.title_bar
         if not tb then return end
 

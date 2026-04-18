@@ -751,6 +751,8 @@ local function apply_quick_settings()
         end
 
         if self._qs_refs and self.item_table and self.item_table.panel then
+            -- Block all panel input until the opening gesture has fully settled.
+            if self._qs_slider_locked then return true end
             if handlePanelGesture(self, ges_ev, false) then
                 return true
             end
@@ -763,7 +765,9 @@ local function apply_quick_settings()
         if not is_enabled() then return end
 
         if self._qs_refs and self.item_table and self.item_table.panel then
-            handlePanelGesture(self, ges_ev, true)
+            if not self._qs_slider_locked then
+                handlePanelGesture(self, ges_ev, true)
+            end
         end
         -- Holds outside the menu do nothing (don't close it)
         return true
@@ -812,6 +816,8 @@ local function apply_quick_settings()
         if _shared and type(_shared.cancelPanelRefresh) == "function" then
             _shared.cancelPanelRefresh(self)
         end
+        -- Clear refs so the input lock fires again on the next open.
+        self._qs_refs = nil
         if orig_onCloseWidget then orig_onCloseWidget(self) end
     end
 

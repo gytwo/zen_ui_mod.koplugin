@@ -919,27 +919,8 @@ local function apply_navbar()
             VerticalGroup:new(vg_children),
         }
 
-        -- Rakuyomi-specific: override swipe-down to show KOReader menu
-        if menu.name == "library_view" then
-            local orig_onSwipe = menu.onSwipe
-            menu.onSwipe = function(self_menu, arg, ges_ev)
-                local BD = require("ui/bidi")
-                local direction = BD.flipDirectionIfMirroredUILayout(ges_ev.direction)
-                if direction == "south" then
-                    -- Only trigger from the top ~14% of the screen, matching KOReader's default
-                    if ges_ev.pos.y < Screen:getHeight() * 0.14 then
-                        local fm = FileManager.instance
-                        if fm and fm.menu then
-                            fm.menu:onShowMenu()
-                        end
-                        return true
-                    end
-                end
-                if orig_onSwipe then
-                    return orig_onSwipe(self_menu, arg, ges_ev)
-                end
-            end
-        end
+        -- Top south swipe → open KOReader menu is handled globally by
+        -- menu_top_swipe (class-level patch on Menu.onSwipe).
     end
 
     local orig_setupLayout = FileManager.setupLayout

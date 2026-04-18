@@ -1379,8 +1379,17 @@ local function apply_page_browser()
             elseif direction == "east" then
                 self:onScrollPageUp()
                 return true
+            elseif direction == "south" and ges.pos.y < Device.screen:getHeight() * 0.14 then
+                local ok_rui, RUI = pcall(require, "apps/reader/readerui")
+                if ok_rui and RUI and RUI.instance then
+                    local reader_menu = RUI.instance.menu
+                    if reader_menu and reader_menu.activation_menu ~= "tap" then
+                        reader_menu:onShowMenu(reader_menu:_getTabIndexFromLocation(ges))
+                        return true
+                    end
+                end
             end
-            return true  -- swallow north/south and anything else
+            return true  -- swallow remaining north/south and anything else
         end
 
         -- Suppress hold gestures in the bottom panel area so they don't

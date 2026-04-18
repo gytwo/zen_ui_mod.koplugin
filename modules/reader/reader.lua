@@ -8,6 +8,7 @@ local PATCH_MODULES = {
     screensaver_cover = "modules/reader/patches/screensaver_cover",
     reader_footer_time_format = "modules/reader/patches/reader_footer_time_format",
     margin_hold_guard = "modules/reader/patches/margin_hold_guard",
+    bookmarks = "modules/reader/patches/bookmarks",
     page_browser = "modules/global/patches/page_browser",
 }
 
@@ -80,6 +81,12 @@ function M.init(logger, plugin)
     local margin_hold_guard_fn = load_patch("margin_hold_guard")
     if margin_hold_guard_fn then
         run_feature(logger, plugin, "margin_hold_guard", margin_hold_guard_fn)
+    end
+
+    -- Always apply: larger black page numbers in the bookmark/highlight list.
+    local bookmarks_fn = load_patch("bookmarks")
+    if bookmarks_fn then
+        run_feature(logger, plugin, "bookmarks", bookmarks_fn)
     end
 
     -- Ensure the runtime-patches registry exists.

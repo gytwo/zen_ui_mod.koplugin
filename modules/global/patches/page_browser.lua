@@ -171,13 +171,17 @@ local function apply_page_browser()
             -- TOC button opens ZenTocWidget
             local pbw_ref = self
             local function open_toc()
+                -- Close the page browser first so the TOC renders over the reader.
+                pbw_ref:onClose()
                 UIManager:show(ZenTocWidget:new{
                     ui         = pbw_ref.ui,
                     focus_page = pbw_ref.focus_page or pbw_ref.cur_page or 1,
                     on_goto    = function(page)
-                        if pbw_ref:updateFocusPage(page, false) then
-                            pbw_ref:update()
+                        -- Navigate directly in the book (PBW is already closed).
+                        if pbw_ref.ui.link then
+                            pbw_ref.ui.link:addCurrentLocationToStack()
                         end
+                        pbw_ref.ui:handleEvent(Event:new("GotoPage", page))
                     end,
                 })
             end

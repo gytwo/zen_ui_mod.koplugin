@@ -21,6 +21,7 @@ local Blitbuffer     = require("ffi/blitbuffer")
 local Device         = require("device")
 local Font           = require("ui/font")
 local Geom           = require("ui/geometry")
+local IconWidget     = require("ui/widget/iconwidget")
 local TextWidget     = require("ui/widget/textwidget")
 local UIManager      = require("ui/uimanager")
 local Screen         = Device.screen
@@ -114,8 +115,8 @@ function ZenTocWidget:init()
     -- -----------------------------------------------------------------------
     -- Layout constants (all screen-scaled)
     -- -----------------------------------------------------------------------
-    local MODAL_W     = math.floor(sw * 0.88)
-    local BORDER      = Screen:scaleBySize(1)
+    local MODAL_W     = sw
+    local BORDER      = 0
     local PAD         = Screen:scaleBySize(16)   -- horizontal content padding
     local TITLE_H     = Screen:scaleBySize(50)
     local SEP_H       = 1
@@ -123,8 +124,8 @@ function ZenTocWidget:init()
     local BAR_H       = Screen:scaleBySize(5)
     local BAR_PAD_V   = Screen:scaleBySize(7)
 
-    -- First pass: fit rows without reserving scrollbar space.
-    local max_list_h_full = math.floor(sh * 0.85) - BORDER * 2 - TITLE_H - SEP_H
+    -- Fit rows into full screen height (minus title bar and optional scrollbar).
+    local max_list_h_full = sh - TITLE_H - SEP_H
     local per_page_full   = math.max(1, math.floor(max_list_h_full / ROW_H))
 
     -- Only add a scrollbar when entries overflow one screenful.
@@ -134,17 +135,17 @@ function ZenTocWidget:init()
     local max_list_h = max_list_h_full - SCROLLBAR_H
     local per_page   = math.max(1, math.floor(max_list_h / ROW_H))
     local list_h     = per_page * ROW_H
-    local MODAL_H    = BORDER * 2 + TITLE_H + SEP_H + list_h + SCROLLBAR_H
-    local MODAL_X    = math.floor((sw - MODAL_W) / 2)
-    local MODAL_Y    = math.floor((sh - MODAL_H) / 2)
+    local MODAL_H    = sh
+    local MODAL_X    = 0
+    local MODAL_Y    = 0
 
     -- Close-button hit-area: right TITLE_H-wide strip of the title bar.
     local CLOSE_W = TITLE_H   -- square hit zone
-    local CLOSE_X = MODAL_X + MODAL_W - CLOSE_W
-    local CLOSE_Y = MODAL_Y + BORDER
+    local CLOSE_X = MODAL_W - CLOSE_W
+    local CLOSE_Y = MODAL_Y
 
     -- Y where entry rows start (absolute screen coords).
-    local LIST_Y = MODAL_Y + BORDER + TITLE_H + SEP_H
+    local LIST_Y = MODAL_Y + TITLE_H + SEP_H
 
     self._L = {
         sw = sw, sh = sh,
@@ -211,23 +212,13 @@ function ZenTocWidget:paintTo(bb, x, y)
     -- Cover the full screen with white so the page browser beneath is hidden.
     bb:paintRect(x, y, L.sw, L.sh, Blitbuffer.COLOR_WHITE)
 
-    -- Absolute modal origin in the blitbuffer.
+    -- Modal is full-screen: origin is (x, y).
     local mx = x + L.modal_x
     local my = y + L.modal_y
 
-    -- White modal background.
-    bb:paintRect(mx, my, L.modal_w, L.modal_h, Blitbuffer.COLOR_WHITE)
-
-    -- Border (1 px on each side).
-    bb:paintRect(mx,                         my,                         L.modal_w, L.border, Blitbuffer.COLOR_DARK_GRAY)
-    bb:paintRect(mx,                         my + L.modal_h - L.border, L.modal_w, L.border, Blitbuffer.COLOR_DARK_GRAY)
-    bb:paintRect(mx,                         my,                         L.border, L.modal_h, Blitbuffer.COLOR_DARK_GRAY)
-    bb:paintRect(mx + L.modal_w - L.border,  my,                         L.border, L.modal_h, Blitbuffer.COLOR_DARK_GRAY)
-
     -- -----------------------------------------------------------------------
-    -- Title bar: "Contents" centred, "×" right-aligned
+    -- Title bar: "Contents" centred, close icon right-aligned
     -- -----------------------------------------------------------------------
-    local title_y = my + L.border + math.floor((L.title_h - self:_textH("cfont", 18)) / 2)
     local title_tw = TextWidget:new{
         text    = "Contents",
         face    = Font:getFace("cfont", 18),
@@ -238,24 +229,23 @@ function ZenTocWidget:paintTo(bb, x, y)
     local tsz = title_tw:getSize()
     title_tw:paintTo(bb,
         mx + math.floor((L.modal_w - tsz.w) / 2),
-        my + L.border + math.floor((L.title_h - tsz.h) / 2))
+        my + math.floor((L.title_h - tsz.h) / 2))
     title_tw:free()
 
-    -- Close "×"
-    local xtw = TextWidget:new{
-        text    = "×",
-        face    = Font:getFace("cfont", 22),
-        fgcolor = Blitbuffer.COLOR_BLACK,
-        padding = 0,
+    -- Close icon
+    local icon_sz    = Screen:scaleBySize(26)
+    local close_icon = IconWidget:new{
+        icon   = "close",
+        width  = icon_sz,
+        height = icon_sz,
     }
-    local xsz = xtw:getSize()
-    xtw:paintTo(bb,
-        L.close_x + math.floor((L.close_w - xsz.w) / 2),
-        my + L.border + math.floor((L.title_h - xsz.h) / 2))
-    xtw:free()
+    close_icon:paintTo(bb,
+        L.close_x + math.floor((L.close_w - icon_sz) / 2),
+        my + math.floor((L.title_h - icon_sz) / 2))
+    close_icon:free()
 
     -- Title separator line.
-    bb:paintRect(mx, my + L.border + L.title_h, L.modal_w, L.sep_h, Blitbuffer.COLOR_LIGHT_GRAY)
+    bb:paintRect(mx, my + L.title_h, L.modal_w, L.sep_h, Blitbuffer.COLOR_LIGHT_GRAY)
 
     -- -----------------------------------------------------------------------
     -- TOC entry rows
@@ -301,11 +291,11 @@ function ZenTocWidget:paintTo(bb, x, y)
 
             -- Page number (right-aligned)
             local page_str = tostring(e.page)
-            local pface    = Font:getFace("cfont", 13)
+            local pface    = Font:getFace("cfont", 16)
             local pn_tw    = TextWidget:new{
                 text    = page_str,
                 face    = pface,
-                fgcolor = is_active and Blitbuffer.COLOR_BLACK or Blitbuffer.gray(130),
+                fgcolor = Blitbuffer.COLOR_BLACK,
                 bold    = is_active,
                 padding = 0,
             }
@@ -317,8 +307,7 @@ function ZenTocWidget:paintTo(bb, x, y)
 
             -- Chapter title (truncated to available width)
             local title_max_w = pn_x - text_x - Screen:scaleBySize(8)
-            local tface = is_active and Font:getFace("cfont", 15)
-                                     or Font:getFace("cfont", 15)
+            local tface = Font:getFace("cfont", 18)
             local title_tw2 = TextWidget:new{
                 text      = e.title,
                 face      = tface,

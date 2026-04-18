@@ -409,7 +409,8 @@ local function apply_page_browser()
         -- grid_height = screen_h - title_h - panel_h, sizes thumbnails to fit
         -- that exact space, and positions them with correct offsets. No
         -- post-hoc shrinking = no thumbnail overlap.
-        local zen_icon_size = Screen:scaleBySize(24)
+        local zen_icon_size      = Screen:scaleBySize(24)  -- view-toggle (grid/single) icons
+        local zen_skip_icon_size = Screen:scaleBySize(36)  -- skip-chapter chevron icons
         local zen_icon_pad_h = Screen:scaleBySize(20)  -- horizontal padding (wider buttons)
         local zen_icon_pad_v = Screen:scaleBySize(10)  -- vertical padding (taller buttons)
         local zen_panel_pad_v = Screen:scaleBySize(6)  -- panel vertical padding (between elements)
@@ -426,8 +427,10 @@ local function apply_page_browser()
                                        padding = 0 }
             local lh = tw:getSize().h
             tw:free()
-            -- Button group: icon + vert padding * 2 + border * 2
-            local btn_h = zen_icon_size + zen_icon_pad_v * 2 + Screen:scaleBySize(2) * 2
+            -- Button group height: max of view-toggle (with border) and skip buttons (borderless)
+            local btn_toggle_h = zen_icon_size      + zen_icon_pad_v * 2 + Screen:scaleBySize(2) * 2
+            local btn_skip_h   = zen_skip_icon_size + zen_icon_pad_v * 2
+            local btn_h = math.max(btn_toggle_h, btn_skip_h)
             -- top_pad + panel_pads + 1× label + (optional slider) + 1× icon row + bottom_pad
             -- Only include slider height and spacing if there's more than 1 page
             if nb_pages and nb_pages > 1 then
@@ -847,10 +850,13 @@ local function apply_page_browser()
             local is_single_page = (self.nb_cols == 1 and self.nb_rows == 1)
 
             local grid_slide_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "grid_slide")
-            local grid_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "grid")
+            local grid_path       = _icons_dir and utils.resolveLocalIcon(_icons_dir, "grid")
+            local skip_left_path  = _icons_dir and utils.resolveLocalIcon(_icons_dir, "skip_left")
+            local skip_right_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "skip_right")
 
             -- Create icon widgets with active state styling
-            local icon_size = zen_icon_size
+            local icon_size      = zen_icon_size
+            local skip_icon_size = zen_skip_icon_size
             local icon_pad_h = zen_icon_pad_h
             local icon_pad_v = zen_icon_pad_v
 
@@ -949,6 +955,26 @@ local function apply_page_browser()
                 btn_group,
             }
 
+            -- Skip chapter buttons (larger icons, no border)
+            local function make_skip_btn(file_path, fallback_icon)
+                return FrameContainer:new{
+                    padding_top    = icon_pad_v,
+                    padding_bottom = icon_pad_v,
+                    padding_left   = icon_pad_h,
+                    padding_right  = icon_pad_h,
+                    bordersize     = 0,
+                    background     = Blitbuffer.COLOR_WHITE,
+                    IconWidget:new{
+                        file   = file_path,
+                        icon   = file_path and nil or fallback_icon,
+                        width  = skip_icon_size,
+                        height = skip_icon_size,
+                    },
+                }
+            end
+            local skip_left_btn  = make_skip_btn(skip_left_path,  "chevron.left")
+            local skip_right_btn = make_skip_btn(skip_right_path, "chevron.right")
+
             -- Switch callbacks
             local _switch_single = function()
                 pbw._zen_nb_cols_override = 1
@@ -972,6 +998,31 @@ local function apply_page_browser()
             end
             self._zen_switch_single = _switch_single
             self._zen_switch_grid   = _switch_grid
+
+            -- Chapter-skip: jump to nearest TOC boundary before/after focus_page
+            local function skip_to_prev_chapter()
+                if not pbw.ui or not pbw.ui.toc or not pbw.ui.toc.toc then return end
+                local cur = pbw.focus_page or pbw.cur_page or 1
+                for i = #pbw.ui.toc.toc, 1, -1 do
+                    local e = pbw.ui.toc.toc[i]
+                    if e.page and e.page < cur then
+                        if pbw:updateFocusPage(e.page, false) then pbw:update() end
+                        return
+                    end
+                end
+            end
+            local function skip_to_next_chapter()
+                if not pbw.ui or not pbw.ui.toc or not pbw.ui.toc.toc then return end
+                local cur = pbw.focus_page or pbw.cur_page or 1
+                for _, e in ipairs(pbw.ui.toc.toc) do
+                    if e.page and e.page > cur then
+                        if pbw:updateFocusPage(e.page, false) then pbw:update() end
+                        return
+                    end
+                end
+            end
+            self._zen_skip_prev = skip_to_prev_chapter
+            self._zen_skip_next = skip_to_next_chapter
 
             -- Store button group reference for tap handling
             self._zen_btn_group = btn_row
@@ -1018,6 +1069,41 @@ local function apply_page_browser()
             logger.dbg("ZenUI page_browser: btn_view_zone x="..self._zen_btn_view_zone.x.." y="..self._zen_btn_view_zone.y.." w="..self._zen_btn_view_zone.w.." h="..self._zen_btn_view_zone.h)
             logger.dbg("ZenUI page_browser: btn_grid_zone x="..self._zen_btn_grid_zone.x.." y="..self._zen_btn_grid_zone.y.." w="..self._zen_btn_grid_zone.w.." h="..self._zen_btn_grid_zone.h)
 
+            -- Skip buttons flanking the view-toggle group
+            local skip_side_gap = Screen:scaleBySize(40)
+            local skip_btn_sz   = skip_left_btn:getSize()
+            local skip_btn_w    = skip_btn_sz.w
+            local skip_btn_h    = skip_btn_sz.h
+            local row_h         = math.max(btn_row_h, skip_btn_h)
+            local vert_off_skip = math.floor((row_h - skip_btn_h) / 2)
+
+            skip_left_btn.overlap_offset  = { skip_side_gap, vert_off_skip }
+            skip_right_btn.overlap_offset = { grid_w - skip_side_gap - skip_btn_w, vert_off_skip }
+
+            local btn_and_skip = OverlapGroup:new{
+                dimen           = Geom:new{ w = grid_w, h = row_h },
+                allow_mirroring = false,
+                CenterContainer:new{
+                    dimen = Geom:new{ w = grid_w, h = row_h },
+                    btn_row,
+                },
+                skip_left_btn,
+                skip_right_btn,
+            }
+
+            self._zen_btn_skip_left_zone = Geom:new{
+                x = (self.dimen.x or 0) + skip_side_gap,
+                y = btn_zone_y + vert_off_skip,
+                w = skip_btn_w,
+                h = skip_btn_h,
+            }
+            self._zen_btn_skip_right_zone = Geom:new{
+                x = (self.dimen.x or 0) + grid_w - skip_side_gap - skip_btn_w,
+                y = btn_zone_y + vert_off_skip,
+                w = skip_btn_w,
+                h = skip_btn_h,
+            }
+
             -- Store panel height for onHold suppression.
             self._zen_panel_h = zen_panel_h
 
@@ -1049,12 +1135,9 @@ local function apply_page_browser()
                 })
             end
 
-            -- Add button group
+            -- Add button group with skip buttons flanking it
             table.insert(panel_content, VerticalSpan:new{ width = zen_panel_pad_btn })
-            table.insert(panel_content, CenterContainer:new{
-                dimen = Geom:new{ w = grid_w, h = btn_row:getSize().h },
-                btn_row,
-            })
+            table.insert(panel_content, btn_and_skip)
             table.insert(panel_content, VerticalSpan:new{ width = zen_panel_pad_bottom })
 
             local panel = FrameContainer:new{
@@ -1276,7 +1359,18 @@ local function apply_page_browser()
                 logger.dbg("ZenUI page_browser: onTap → slider")
                 return true
             end
-            -- 2. View-toggle buttons: fallback for taps before the first paintTo,
+            -- 2. Skip chapter buttons.
+            if self._zen_btn_skip_left_zone
+               and self._zen_btn_skip_left_zone:contains(ges.pos) then
+                if self._zen_skip_prev then self._zen_skip_prev() end
+                return true
+            end
+            if self._zen_btn_skip_right_zone
+               and self._zen_btn_skip_right_zone:contains(ges.pos) then
+                if self._zen_skip_next then self._zen_skip_next() end
+                return true
+            end
+            -- 3. View-toggle buttons: fallback for taps before the first paintTo,
             --    when btn.dimen.x/y are still 0 so the button's own ges_events
             --    won't match.  After first paint, the IconButton's onTapIconButton
             --    fires the callback directly (children-first propagation).
@@ -1294,7 +1388,7 @@ local function apply_page_browser()
                 if self._zen_switch_grid then self._zen_switch_grid() end
                 return true
             end
-            -- 3. Any tap inside the panel strip → swallow.  Without this a
+            -- 4. Any tap inside the panel strip → swallow.  Without this a
             --    tap falls through to _orig_onTap which hits the thumbnail
             --    behind the panel, navigates the page, and the slider jumps.
             local panel_h = self._zen_panel_h or 0
@@ -1302,7 +1396,7 @@ local function apply_page_browser()
                and ges.pos.y >= (self.dimen.y + self.dimen.h - panel_h) then
                 return true
             end
-            -- 4. Thumbnail grid area → native handler.
+            -- 5. Thumbnail grid area → native handler.
             return _orig_onTap(self, arg, ges)
         end
 

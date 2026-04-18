@@ -182,6 +182,97 @@ local function apply_browser_folder_cover()
         if not MosaicMenuItem then return end -- Protect against remnants of project title
         local BookInfoManager = get_upvalue(MosaicMenuItem.update, "BookInfoManager")
         local original_update = MosaicMenuItem.update
+        local logger = require("logger")
+        local UIManager = require("ui/uimanager")
+
+        -- KOReader fires onBookInfoUpdated for the extracted *book* path, not the
+        -- *folder* path.  So when we trigger background extraction for a book inside
+        -- a folder, the folder item's update() is never called again automatically.
+        -- schedule_folder_refresh polls until extraction finishes, then calls
+        -- updateItems() so the folder cover re-renders with the new cover data.
+        local function schedule_folder_refresh(item)
+            if item._zen_refresh_timer then return end
+            item._zen_refresh_timer = true
+            local menu_ref = item.menu
+            local function try_refresh(retries)
+                if BookInfoManager:isExtractingInBackground() and retries > 0 then
+                    UIManager:scheduleIn(3, function() try_refresh(retries - 1) end)
+                    return
+                end
+                item._zen_refresh_timer = nil
+                if menu_ref and type(menu_ref.updateItems) == "function" then
+                    logger.warn("[zen-ui] folder cover: deferred updateItems after extraction")
+                    menu_ref:updateItems()
+                end
+            end
+            UIManager:scheduleIn(2, function() try_refresh(4) end)
+        end
+
+        -- Tracks file paths where we have already attempted a DB-row migration
+        -- this session, so we don't hammer the DB with repeated SQL on every
+        -- refresh call for the same path.
+        local zen_migrated_paths = {}
+
+        -- Walk up the directory tree looking for a DB entry that shares the same
+        -- filename as `path`.  Handles the common case where a book was moved into
+        -- a subfolder but the BookInfoManager DB row still points to the old path
+        -- in a parent directory.  Stops at the reader home_dir boundary or after
+        -- MAX_LEVELS ancestor directories, whichever comes first.
+        local ffiUtil = require("ffi/util")
+        local MAX_ANCESTOR_LEVELS = 8
+
+        local function getBookInfoWithFallback(path)
+            -- Exact match first.
+            local bi = BookInfoManager:getBookInfo(path, true)
+            if bi then return bi, path end
+
+            local basename = ffiUtil.basename(path)
+            local home_dir = G_reader_settings and G_reader_settings:readSetting("home_dir") or nil
+
+            -- Walk: at each step move one level up from the current dir and
+            -- probe  <ancestor>/<basename>.  This finds the old DB entry when
+            -- the book was moved from an ancestor directory into a subfolder.
+            local dir = ffiUtil.dirname(path)  -- immediate containing dir
+            for _ = 1, MAX_ANCESTOR_LEVELS do
+                local parent = ffiUtil.dirname(dir)
+                if parent == dir then break end  -- filesystem root
+                local candidate = parent .. "/" .. basename
+                if candidate ~= path then
+                    local candidate_bi = BookInfoManager:getBookInfo(candidate, true)
+                    if candidate_bi
+                            and candidate_bi.cover_bb
+                            and candidate_bi.has_cover
+                            and candidate_bi.cover_fetched
+                            and not candidate_bi.ignore_cover then
+                        logger.warn("[zen-ui] fallback: found cover at ancestor path",
+                            candidate, "for", path)
+                        return candidate_bi, candidate
+                    end
+                end
+                if home_dir and parent == home_dir then break end
+                dir = parent
+            end
+            return nil, nil
+        end
+
+        -- Best-effort: update the DB row from old_path to new_path so that future
+        -- lookups use the exact path.  Silently swallowed on any error.
+        local function tryMigrateBookInfoPath(old_path, new_path)
+            if old_path == new_path then return end
+            pcall(function()
+                local db = BookInfoManager.db_conn
+                    or BookInfoManager.db
+                    or BookInfoManager.db_connection
+                    or BookInfoManager._db_conn
+                if not db then return end
+                local function sq_esc(s) return s:gsub("'", "''") end
+                db:exec(
+                    "UPDATE bookinfo SET filepath='" .. sq_esc(new_path) ..
+                    "' WHERE filepath='" .. sq_esc(old_path) .. "'"
+                )
+                logger.warn("[zen-ui] migrated DB row", old_path, "->", new_path)
+            end)
+        end
 
         -- setting
         function BooleanSetting(text, name, default)
@@ -200,18 +291,158 @@ local function apply_browser_folder_cover()
             name_centered = BooleanSetting(_("Folder name centered"), "folder_name_centered", true),
             show_folder_name = BooleanSetting(_("Show folder name"), "folder_name_show", true),
             name_opaque = BooleanSetting(_("Folder name opaque background"), "folder_name_opaque", true),
+            gallery_mode = BooleanSetting(_("Gallery view"), "folder_gallery_mode"),
         }
 
         -- cover item
         function MosaicMenuItem:update(...)
+            -- Per-item guard: while we have an ancestor cover painted and bookinfo
+            -- is not yet in the DB at this path, block ALL update() calls.
+            -- orig_biu (CoverBrowser's onBookInfoUpdated handler) calls item:update()
+            -- then UIManager:setDirty() for the item region.  If original_update()
+            -- runs with nil bookinfo it rebuilds a FakeCover at slightly different
+            -- pixel dimensions than our ancestor cover (browser_cover_mosaic_uniform
+            -- subtracts 6px UNDERLINE_RESERVE that our cover doesn't).  The e-ink
+            -- partial repaint then redraws a smaller region, leaving ghost pixels
+            -- from the outer edge of our taller cover ("distorted/shifted" look).
+            -- Blocking original_update() entirely prevents that mismatch.
+            -- When bookinfo finally arrives (SQL migration or extraction), we let one
+            -- update() through with refresh_dimen cleared so the full cell repaints
+            -- and cleanly overwrites the ancestor cover.
+            if self._zen_ancestor_cover then
+                if self.entry and (self.entry.is_file or self.entry.file) then
+                    local _p = self.entry.path
+                    if _p and not BookInfoManager:getBookInfo(_p, true) then
+                        return  -- bookinfo still nil; keep ancestor cover
+                    end
+                end
+                self._zen_ancestor_cover = nil
+                self.refresh_dimen = nil  -- force full-cell repaint to clear ancestor ghost
+            end
+
             original_update(self, ...)
             if self._foldercover_processed or self.menu.no_refresh_covers or not self.do_cover_image then return end
 
-            if self.entry.is_file or self.entry.file or not self.mandatory then return end -- it's a file
+            if not self.mandatory then return end
+
+            -- File items: if the book is not yet in the DB at its current path
+            -- (freshly moved), immediately render its cover from ancestor bookinfo
+            -- rather than showing KOReader's default FakeCover for several seconds.
+            -- The cover widget is built to match the standard coverbrowser structure:
+            --   _underline_container[1] = OverlapGroup
+            --     [1] = FrameContainer (bordersize set)  ← target for rounded_corners
+            -- This lets browser_cover_rounded_corners locate and mask the frame.
+            -- schedule_folder_refresh polls until extraction completes so the DB
+            -- eventually gets the correct path entry and standard rendering takes over.
+            if self.entry.is_file or self.entry.file then
+                local path = self.entry.path
+                local bookinfo = BookInfoManager:getBookInfo(path, true)
+                if not bookinfo then
+                    local ancestor_bi, ancestor_path = getBookInfoWithFallback(path)
+                    if ancestor_bi and ancestor_path ~= path and ancestor_bi.cover_bb then
+                        -- Build immediate cover widget from ancestor bookinfo.
+                        -- Copy the blitbuffer: BookInfoManager frees its cached copy
+                        -- when extraction completes and replaces the cache entry.
+                        -- Without a copy, paintTo crashes with "cannot render image"
+                        -- on the next repaint after extraction finishes.
+                        local cover_bb_copy = ancestor_bi.cover_bb:copy()
+                        local border = Folder.face.border_size
+                        local max_w = self.width - 2 * border
+                        local bh = self.height - 2 * border
+                        local portrait_w, portrait_h
+                        if bh * 2 <= max_w * 3 then
+                            portrait_h = bh
+                            portrait_w = math.floor(bh * 2 / 3)
+                        else
+                            portrait_w = max_w
+                            portrait_h = math.min(math.floor(max_w * 3 / 2), bh)
+                        end
+                        local cover_frame = FrameContainer:new {
+                            padding     = 0,
+                            bordersize  = border,
+                            width       = portrait_w + 2 * border,
+                            height      = portrait_h + 2 * border,
+                            background  = Blitbuffer.COLOR_LIGHT_GRAY,
+                            CenterContainer:new {
+                                dimen = { w = portrait_w, h = portrait_h },
+                                ImageWidget:new {
+                                    image            = cover_bb_copy,
+                                    image_disposable = true,
+                                    width            = portrait_w,
+                                    height           = portrait_h,
+                                },
+                            },
+                            overlap_align = "center",
+                        }
+                        local overlap = OverlapGroup:new {
+                            dimen = { w = self.width, h = self.height },
+                            cover_frame,
+                        }
+                        if self._underline_container[1] then
+                            self._underline_container[1]:free()
+                        end
+                        self._underline_container[1] = overlap
+                        -- Mark this item so update() calls are blocked until bookinfo
+                        -- is available at the new path (see flag check at top of update).
+                        self._zen_ancestor_cover = true
+                        -- Best-effort DB migration for next standard render cycle.
+                        if not zen_migrated_paths[path] then
+                            zen_migrated_paths[path] = true
+                            tryMigrateBookInfoPath(ancestor_path, path)
+                        end
+                        return
+                    end
+                    -- No ancestor cover found (genuinely new/unindexed file).
+                    -- Poll until extraction completes then refresh to show the cover.
+                    if not zen_migrated_paths[path] then
+                        zen_migrated_paths[path] = true
+                        schedule_folder_refresh(self)
+                    end
+                    return
+                end
+                if bookinfo and bookinfo.cover_fetched
+                        and (bookinfo.ignore_cover or not bookinfo.has_cover or not bookinfo.cover_bb) then
+                    local border     = Folder.face.border_size
+                    local max_w      = self.width  - 2 * border
+                    local bh         = self.height - 2 * border
+                    local portrait_w, portrait_h
+                    if bh * 2 <= max_w * 3 then
+                        portrait_h = bh
+                        portrait_w = math.floor(bh * 2 / 3)
+                    else
+                        portrait_w = max_w
+                        portrait_h = math.min(math.floor(max_w * 3 / 2), bh)
+                    end
+                    local dimen_h      = portrait_h + 2 * border
+                    local centered_top = math.floor((self.height - dimen_h) / 2)
+                    local gray_widget  = VerticalGroup:new {
+                        VerticalSpan:new { width = centered_top },
+                        CenterContainer:new {
+                            dimen = { w = self.width, h = dimen_h },
+                            FrameContainer:new {
+                                padding = 0,
+                                bordersize = border,
+                                width  = portrait_w + 2 * border,
+                                height = dimen_h,
+                                background = Blitbuffer.COLOR_LIGHT_GRAY,
+                                CenterContainer:new {
+                                    dimen = { w = portrait_w, h = portrait_h },
+                                    VerticalSpan:new { width = 1 },
+                                },
+                            },
+                        },
+                    }
+                    if self._underline_container[1] then
+                        self._underline_container[1]:free()
+                    end
+                    self._underline_container[1] = gray_widget
+                end
+                return
+            end
+
+            -- Folder items only below this point.
             local dir_path = self.entry and self.entry.path
             if not dir_path then return end
-
-            self._foldercover_processed = true
 
             local cover_file = findCover(dir_path) --custom
             if cover_file then
@@ -224,6 +455,7 @@ local function apply_browser_folder_cover()
                     return orig_w, orig_h
                 end)
                 if success then
+                    self._foldercover_processed = true
                     self:_setFolderCover { file = cover_file, w = w, h = h, scale_to_fit = settings.crop_to_fit.get() }
                     return
                 end
@@ -232,33 +464,99 @@ local function apply_browser_folder_cover()
             self.menu._dummy = true
             local entries = self.menu:genItemTableFromPath(dir_path) -- sorted
             self.menu._dummy = false
-            if not entries then return end
+            if not entries then
+                self._foldercover_processed = true
+                return
+            end
 
-            local found_cover = false
-            for _, entry in ipairs(entries) do
-                if entry.is_file or entry.file then
-                    local bookinfo = BookInfoManager:getBookInfo(entry.path, true)
-                    if
-                        bookinfo
-                        and bookinfo.cover_bb
-                        and bookinfo.has_cover
-                        and bookinfo.cover_fetched
-                        and not bookinfo.ignore_cover
-                        -- Do NOT check isCachedCoverInvalid here. That check uses the
-                        -- full-cell cover_specs and rejects any thumbnail that was
-                        -- cached at a smaller layout (e.g. 3x3 covers in 2x2 mode).
-                        -- Showing a slightly upscaled thumbnail is far better than a
-                        -- blank folder.  Book file-items still get re-extracted at the
-                        -- new size in the background via the normal KOReader flow.
-                    then
-                        self:_setFolderCover { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h }
-                        found_cover = true
-                        break
+            if settings.gallery_mode.get() then
+                local covers = {}
+                local extraction_triggered = false
+                for _, entry in ipairs(entries) do
+                    if entry.is_file or entry.file then
+                        local bookinfo, found_at = getBookInfoWithFallback(entry.path)
+                        if bookinfo then
+                            logger.dbg("[zen-ui] gallery: found cover for", entry.path,
+                                found_at ~= entry.path and ("(via " .. found_at .. ")") or "")
+                            -- If found at an ancestor path, patch the DB row for next time.
+                            if found_at ~= entry.path then
+                                tryMigrateBookInfoPath(found_at, entry.path)
+                            end
+                            table.insert(covers, { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h })
+                            if #covers >= 4 then break end
+                        else
+                            -- Truly not in DB anywhere: queue extraction.
+                            logger.warn("[zen-ui] gallery: book not in DB, queuing extraction:", entry.path)
+                            if not BookInfoManager:isExtractingInBackground() then
+                                BookInfoManager:extractInBackground {{
+                                    filepath    = entry.path,
+                                    cover_specs = self.menu.cover_specs or {},
+                                }}
+                            end
+                            extraction_triggered = true
+                        end
                     end
                 end
-            end
-            if not found_cover then
-                self:_setFolderCover { no_image = true }
+                -- Only lock out re-render once there are no pending extractions.
+                if not extraction_triggered then
+                    self._foldercover_processed = true
+                else
+                    -- Trigger a deferred re-render once extraction finishes.  Without
+                    -- this, the folder cover never updates because KOReader only fires
+                    -- onBookInfoUpdated for the book path, not the folder path.
+                    schedule_folder_refresh(self)
+                end
+                self:_setFolderCover { gallery = covers }
+            else
+                local found_cover = false
+                for _, entry in ipairs(entries) do
+                    if entry.is_file or entry.file then
+                        -- Use ancestor-path fallback so a book moved into this folder can
+                        -- still show its cover even if the DB row uses the old path.
+                        local bookinfo, found_at = getBookInfoWithFallback(entry.path)
+                        if bookinfo then
+                            logger.dbg("[zen-ui] single: found cover for", dir_path, "via", entry.path,
+                                found_at ~= entry.path and ("(ancestor: " .. found_at .. ")") or "")
+                            if found_at ~= entry.path then
+                                tryMigrateBookInfoPath(found_at, entry.path)
+                            end
+                            self._foldercover_processed = true
+                            self:_setFolderCover { data = bookinfo.cover_bb, w = bookinfo.cover_w, h = bookinfo.cover_h }
+                            found_cover = true
+                            break
+                        end
+                    end
+                end
+                if not found_cover then
+                    -- Before giving up, queue extraction for any entries truly absent from the
+                    -- DB (the ancestor search already exhausted partial-path matches above).
+                    local unindexed = {}
+                    for _, entry in ipairs(entries) do
+                        if entry.is_file or entry.file then
+                            local bi_any, _ = getBookInfoWithFallback(entry.path)
+                            if bi_any == nil then
+                                table.insert(unindexed, {
+                                    filepath    = entry.path,
+                                    cover_specs = self.menu.cover_specs or {},
+                                })
+                            end
+                        end
+                    end
+                    if #unindexed > 0 then
+                        if not BookInfoManager:isExtractingInBackground() then
+                            logger.warn("[zen-ui] single: extracting", #unindexed, "unindexed books in", dir_path)
+                            BookInfoManager:extractInBackground(unindexed)
+                        else
+                            logger.warn("[zen-ui] single: extraction already running, deferring for", dir_path)
+                        end
+                        -- Schedule a deferred re-render once extraction finishes.
+                        -- (Do not lock _foldercover_processed here — we want to retry.)
+                        schedule_folder_refresh(self)
+                    else
+                        self._foldercover_processed = true
+                        self:_setFolderCover { no_image = true }
+                    end
+                end
             end
         end
 
@@ -289,7 +587,66 @@ local function apply_browser_folder_cover()
             -- explicit scale_factor) so KOReader auto-scales to min(w,h) ratio.
             -- This guarantees zero overflow regardless of source aspect ratio.
             local image_widget
-            if img.no_image then
+            if img.gallery then
+                local covers = img.gallery
+                local sep = 1
+                local half_w  = math.floor((portrait_w - sep) / 2)
+                local half_w2 = portrait_w - sep - half_w
+                local half_h  = math.floor((portrait_h - sep) / 2)
+                local half_h2 = portrait_h - sep - half_h
+                local cell_dims = {
+                    { w = half_w,  h = half_h  },
+                    { w = half_w2, h = half_h  },
+                    { w = half_w,  h = half_h2 },
+                    { w = half_w2, h = half_h2 },
+                }
+                local cells = {}
+                for i = 1, 4 do
+                    local c = covers[i]
+                    local cd = cell_dims[i]
+                    if c then
+                        cells[i] = CenterContainer:new {
+                            dimen = { w = cd.w, h = cd.h },
+                            ImageWidget:new {
+                                image  = c.data,
+                                width  = cd.w,
+                                height = cd.h,
+                            },
+                        }
+                    else
+                        -- Empty slot: transparent widget with correct dimensions so the
+                        -- layout engine sizes the row/column correctly.  The outer
+                        -- FrameContainer's LIGHT_GRAY background shows through.
+                        cells[i] = CenterContainer:new {
+                            dimen = { w = cd.w, h = cd.h },
+                            VerticalSpan:new { width = 1 },
+                        }
+                    end
+                end
+                image_widget = FrameContainer:new {
+                    padding = 0,
+                    bordersize = border,
+                    width = dimen.w, height = dimen.h,
+                    background = Blitbuffer.COLOR_LIGHT_GRAY,
+                    CenterContainer:new {
+                        dimen = { w = portrait_w, h = portrait_h },
+                        VerticalGroup:new {
+                            HorizontalGroup:new {
+                                cells[1],
+                                LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = sep, h = half_h } },
+                                cells[2],
+                            },
+                            LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = portrait_w, h = sep } },
+                            HorizontalGroup:new {
+                                cells[3],
+                                LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = sep, h = half_h2 } },
+                                cells[4],
+                            },
+                        },
+                    },
+                    overlap_align = "center",
+                }
+            elseif img.no_image then
                 image_widget = FrameContainer:new {
                     padding = 0,
                     bordersize = border,
@@ -727,6 +1084,23 @@ local function apply_browser_folder_cover()
                         widget,
                     }
                 end
+            end
+        end
+
+        -- Hook CoverBrowser's onBookInfoUpdated.
+        -- The primary flash suppression is the per-item _zen_ancestor_cover flag
+        -- checked at the top of update(): it blocks original_update() from rebuilding
+        -- the widget while bookinfo is nil, so orig_biu's setDirty() repaint just
+        -- redraws our unchanged ancestor cover (correct pixels, no ghost).
+        -- zen_migrated_paths provides a secondary path-based guard.
+        if type(plugin.onBookInfoUpdated) == "function" then
+            local orig_biu = plugin.onBookInfoUpdated
+            function plugin:onBookInfoUpdated(filepath, bookinfo)
+                if zen_migrated_paths[filepath] then
+                    zen_migrated_paths[filepath] = nil
+                    return
+                end
+                orig_biu(self, filepath, bookinfo)
             end
         end
 

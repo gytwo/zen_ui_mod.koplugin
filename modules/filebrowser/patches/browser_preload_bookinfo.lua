@@ -38,10 +38,11 @@ local function apply_browser_preload_bookinfo()
     local FileChooser = require("ui/widget/filechooser")
     local UIManager   = require("ui/uimanager")
 
-    -- Track the last directory for which we launched a pre-scan.
-    -- Same-directory refreshes (post-rename, post-delete) are skipped so we
-    -- do not hammer the DB with redundant queries after every file operation.
-    local last_scanned_path = nil
+    -- Track the last directory and item count for which we launched a pre-scan.
+    -- Same-directory refreshes are skipped UNLESS the item count changed, which
+    -- means files were added or removed (e.g. a book was just moved into this folder).
+    local last_scanned_path  = nil
+    local last_scanned_count = 0
 
     -- Capture plugin reference for live config reads inside callbacks.
     local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
@@ -137,10 +138,12 @@ local function apply_browser_preload_bookinfo()
         if not is_enabled() then return end
 
         local path = self.path
-        -- Skip same-directory refreshes (file rename/delete ops call refreshPath
-        -- without changing the directory path).
-        if path == last_scanned_path then return end
-        last_scanned_path = path
+        local item_count = self.item_table and #self.item_table or 0
+        -- Skip same-directory refreshes only when the item count is unchanged.
+        -- A changed count means files were added or removed, so we must re-scan.
+        if path == last_scanned_path and item_count == last_scanned_count then return end
+        last_scanned_path  = path
+        last_scanned_count = item_count
 
         -- cover_specs is set on self by CoverBrowser's patched updateItems,
         -- which runs inside orig_refreshPath → switchItemTable → updateItems.

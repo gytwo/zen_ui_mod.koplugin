@@ -448,6 +448,14 @@ local function apply_context_menu()
                                             DocSettings.updateLocation(src, dest_file)
                                             ReadHistory:updateItem(src, dest_file)
                                             ReadCollection:updateItem(src, dest_file)
+                                            -- Migrate cover/metadata DB entry to the new path so
+                                            -- folder covers and list metadata update immediately
+                                            -- without requiring full re-extraction.
+                                            local ok_bim2, bim2 = pcall(require, "bookinfomanager")
+                                            if ok_bim2 and bim2
+                                                    and type(bim2.onFileManagerFileRenamed) == "function" then
+                                                pcall(bim2.onFileManagerFileRenamed, bim2, src, dest_file)
+                                            end
                                         else
                                             ReadHistory:updateItemsByPath(src, dest_file)
                                             ReadCollection:updateItemsByPath(src, dest_file)

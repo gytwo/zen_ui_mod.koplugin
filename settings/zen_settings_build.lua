@@ -1409,6 +1409,20 @@ function M.build(plugin)
                 end,
             },
             {
+                text = _("Show folder covers as gallery"),
+                checked_func = function()
+                    local ok, bim = pcall(require, "bookinfomanager")
+                    if not ok then return false end
+                    return bim:getSetting("folder_gallery_mode") ~= nil
+                end,
+                callback = function()
+                    local ok, bim = pcall(require, "bookinfomanager")
+                    if not ok then return end
+                    bim:toggleSetting("folder_gallery_mode")
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
                 text = _("Show folder name on cover"),
                 checked_func = function()
                     local ok, bim = pcall(require, "bookinfomanager")

@@ -60,6 +60,10 @@ local function apply_opening_banner()
         return
     end
 
+    -- Capture plugin reference while __ZEN_UI_PLUGIN is still set (it is cleared
+    -- after patch application, so rawget at coroutine-time returns nil).
+    local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
+
     local Blitbuffer = require("ffi/blitbuffer")
     local Font    = require("ui/font")
     local Geom    = require("ui/geometry")
@@ -176,6 +180,58 @@ local function apply_opening_banner()
     pcall(try_hook_mosaic)
     pcall(try_hook_list)
 
+    -- ── Bottom-corner masking for the banner ────────────────────────────────
+    -- Paints white pixels outside the arc in the bottom-left and bottom-right
+    -- r×r corner zones, matching the cover's rounded corner radius.
+    local function _mask_bottom_corners(bb, x, y, w, h, r)
+        local color = Blitbuffer.COLOR_WHITE
+        for j = 0, r - 1 do
+            local inner = math.sqrt(r * r - (r - j) * (r - j))
+            local cut   = math.ceil(r - inner)
+            if cut > 0 then
+                bb:paintRect(x,           y + h - 1 - j, cut, 1, color)
+                bb:paintRect(x + w - cut, y + h - 1 - j, cut, 1, color)
+            end
+        end
+    end
+
+    -- ── Border that follows rounded bottom corners ───────────────────────────
+    -- Draws a 1px border around the banner.  When r > 0 the bottom-left and
+    -- bottom-right corners are arcs (matching the mask radius) instead of
+    -- sharp right angles.  Must be called AFTER _mask_bottom_corners so the
+    -- border is never overwritten by the masking pass.
+    local function _draw_border(bb, x, y, w, h, r, color)
+        -- Top edge (always straight)
+        bb:paintRect(x, y, w, 1, color)
+        if r > 0 then
+            -- Left / right: straight down to where the arc begins
+            bb:paintRect(x,         y, 1, h - r, color)
+            bb:paintRect(x + w - 1, y, 1, h - r, color)
+            -- Bottom straight segment between the two arc zones
+            if w > 2 * r then
+                bb:paintRect(x + r, y + h - 1, w - 2 * r, 1, color)
+            end
+            -- Bottom-left and bottom-right 1px arc borders
+            local r_inner = r - 1
+            for j = 0, r - 1 do
+                for c = 0, r - 1 do
+                    local dx   = r - c - 0.5
+                    local dy   = r - j - 0.5
+                    local dist = math.sqrt(dx * dx + dy * dy)
+                    if dist >= r_inner and dist <= r then
+                        bb:paintRect(x + c,           y + h - 1 - j, 1, 1, color)
+                        bb:paintRect(x + w - 1 - c,   y + h - 1 - j, 1, 1, color)
+                    end
+                end
+            end
+        else
+            -- Simple rectangular border (no rounding)
+            bb:paintRect(x,         y + h - 1, w, 1, color)
+            bb:paintRect(x,         y,         1, h, color)
+            bb:paintRect(x + w - 1, y,         1, h, color)
+        end
+    end
+
     -- ── Tiny inline widget: black rect + centred "Opening" text ─────────────
     local OpeningBanner = Widget:extend{}
 
@@ -184,7 +240,17 @@ local function apply_opening_banner()
         self.dimen.y = y
         local bg = self.light_banner and Blitbuffer.COLOR_WHITE or Blitbuffer.COLOR_BLACK
         local fg = self.light_banner and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_WHITE
-        bb:paintRect(x, y, self.dimen.w, self.dimen.h, bg)
+        local w, h = self.dimen.w, self.dimen.h
+        local r    = self.round_bottom_corners and Screen:scaleBySize(8) or 0
+
+        -- 1. Fill background
+        bb:paintRect(x, y, w, h, bg)
+        -- 2. Clip bottom corners (before border so the border draws on top)
+        if r > 0 then
+            _mask_bottom_corners(bb, x, y, w, h, r)
+        end
+        -- 3. Border (after masking so it is never erased)
+        _draw_border(bb, x, y, w, h, r, fg)
 
         local tw = TextWidget:new{
             text      = self.label or _("Opening"),
@@ -194,8 +260,8 @@ local function apply_opening_banner()
         }
         local tsz = tw:getSize()
         tw:paintTo(bb,
-            x + math.floor((self.dimen.w - tsz.w) / 2),
-            y + math.floor((self.dimen.h - tsz.h) / 2))
+            x + math.floor((w - tsz.w) / 2),
+            y + math.floor((h - tsz.h) / 2))
         tw:free()
     end
 
@@ -232,9 +298,17 @@ local function apply_opening_banner()
             bw = Screen:getWidth()
         end
 
+        local plug = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+        local round_bottom = cover and not cover.is_list
+            and plug
+            and type(plug.config) == "table"
+            and type(plug.config.features) == "table"
+            and plug.config.features.browser_cover_rounded_corners == true
+
         local banner = OpeningBanner:new{
-            dimen        = Geom:new{ x = bx, y = by, w = bw, h = banner_h },
-            light_banner = cover and cover.light_banner or false,
+            dimen                = Geom:new{ x = bx, y = by, w = bw, h = banner_h },
+            light_banner         = cover and cover.light_banner or false,
+            round_bottom_corners = round_bottom and true or false,
         }
 
         UIManager:show(banner, "ui", Geom:new{x=bx, y=by, w=bw, h=banner_h}, bx, by)

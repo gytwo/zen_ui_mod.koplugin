@@ -168,7 +168,7 @@ local function apply_browser_page_count()
             }
             local tw_sz  = tw:getSize()
             -- Height fixed by corner_mark_size (same scale as cover badge bh).
-            local bh     = math.floor(corner_mark_size * 1.1)
+            local bh     = math.floor(corner_mark_size * 0.95)
             -- Horizontal padding proportional to corner_mark_size (≈ bw * 0.12).
             local h_pad  = math.floor(corner_mark_size * 0.12)
             local bw     = tw_sz.w + 2 * h_pad

@@ -262,8 +262,6 @@ local function apply_browser_folder_cover()
         end
 
         function MosaicMenuItem:_setFolderCover(img)
-            local top_h = 2 * (Folder.edge.thick + Folder.edge.margin)
-
             -- Compute the largest 2:3 portrait box that fits within the cell.
             -- Uses both self.width and self.height so the cover scales correctly
             -- for any grid layout (2×2, 4×3, etc.), matching the dual-constraint
@@ -271,8 +269,6 @@ local function apply_browser_folder_cover()
             local border      = Folder.face.border_size  -- Size.border.thin
             local max_w       = self.width  - 2 * border
             local bh          = self.height - 2 * border
-            -- Tab lines now float on top of the cover (rendered last), so the image
-            -- can use the full cell height — same as browser_cover_mosaic_uniform.lua.
             local available_h = bh
             local portrait_w, portrait_h
             if available_h * 2 <= max_w * 3 then
@@ -373,55 +369,35 @@ local function apply_browser_folder_cover()
                 nbitems_widget = VerticalSpan:new { width = 0 }
             end
 
-            -- Place the image box using the same CenterContainer geometry as a book cover
-            -- (dimen.h centered in self.height), so their bottoms align.  Tab lines are
-            -- drawn AFTER (on top of) the image so they are always visible — in compact
-            -- grids like 3×3 the image top edge overlaps the tab area; drawing the lines
-            -- last keeps both lines visible regardless of cell height.
-            -- Push the image down just enough so the tab lines always have clear space
-            -- above it.  In loose grids (e.g. 3×2) the natural centered position already
-            -- satisfies image_top >= top_h, so no adjustment is made and alignment is
-            -- identical to a book cover.  In tight grids (e.g. 3×3) the image is shifted
-            -- down by the minimum needed amount (a few px), giving the lines unobstructed
-            -- space without visibly affecting the layout.
-            local centered_top = math.floor((self.height - dimen.h) / 2)
-            local image_top    = math.max(top_h, centered_top)
-            local tab_top      = image_top - top_h   -- always >= 0, no clamping needed
+            -- Center the image exactly like a book cover so folder covers align with
+            -- their row neighbours in all grid layouts.
+            -- Loose grids (e.g. 3×2): enough space above the image → horizontal tab
+            --   lines float above the cover (classic look).
+            -- Tight grids (e.g. 3×3): no clear space above → vertical spine lines on
+            --   the left of the cover, mirroring list mode.
+            -- In both cases the line closer to the cover is longer; the outer one is
+            -- shorter.  Rounded corners inset the lines on both sides.
+            local centered_top  = math.floor((self.height - dimen.h) / 2)
+            local top_h         = 2 * (Folder.edge.thick + Folder.edge.margin)
+            local use_top_lines = centered_top >= top_h
 
-            -- When rounded corners are active, trim the tab lines inward so they
-            -- don't visually overhang the rounded cover edge on each side.
             local plug = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
             local rounded = plug
                 and type(plug.config) == "table"
                 and type(plug.config.features) == "table"
                 and plug.config.features.browser_cover_rounded_corners == true
             local line_inset = rounded and Screen:scaleBySize(4) or 0
-            local line1_w = math.max(0, math.floor(dimen.w * (Folder.edge.width ^ 2)) - 2 * line_inset)
-            local line2_w = math.max(0, math.floor(dimen.w * Folder.edge.width)       - 2 * line_inset)
 
-            local widget = OverlapGroup:new {
-                dimen = { w = self.width, h = self.height },
-                -- Layer 1: image cover + overlays.  Positioned by explicit VerticalSpan so
-                -- that image_top (which may be > centered_top in tight grids) is respected
-                -- while the image remains horizontally centered.
-                VerticalGroup:new {
-                    VerticalSpan:new { width = image_top },
-                    CenterContainer:new {
-                        dimen = { w = self.width, h = dimen.h },
-                        OverlapGroup:new {
-                            dimen = dimen,
-                            image_widget,
-                            folder_name_widget,
-                            nbitems_widget,
-                        },
-                    },
-                },
-                -- Layer 2: tab lines drawn on top, horizontally centered over the cover,
-                -- positioned to hover just above (or overlap) the top edge of the image.
-                TopContainer:new {
+            local decoration_layer
+            if use_top_lines then
+                -- Horizontal lines above the image.
+                -- line1 (top / farther from cover): shorter.  line2 (bottom / closer): longer.
+                local line1_w = math.max(0, math.floor(dimen.w * (Folder.edge.width ^ 2)) - 2 * line_inset)
+                local line2_w = math.max(0, math.floor(dimen.w * Folder.edge.width)       - 2 * line_inset)
+                decoration_layer = TopContainer:new {
                     dimen = { w = self.width, h = self.height },
                     VerticalGroup:new {
-                        VerticalSpan:new { width = tab_top },
+                        VerticalSpan:new { width = centered_top - top_h },
                         CenterContainer:new {
                             dimen = { w = self.width, h = top_h },
                             VerticalGroup:new {
@@ -437,7 +413,54 @@ local function apply_browser_folder_cover()
                             },
                         },
                     },
+                }
+            else
+                -- Vertical spine lines to the left of the cover image.
+                -- line1 (outer / farther from cover): shorter.  line2 (inner / closer): longer.
+                local spine_gap = Screen:scaleBySize(9)
+                local spine_x   = math.max(0, math.floor((self.width - dimen.w) / 2))
+                local line1_h   = math.max(0, math.floor(dimen.h * (Folder.edge.width ^ 2)) - 2 * line_inset)
+                local line2_h   = math.max(0, math.floor(dimen.h * Folder.edge.width)       - 2 * line_inset)
+                decoration_layer = LeftContainer:new {
+                    dimen = { w = self.width, h = self.height },
+                    HorizontalGroup:new {
+                        HorizontalSpan:new { width = math.max(0, spine_x - spine_gap) },
+                        CenterContainer:new {
+                            dimen = { w = Folder.edge.thick, h = self.height },
+                            LineWidget:new {
+                                background = Folder.edge.color,
+                                dimen = { w = Folder.edge.thick, h = line1_h },
+                            },
+                        },
+                        HorizontalSpan:new { width = Folder.edge.margin },
+                        CenterContainer:new {
+                            dimen = { w = Folder.edge.thick, h = self.height },
+                            LineWidget:new {
+                                background = Folder.edge.color,
+                                dimen = { w = Folder.edge.thick, h = line2_h },
+                            },
+                        },
+                    },
+                }
+            end
+
+            local widget = OverlapGroup:new {
+                dimen = { w = self.width, h = self.height },
+                -- Layer 1: image cover + overlays, centered to match adjacent book covers.
+                VerticalGroup:new {
+                    VerticalSpan:new { width = centered_top },
+                    CenterContainer:new {
+                        dimen = { w = self.width, h = dimen.h },
+                        OverlapGroup:new {
+                            dimen = dimen,
+                            image_widget,
+                            folder_name_widget,
+                            nbitems_widget,
+                        },
+                    },
                 },
+                -- Layer 2: tab lines above (loose grids) or spine lines left (tight grids).
+                decoration_layer,
             }
             if self._underline_container[1] then
                 local previous_widget = self._underline_container[1]

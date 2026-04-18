@@ -15,7 +15,6 @@ local function apply_navbar()
     local IconWidget = require("ui/widget/iconwidget")
     local InputContainer = require("ui/widget/container/inputcontainer")
     local LineWidget = require("ui/widget/linewidget")
-    local Size = require("ui/size")
     local TextWidget = require("ui/widget/textwidget")
     local UIManager = require("ui/uimanager")
     local VerticalGroup = require("ui/widget/verticalgroup")
@@ -52,7 +51,6 @@ local function apply_navbar()
     local navbar_v_padding = Screen:scaleBySize(4)
     -- Dead zone at left/right edges to avoid stealing corner gesture taps
     local corner_dead_zone = math.floor(Screen:getWidth() / 12)
-    local navbar_top_gap = Screen:scaleBySize(10)
     local underline_thickness = Screen:scaleBySize(2)
 
     -- === Persistent config ===
@@ -73,7 +71,6 @@ local function apply_navbar()
         },
         tab_order = { "page_left", "books", "manga", "news", "continue", "history", "favorites", "collections", "exit", "page_right", "menu" },
         show_labels = true,
-        show_top_border = true,
         books_label = "Books",
         manga_action = "rakuyomi",
         manga_folder = "",
@@ -81,8 +78,6 @@ local function apply_navbar()
         news_folder = "",
         colored = false,
         active_tab_color = {0x33, 0x99, 0xFF}, -- blue
-        show_in_standalone = true,
-        show_top_gap = false,
         active_tab_styling = true,
         active_tab_bold = true,
         active_tab_underline = true,
@@ -602,41 +597,13 @@ local function apply_navbar()
             table.insert(row, createTabWidget(tab, tab_w, tab.id == active_tab))
         end
 
-        local OverlapGroup = require("ui/widget/overlapgroup")
         local row_with_padding = HorizontalGroup:new{
             HorizontalSpan:new{ width = navbar_h_padding },
             row,
             HorizontalSpan:new{ width = navbar_h_padding },
         }
-        local row_h = row_with_padding:getSize().h
 
-        local visual_children = {}
-
-        if config.show_top_border then
-            local separator = LineWidget:new{
-                dimen = Geom:new{ w = inner_w, h = Size.line.medium },
-                background = Blitbuffer.COLOR_LIGHT_GRAY,
-            }
-            -- OverlapGroup: gray separator behind, tab row (with underlines) on top
-            local separator_and_row = OverlapGroup:new{
-                dimen = Geom:new{ w = screen_w, h = row_h },
-                allow_mirroring = false,
-                CenterContainer:new{
-                    dimen = Geom:new{ w = screen_w, h = Size.line.medium },
-                    separator,
-                },
-                row_with_padding,
-            }
-            if config.show_top_gap then
-                table.insert(visual_children, VerticalSpan:new{ width = navbar_top_gap })
-            end
-            table.insert(visual_children, separator_and_row)
-        else
-            if config.show_top_gap then
-                table.insert(visual_children, VerticalSpan:new{ width = navbar_top_gap })
-            end
-            table.insert(visual_children, row_with_padding)
-        end
+        local visual_children = { row_with_padding }
 
         local visual = VerticalGroup:new(visual_children)
 
@@ -736,7 +703,7 @@ local function apply_navbar()
     function Menu:init()
         if self.name == "filemanager" and not self.height then
             self.height = Screen:getHeight() - getNavbarHeight()
-        elseif config.show_in_standalone and not _skip_standalone_navbar and isStandaloneNavbarView(self) then
+        elseif not _skip_standalone_navbar and isStandaloneNavbarView(self) then
             -- Override height even if already set (e.g. Rakuyomi sets height = screen_h)
             self.height = Screen:getHeight() - getNavbarHeight()
             -- Force borderless for plugin views that forgot to set it (e.g. Rakuyomi)
@@ -749,7 +716,7 @@ local function apply_navbar()
         -- so inject navbar via nextTick from here. Hide-pagination doesn't
         -- apply to these views so there's no ordering conflict.
         local nexttick_tab_id = standalone_nexttick_tab_ids[self.name]
-        if nexttick_tab_id and config.show_in_standalone then
+        if nexttick_tab_id then
             local menu = self
             UIManager:nextTick(function()
                 injectStandaloneNavbar(menu, nexttick_tab_id)
@@ -958,7 +925,7 @@ local function apply_navbar()
 
     function FileManagerHistory:onShowHist(search_info)
         local result = orig_onShowHist(self, search_info)
-        if config.show_in_standalone and self.booklist_menu then
+        if self.booklist_menu then
             injectStandaloneNavbar(self.booklist_menu, "history")
         end
         return result
@@ -970,7 +937,7 @@ local function apply_navbar()
     function FileManagerCollection:onShowColl(collection_name)
         local from_coll_list = self.coll_list ~= nil
         local result = orig_onShowColl(self, collection_name)
-        if config.show_in_standalone and self.booklist_menu then
+        if self.booklist_menu then
             injectStandaloneNavbar(self.booklist_menu, from_coll_list and "collections" or "favorites")
         end
         return result
@@ -986,7 +953,7 @@ local function apply_navbar()
         local result = orig_onShowCollList(self, file_or_selected_collections, caller_callback, no_dialog)
         _skip_standalone_navbar = false
         -- Only inject navbar in browse mode, not selection mode
-        if config.show_in_standalone and self.coll_list and file_or_selected_collections == nil then
+        if self.coll_list and file_or_selected_collections == nil then
             injectStandaloneNavbar(self.coll_list, "collections")
         end
         return result
@@ -1010,8 +977,6 @@ local function apply_navbar()
         local orig_qrss_init = QuickRSSUI_class.init
         function QuickRSSUI_class:init()
             orig_qrss_init(self)
-
-            if not config.show_in_standalone then return end
 
             local navbar_h = getNavbarHeight()
             if navbar_h <= 0 then return end

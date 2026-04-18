@@ -436,30 +436,6 @@ function M.build(plugin)
                 end,
             },
             {
-                text = _("Show top border"),
-                checked_func = function() return config.navbar.show_top_border == true end,
-                callback = function()
-                    config.navbar.show_top_border = not (config.navbar.show_top_border == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Show in standalone views"),
-                checked_func = function() return config.navbar.show_in_standalone == true end,
-                callback = function()
-                    config.navbar.show_in_standalone = not (config.navbar.show_in_standalone == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Show top gap"),
-                checked_func = function() return config.navbar.show_top_gap == true end,
-                callback = function()
-                    config.navbar.show_top_gap = not (config.navbar.show_top_gap == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
                 text = _("Active tab styling"),
                 checked_func = function() return config.navbar.active_tab_styling == true end,
                 callback = function()
@@ -1038,17 +1014,13 @@ function M.build(plugin)
                 end,
             },
             {
-                text = _("Show time"),
-                checked_func = function() return config.status_bar.show_time == true end,
-                callback = function()
-                    config.status_bar.show_time = not (config.status_bar.show_time == true)
-                    save_and_apply_status_bar()
-                end,
-            },
-            {
                 text = _("12-hour time"),
                 checked_func = function() return config.status_bar.time_12h == true end,
-                enabled_func = function() return config.status_bar.show_time == true end,
+                enabled_func = function()
+                    for _, k in ipairs(config.status_bar.left_order  or {}) do if k == "time" then return true end end
+                    for _, k in ipairs(config.status_bar.right_order or {}) do if k == "time" then return true end end
+                    return false
+                end,
                 callback = function()
                     config.status_bar.time_12h = not (config.status_bar.time_12h == true)
                     save_and_apply_status_bar()
@@ -1079,85 +1051,238 @@ function M.build(plugin)
                 end,
             },
             {
-                text = _("Items"),
-                sub_item_table = {
-                    {
-                        text = _("Arrange items"),
-                        keep_menu_open = true,
-                        separator = true,
-                        callback = function()
-                            local SortWidget = require("ui/widget/sortwidget")
-                            local status_bar_items = {
-                                wifi = _("WiFi"),
-                                disk = _("Disk space"),
-                                ram = _("RAM usage"),
-                                frontlight = _("Brightness"),
-                                battery = _("Battery"),
-                            }
-                            local sort_items = {}
-                            for _, key in ipairs(config.status_bar.order) do
-                                if status_bar_items[key] then
-                                    table.insert(sort_items, {
-                                        text = status_bar_items[key],
-                                        orig_item = key,
-                                        dim = not (config.status_bar.show[key] == true),
-                                    })
-                                end
-                            end
-
-                            UIManager:show(SortWidget:new{
-                                title = _("Arrange status bar items"),
-                                item_table = sort_items,
-                                callback = function()
-                                    for i, item in ipairs(sort_items) do
-                                        config.status_bar.order[i] = item.orig_item
+                text = _("Center items"),
+                sub_item_table = (function()
+                    local all_items = {
+                        { key = "wifi",        text = _("Wi-Fi") },
+                        { key = "disk",        text = _("Disk space") },
+                        { key = "ram",         text = _("RAM usage") },
+                        { key = "frontlight",  text = _("Brightness") },
+                        { key = "battery",     text = _("Battery") },
+                        { key = "time",        text = _("Time") },
+                        { key = "custom_text", text = _("Custom text") },
+                    }
+                    local t = {
+                        {
+                            text = _("Arrange"),
+                            keep_menu_open = true,
+                            separator = true,
+                            callback = function()
+                                local SortWidget = require("ui/widget/sortwidget")
+                                local lbl = {}
+                                for _, d in ipairs(all_items) do lbl[d.key] = d.text end
+                                local sort_items = {}
+                                for _, key in ipairs(config.status_bar.center_order or {}) do
+                                    if lbl[key] then
+                                        table.insert(sort_items, { text = lbl[key], orig_item = key })
                                     end
-                                    save_and_apply_status_bar()
-                                end,
-                            })
-                        end,
-                    },
-                    {
-                        text = _("Show WiFi"),
-                        checked_func = function() return config.status_bar.show.wifi == true end,
-                        callback = function()
-                            config.status_bar.show.wifi = not (config.status_bar.show.wifi == true)
-                            save_and_apply_status_bar()
-                        end,
-                    },
-                    {
-                        text = _("Show disk space"),
-                        checked_func = function() return config.status_bar.show.disk == true end,
-                        callback = function()
-                            config.status_bar.show.disk = not (config.status_bar.show.disk == true)
-                            save_and_apply_status_bar()
-                        end,
-                    },
-                    {
-                        text = _("Show RAM usage"),
-                        checked_func = function() return config.status_bar.show.ram == true end,
-                        callback = function()
-                            config.status_bar.show.ram = not (config.status_bar.show.ram == true)
-                            save_and_apply_status_bar()
-                        end,
-                    },
-                    {
-                        text = _("Show brightness"),
-                        checked_func = function() return config.status_bar.show.frontlight == true end,
-                        callback = function()
-                            config.status_bar.show.frontlight = not (config.status_bar.show.frontlight == true)
-                            save_and_apply_status_bar()
-                        end,
-                    },
-                    {
-                        text = _("Show battery"),
-                        checked_func = function() return config.status_bar.show.battery == true end,
-                        callback = function()
-                            config.status_bar.show.battery = not (config.status_bar.show.battery == true)
-                            save_and_apply_status_bar()
-                        end,
-                    },
-                },
+                                end
+                                UIManager:show(SortWidget:new{
+                                    title = _("Arrange center items"),
+                                    item_table = sort_items,
+                                    callback = function()
+                                        local new_order = {}
+                                        for _, item in ipairs(sort_items) do
+                                            table.insert(new_order, item.orig_item)
+                                        end
+                                        config.status_bar.center_order = new_order
+                                        save_and_apply_status_bar()
+                                    end,
+                                })
+                            end,
+                        },
+                    }
+                    for _, def in ipairs(all_items) do
+                        local key = def.key
+                        table.insert(t, {
+                            text = def.text,
+                            checked_func = function()
+                                for _, k in ipairs(config.status_bar.center_order or {}) do
+                                    if k == key then return true end
+                                end
+                                return false
+                            end,
+                            callback = function()
+                                local lo = config.status_bar.left_order   or {}
+                                local co = config.status_bar.center_order or {}
+                                local ro = config.status_bar.right_order  or {}
+                                local found, new_co = false, {}
+                                for _, k in ipairs(co) do
+                                    if k == key then found = true else table.insert(new_co, k) end
+                                end
+                                if found then
+                                    config.status_bar.center_order = new_co
+                                else
+                                    local new_lo, new_ro = {}, {}
+                                    for _, k in ipairs(lo) do if k ~= key then table.insert(new_lo, k) end end
+                                    for _, k in ipairs(ro) do if k ~= key then table.insert(new_ro, k) end end
+                                    table.insert(co, key)
+                                    config.status_bar.left_order   = new_lo
+                                    config.status_bar.center_order = co
+                                    config.status_bar.right_order  = new_ro
+                                end
+                                save_and_apply_status_bar()
+                            end,
+                        })
+                    end
+                    return t
+                end)(),
+            },
+            {
+                text = _("Left items"),
+                sub_item_table = (function()
+                    local all_items = {
+                        { key = "wifi",        text = _("Wi-Fi") },
+                        { key = "disk",        text = _("Disk space") },
+                        { key = "ram",         text = _("RAM usage") },
+                        { key = "frontlight",  text = _("Brightness") },
+                        { key = "battery",     text = _("Battery") },
+                        { key = "time",        text = _("Time") },
+                        { key = "custom_text", text = _("Custom text") },
+                    }
+                    local t = {
+                        {
+                            text = _("Arrange"),
+                            keep_menu_open = true,
+                            separator = true,
+                            callback = function()
+                                local SortWidget = require("ui/widget/sortwidget")
+                                local lbl = {}
+                                for _, d in ipairs(all_items) do lbl[d.key] = d.text end
+                                local sort_items = {}
+                                for _, key in ipairs(config.status_bar.left_order or {}) do
+                                    if lbl[key] then
+                                        table.insert(sort_items, { text = lbl[key], orig_item = key })
+                                    end
+                                end
+                                UIManager:show(SortWidget:new{
+                                    title = _("Arrange left items"),
+                                    item_table = sort_items,
+                                    callback = function()
+                                        local new_order = {}
+                                        for _, item in ipairs(sort_items) do
+                                            table.insert(new_order, item.orig_item)
+                                        end
+                                        config.status_bar.left_order = new_order
+                                        save_and_apply_status_bar()
+                                    end,
+                                })
+                            end,
+                        },
+                    }
+                    for _, def in ipairs(all_items) do
+                        local key = def.key
+                        table.insert(t, {
+                            text = def.text,
+                            checked_func = function()
+                                for _, k in ipairs(config.status_bar.left_order or {}) do
+                                    if k == key then return true end
+                                end
+                                return false
+                            end,
+                            callback = function()
+                                local lo = config.status_bar.left_order  or {}
+                                local ro = config.status_bar.right_order or {}
+                                local co = config.status_bar.center_order or {}
+                                local found, new_lo = false, {}
+                                for _, k in ipairs(lo) do
+                                    if k == key then found = true else table.insert(new_lo, k) end
+                                end
+                                if found then
+                                    config.status_bar.left_order = new_lo
+                                else
+                                    local new_co, new_ro = {}, {}
+                                    for _, k in ipairs(co) do if k ~= key then table.insert(new_co, k) end end
+                                    for _, k in ipairs(ro) do if k ~= key then table.insert(new_ro, k) end end
+                                    table.insert(lo, key)
+                                    config.status_bar.left_order   = lo
+                                    config.status_bar.center_order = new_co
+                                    config.status_bar.right_order  = new_ro
+                                end
+                                save_and_apply_status_bar()
+                            end,
+                        })
+                    end
+                    return t
+                end)(),
+            },
+            {
+                text = _("Right items"),
+                sub_item_table = (function()
+                    local all_items = {
+                        { key = "wifi",        text = _("Wi-Fi") },
+                        { key = "disk",        text = _("Disk space") },
+                        { key = "ram",         text = _("RAM usage") },
+                        { key = "frontlight",  text = _("Brightness") },
+                        { key = "battery",     text = _("Battery") },
+                        { key = "time",        text = _("Time") },
+                        { key = "custom_text", text = _("Custom text") },
+                    }
+                    local t = {
+                        {
+                            text = _("Arrange"),
+                            keep_menu_open = true,
+                            separator = true,
+                            callback = function()
+                                local SortWidget = require("ui/widget/sortwidget")
+                                local lbl = {}
+                                for _, d in ipairs(all_items) do lbl[d.key] = d.text end
+                                local sort_items = {}
+                                for _, key in ipairs(config.status_bar.right_order or {}) do
+                                    if lbl[key] then
+                                        table.insert(sort_items, { text = lbl[key], orig_item = key })
+                                    end
+                                end
+                                UIManager:show(SortWidget:new{
+                                    title = _("Arrange right items"),
+                                    item_table = sort_items,
+                                    callback = function()
+                                        local new_order = {}
+                                        for _, item in ipairs(sort_items) do
+                                            table.insert(new_order, item.orig_item)
+                                        end
+                                        config.status_bar.right_order = new_order
+                                        save_and_apply_status_bar()
+                                    end,
+                                })
+                            end,
+                        },
+                    }
+                    for _, def in ipairs(all_items) do
+                        local key = def.key
+                        table.insert(t, {
+                            text = def.text,
+                            checked_func = function()
+                                for _, k in ipairs(config.status_bar.right_order or {}) do
+                                    if k == key then return true end
+                                end
+                                return false
+                            end,
+                            callback = function()
+                                local lo = config.status_bar.left_order  or {}
+                                local ro = config.status_bar.right_order or {}
+                                local co = config.status_bar.center_order or {}
+                                local found, new_ro = false, {}
+                                for _, k in ipairs(ro) do
+                                    if k == key then found = true else table.insert(new_ro, k) end
+                                end
+                                if found then
+                                    config.status_bar.right_order = new_ro
+                                else
+                                    local new_lo, new_co = {}, {}
+                                    for _, k in ipairs(lo) do if k ~= key then table.insert(new_lo, k) end end
+                                    for _, k in ipairs(co) do if k ~= key then table.insert(new_co, k) end end
+                                    table.insert(ro, key)
+                                    config.status_bar.left_order   = new_lo
+                                    config.status_bar.center_order = new_co
+                                    config.status_bar.right_order  = ro
+                                end
+                                save_and_apply_status_bar()
+                            end,
+                        })
+                    end
+                    return t
+                end)(),
             },
             {
                 text_func = function()
@@ -2335,19 +2460,19 @@ function M.build(plugin)
 
     reorder_nested_items_by_text(filebrowser_items, _("Status bar"), {
         _("Enable custom status bar"),
-        _("Show time"),
         _("12-hour time"),
         _("Show bottom border"),
         _("Bold text"),
         _("Colored status icons"),
-        _("Items"),
+        _("Left items"),
+        _("Center items"),
+        _("Right items"),
     })
 
     reorder_nested_items_by_text(filebrowser_items, _("Navbar"), {
         _("Enable bottom nav bar"),
         _("Show labels"),
         _("Show top border"),
-        _("Show in standalone views"),
         _("Show top gap"),
         _("Tabs"),
         _("Active tab styling"),

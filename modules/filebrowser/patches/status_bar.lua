@@ -48,19 +48,18 @@ local function apply_status_bar()
         { key = "custom", label = "Custom",        value = nil }, -- uses custom_separator
     }
 
+    -- Known item keys; determines what can be placed on either side
+    local known_item_keys = { "wifi", "disk", "ram", "frontlight", "battery", "time", "custom_text" }
+    local known_item_set = {}
+    for _, k in ipairs(known_item_keys) do known_item_set[k] = true end
+
     local config_default = {
-        show = {
-            wifi = true,
-            disk = true,
-            ram = false,
-            frontlight = false,
-            battery = true,
-        },
-        custom_text = "",  -- empty = use Device.model
+        custom_text = "",  -- shown by the "custom_text" item; empty = device model name
         separator_key = "dot",
         custom_separator = "  ",
-        order = { "wifi", "disk", "ram", "frontlight", "battery" },
-        show_time = true,
+        left_order   = { "time" },
+        center_order = {},
+        right_order  = { "wifi", "battery" },
         time_12h = false,
         show_bottom_border = true,
         colored = false,
@@ -70,33 +69,60 @@ local function apply_status_bar()
 
     local function loadConfig()
         local config = zen_plugin.config.status_bar or {}
-        -- Merge any new defaults into existing config
+        -- Migration: convert old show/order/show_time format to left_order/right_order
+        if config.left_order == nil and config.right_order == nil then
+            local old_order = type(config.order) == "table" and config.order
+                              or { "wifi", "disk", "ram", "frontlight", "battery" }
+            local old_show  = type(config.show) == "table" and config.show or {}
+            local migrated_right = {}
+            for _, key in ipairs(old_order) do
+                if old_show[key] ~= false then
+                    table.insert(migrated_right, key)
+                end
+            end
+            if config.show_time ~= false then
+                local tpos = config.time_position or "center"
+                if tpos == "right" then
+                    config.left_order   = {}
+                    config.center_order = {}
+                    table.insert(migrated_right, 1, "time")
+                    config.right_order  = migrated_right
+                elseif tpos == "center" then
+                    config.left_order   = {}
+                    config.center_order = { "time" }
+                    config.right_order  = migrated_right
+                else
+                    config.left_order   = { "time" }
+                    config.center_order = {}
+                    config.right_order  = migrated_right
+                end
+            else
+                config.left_order   = {}
+                config.center_order = {}
+                config.right_order  = migrated_right
+            end
+        end
+        -- Merge scalar defaults
         for k, v in pairs(config_default) do
             if config[k] == nil then
                 config[k] = utils.deepcopy(v)
             end
         end
-        if type(config.show) == "table" then
-            for k, v in pairs(config_default.show) do
-                if config.show[k] == nil then
-                    config.show[k] = v
+        -- Validate: only known keys, no cross-side duplicates
+        local seen = {}
+        local function clean_order(list)
+            local out = {}
+            for _, v in ipairs(type(list) == "table" and list or {}) do
+                if known_item_set[v] and not seen[v] then
+                    seen[v] = true
+                    table.insert(out, v)
                 end
             end
-        else
-            config.show = utils.deepcopy(config_default.show)
+            return out
         end
-        -- Ensure order contains all known items
-        if type(config.order) ~= "table" then
-            config.order = utils.deepcopy(config_default.order)
-        else
-            local order_set = {}
-            for _, v in ipairs(config.order) do order_set[v] = true end
-            for _, v in ipairs(config_default.order) do
-                if not order_set[v] then
-                    table.insert(config.order, v)
-                end
-            end
-        end
+        config.left_order   = clean_order(config.left_order)
+        config.center_order = clean_order(config.center_order)
+        config.right_order  = clean_order(config.right_order)
         zen_plugin.config.status_bar = config
         return config
     end
@@ -283,14 +309,31 @@ local function apply_status_bar()
         return nil
     end
 
+    local function getTimeInfo()
+        local fmt = config.time_12h and "%I:%M %p" or "%H:%M"
+        local time_str = os.date(fmt)
+        if config.time_12h then
+            time_str = time_str:gsub("^0(%d:)", "%1")
+        end
+        return time_str, nil, nil
+    end
+
+    local function getCustomTextInfo()
+        local text = (config.custom_text ~= nil and config.custom_text ~= "")
+                     and config.custom_text or getDeviceName()
+        return (text ~= "") and text or nil, nil, nil
+    end
+
     -- === Item registry ===
 
     local item_fetchers = {
-        wifi = getWifiInfo,
-        disk = getDiskInfo,
-        ram = getRamInfo,
-        frontlight = getFrontlightInfo,
-        battery = getBatteryInfo,
+        wifi        = getWifiInfo,
+        disk        = getDiskInfo,
+        ram         = getRamInfo,
+        frontlight  = getFrontlightInfo,
+        battery     = getBatteryInfo,
+        time        = getTimeInfo,
+        custom_text = getCustomTextInfo,
     }
 
     -- === Build the status row ===
@@ -325,13 +368,13 @@ local function apply_status_bar()
         -- Show back chevron in subfolders always; everywhere when home is not locked
         local show_back = in_subfolder or not home_locked
 
-        -- Left widget: tappable chevron.left when back navigation is available, device name otherwise
-        local left_widget
+        -- Back chevron is always pinned to the far-left when navigation is available
+        local back_widget = nil
         if show_back then
             local Button = require("ui/widget/button")
             local ffiUtil = require("ffi/util")
             local icon_size = Screen:scaleBySize(28)
-            left_widget = Button:new{
+            back_widget = Button:new{
                 icon = "chevron.left",
                 icon_width = icon_size,
                 icon_height = icon_size,
@@ -349,102 +392,108 @@ local function apply_status_bar()
                     end
                 end,
             }
-        else
-            left_widget = TextWidget:new{
-                text = getDeviceName(),
-                face = getBarFont(),
-            }
         end
 
+        -- Build a HorizontalGroup from an ordered list of item keys.
+        -- Returns nil when the group has no visible items.
         local sep = getSeparator()
         local use_color = config.colored
-        local right_group = HorizontalGroup:new{}
-        local first = true
-        for _, key in ipairs(config.order) do
-            local fn = item_fetchers[key]
-            if fn then
-                local icon, label, color = fn()
-                if icon and icon ~= "" then
-                    if not first and sep ~= "" then
-                        table.insert(right_group, TextWidget:new{
-                            text = sep,
-                            face = getBarFont(),
-                        })
-                    end
-                    if use_color and color then
-                        -- Icon in color, label in black
-                        table.insert(right_group, ColorTextWidget:new{
-                            text = icon,
-                            face = getBarFont(),
-                            fgcolor = color,
-                        })
-                        if label and label ~= "" then
-                            table.insert(right_group, TextWidget:new{
-                                text = label,
-                                face = getBarFont(),
-                            })
+        local function buildGroup(order)
+            local group = HorizontalGroup:new{}
+            local first = true
+            for _, key in ipairs(order) do
+                local fn = item_fetchers[key]
+                if fn then
+                    local icon, label, color = fn()
+                    if icon ~= nil then
+                        if not first and sep ~= "" then
+                            table.insert(group, TextWidget:new{ text = sep, face = getBarFont() })
                         end
-                    else
-                        -- All black: combine icon + label
-                        local text = label and (icon .. label) or icon
-                        table.insert(right_group, TextWidget:new{
-                            text = text,
-                            face = getBarFont(),
-                        })
+                        if use_color and color then
+                            table.insert(group, ColorTextWidget:new{
+                                text = icon, face = getBarFont(), fgcolor = color,
+                            })
+                            if label and label ~= "" then
+                                table.insert(group, TextWidget:new{ text = label, face = getBarFont() })
+                            end
+                        else
+                            local text = label and (icon .. label) or icon
+                            table.insert(group, TextWidget:new{ text = text, face = getBarFont() })
+                        end
+                        first = false
                     end
-                    first = false
                 end
             end
+            return #group > 0 and group or nil
         end
 
-        local row_height = math.max(left_widget:getSize().h, right_group:getSize().h)
-        local screen_w = Screen:getWidth()
+        local left_content  = buildGroup(config.left_order   or {})
+        local right_content = buildGroup(config.right_order  or {})
 
-        local inner_w = screen_w - h_padding * 2
+        -- Center: folder name when in subfolder takes priority over configured center items
+        local center_content = nil
+        if in_subfolder and folder_name then
+            center_content = TextWidget:new{
+                text = folder_name,
+                face = getBarFont(),
+                bold = true,
+            }
+        else
+            center_content = buildGroup(config.center_order or {})
+        end
+
+        -- Row height = max of all present widgets
+        local row_height = Screen:scaleBySize(18)
+        local function updateRowHeight(w)
+            if w then
+                local sz = w:getSize()
+                if sz and sz.h > row_height then row_height = sz.h end
+            end
+        end
+        updateRowHeight(back_widget)
+        updateRowHeight(left_content)
+        updateRowHeight(center_content)
+        updateRowHeight(right_content)
+
+        local screen_w    = Screen:getWidth()
+        local inner_w     = screen_w - h_padding * 2
+        local chevron_gap = Screen:scaleBySize(6)
+
+        -- Left zone: h_padding + [chevron] + [gap] + [left_content]
+        local left_group = HorizontalGroup:new{}
+        table.insert(left_group, HorizontalSpan:new{ width = h_padding })
+        if back_widget then
+            table.insert(left_group, back_widget)
+            if left_content then
+                table.insert(left_group, HorizontalSpan:new{ width = chevron_gap })
+            end
+        end
+        if left_content then
+            table.insert(left_group, left_content)
+        end
 
         local row = OverlapGroup:new{
             dimen = Geom:new{ w = screen_w, h = row_height },
             LeftContainer:new{
                 dimen = Geom:new{ w = screen_w, h = row_height },
-                HorizontalGroup:new{
-                    HorizontalSpan:new{ width = h_padding },
-                    left_widget,
-                },
-            },
-            RightContainer:new{
-                dimen = Geom:new{ w = screen_w, h = row_height },
-                HorizontalGroup:new{
-                    right_group,
-                    HorizontalSpan:new{ width = h_padding },
-                },
+                left_group,
             },
         }
 
-        -- Center slot: folder name (bold) when in a subfolder, otherwise the time
-        if in_subfolder and folder_name then
-            local center_text = TextWidget:new{
-                text = folder_name,
-                face = getBarFont(),
-                bold = true,
-            }
-            table.insert(row, 2, CenterContainer:new{
+        if center_content then
+            table.insert(row, CenterContainer:new{
                 dimen = Geom:new{ w = screen_w, h = row_height },
-                center_text,
+                center_content,
             })
-        elseif config.show_time then
-            local fmt = config.time_12h and "%I:%M %p" or "%H:%M"
-            local time_str = os.date(fmt)
-            -- Strip leading zero from 12h hours (e.g. "09:30 AM" -> "9:30 AM")
-            if config.time_12h then
-                time_str = time_str:gsub("^0(%d:)", "%1")
-            end
-            local time_text = TextWidget:new{
-                text = time_str,
-                face = getBarFont(),
-            }
-            table.insert(row, 2, CenterContainer:new{
+        end
+
+        if right_content then
+            table.insert(row, RightContainer:new{
                 dimen = Geom:new{ w = screen_w, h = row_height },
-                time_text,
+                HorizontalGroup:new{
+                    right_content,
+                    HorizontalSpan:new{ width = h_padding },
+                },
             })
         end
 

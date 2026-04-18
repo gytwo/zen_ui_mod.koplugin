@@ -1234,7 +1234,18 @@ local function apply_browser_folder_cover()
                     end
 
                     -- Spine lines slightly offset from the left edge of the cover image.
+                    -- line1 (outer, farther from cover) = shorter; line2 (inner, closer) = longer.
+                    -- Mirrors the vertical-spine proportions used in _setFolderCover (tight mosaic grids).
+                    local plug_rc = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+                    local rounded = plug_rc
+                        and type(plug_rc.config) == "table"
+                        and type(plug_rc.config.features) == "table"
+                        and plug_rc.config.features.browser_cover_rounded_corners == true
+                    local line_inset = rounded and Screen:scaleBySize(4) or 0
+                    local line1_h = math.max(0, math.floor(dimen_h * (Folder.edge.width ^ 2)) - 2 * line_inset)
+                    local line2_h = math.max(0, math.floor(dimen_h *  Folder.edge.width)       - 2 * line_inset)
                     local spine_gap = Screen:scaleBySize(8)
+                    self._cover_frame = wleft[1]  -- FrameContainer child; used by paintTo for rounded corners
                     wleft = OverlapGroup:new {
                         dimen = { w = cover_zone_w, h = dimen_h },
                         wleft,
@@ -1242,14 +1253,20 @@ local function apply_browser_folder_cover()
                             dimen = { w = cover_zone_w, h = dimen_h },
                             HorizontalGroup:new {
                                 HorizontalSpan:new { width = math.max(0, spine_x - spine_gap) },
-                                LineWidget:new {
-                                    background = Folder.edge.color,
+                                CenterContainer:new {
                                     dimen = { w = Folder.edge.thick, h = dimen_h },
+                                    LineWidget:new {
+                                        background = Folder.edge.color,
+                                        dimen = { w = Folder.edge.thick, h = line1_h },
+                                    },
                                 },
                                 HorizontalSpan:new { width = Folder.edge.margin },
-                                LineWidget:new {
-                                    background = Folder.edge.color,
+                                CenterContainer:new {
                                     dimen = { w = Folder.edge.thick, h = dimen_h },
+                                    LineWidget:new {
+                                        background = Folder.edge.color,
+                                        dimen = { w = Folder.edge.thick, h = line2_h },
+                                    },
                                 },
                             },
                         },

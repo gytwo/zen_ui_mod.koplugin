@@ -115,4 +115,31 @@ function M.registerPluginIcons(icons_dir, icons, copy_to_user_dir)
     end)
 end
 
+-- Module-level cache so pgettext is resolved only once (lazy, safe for early require).
+local _C_cache
+local function _C(ctx, msgid)
+    if not _C_cache then
+        local _cg = rawget(_G, "C_")
+        if type(_cg) == "function" then
+            _C_cache = _cg
+        else
+            local ok_gt, gt = pcall(require, "gettext")
+            if ok_gt and gt and type(gt.pgettext) == "function" then
+                _C_cache = function(c, m) return gt.pgettext(c, m) end
+            else
+                _C_cache = function(_, m) return m end
+            end
+        end
+    end
+    return _C_cache(ctx, msgid)
+end
+
+--- Returns a localised page-count label, e.g. "100\u{00A0}p." in English.
+--- The abbreviation "p." is translated via pgettext(context="page_count").
+--- @param pages number
+--- @return string
+function M.formatPageCount(pages)
+    return tostring(pages) .. "\u{00A0}" .. _C("page_count", "p.")
+end
+
 return M

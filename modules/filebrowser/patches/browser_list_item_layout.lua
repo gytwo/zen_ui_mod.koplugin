@@ -23,6 +23,7 @@ local function apply_browser_list_item_layout()
     local VerticalSpan = require("ui/widget/verticalspan")
     local filemanagerutil = require("apps/filemanager/filemanagerutil")
     local util = require("util")
+    local zen_utils = require("common/utils")
     local _ = require("gettext")
 
     local Screen = Device.screen
@@ -44,6 +45,41 @@ local function apply_browser_list_item_layout()
 
         local BookInfoManager = get_upvalue(ListMenuItem.update, "BookInfoManager")
         if not BookInfoManager then return end
+
+        -- ── Corner-mask helpers (reused in paintTo) ───────────────────────────
+        local corner_radius = Screen:scaleBySize(8)
+
+        local function paintCornerMasks(bb, tx, ty, tw, th, r)
+            local color = Blitbuffer.COLOR_WHITE
+            for j = 0, r - 1 do
+                local inner = math.sqrt(r * r - (r - j) * (r - j))
+                local cut   = math.ceil(r - inner)
+                if cut > 0 then
+                    bb:paintRect(tx,            ty + j,          cut, 1, color)
+                    bb:paintRect(tx + tw - cut, ty + j,          cut, 1, color)
+                    bb:paintRect(tx,            ty + th - 1 - j, cut, 1, color)
+                    bb:paintRect(tx + tw - cut, ty + th - 1 - j, cut, 1, color)
+                end
+            end
+        end
+
+        local function paintCornerBorderArcs(bb, tx, ty, tw, th, r, bsz, color)
+            local r_outer = r
+            local r_inner = r - bsz
+            for j = 0, r - 1 do
+                for c = 0, r - 1 do
+                    local dx   = r - c - 0.5
+                    local dy   = r - j - 0.5
+                    local dist = math.sqrt(dx * dx + dy * dy)
+                    if dist >= r_inner and dist <= r_outer then
+                        bb:paintRect(tx + c,          ty + j,           1, 1, color)
+                        bb:paintRect(tx + tw - 1 - c, ty + j,           1, 1, color)
+                        bb:paintRect(tx + c,          ty + th - 1 - j,  1, 1, color)
+                        bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j,  1, 1, color)
+                    end
+                end
+            end
+        end
 
         local original_update = ListMenuItem.update
 
@@ -121,39 +157,43 @@ local function apply_browser_list_item_layout()
                         scale_factor = scale_factor,
                     }
                     wimage:_render()
-                    wleft = CenterContainer:new{
-                        dimen = { w = cover_zone_w, h = dimen_h },
-                        FrameContainer:new{
-                            width = cover_w + 2 * border_size,
-                            height = max_img + 2 * border_size,
-                            margin = 0, padding = 0, bordersize = border_size,
-                            dim = file_deleted,
-                            CenterContainer:new{
-                                dimen = { w = cover_w, h = max_img },
-                                wimage,
-                            },
+                    local cover_frame = FrameContainer:new{
+                        width = cover_w + 2 * border_size,
+                        height = max_img + 2 * border_size,
+                        margin = 0, padding = 0, bordersize = border_size,
+                        dim = file_deleted,
+                        CenterContainer:new{
+                            dimen = { w = cover_w, h = max_img },
+                            wimage,
                         },
                     }
+                    wleft = CenterContainer:new{
+                        dimen = { w = cover_zone_w, h = dimen_h },
+                        cover_frame,
+                    }
+                    self._cover_frame = cover_frame
                     self.menu._has_cover_images = true
                     self._has_cover_image = true
                 else
                     -- Placeholder (no cover or not yet fetched)
-                    wleft = CenterContainer:new{
-                        dimen = { w = cover_zone_w, h = dimen_h },
-                        FrameContainer:new{
-                            width = cover_w + 2 * border_size,
-                            height = max_img + 2 * border_size,
-                            margin = 0, padding = 0, bordersize = border_size,
-                            dim = file_deleted,
-                            CenterContainer:new{
-                                dimen = { w = cover_w, h = max_img },
-                                TextWidget:new{
-                                    text = "⛶",
-                                    face = Font:getFace("cfont", _fontSize(20)),
-                                },
+                    local cover_frame = FrameContainer:new{
+                        width = cover_w + 2 * border_size,
+                        height = max_img + 2 * border_size,
+                        margin = 0, padding = 0, bordersize = border_size,
+                        dim = file_deleted,
+                        CenterContainer:new{
+                            dimen = { w = cover_w, h = max_img },
+                            TextWidget:new{
+                                text = "⛶",
+                                face = Font:getFace("cfont", _fontSize(20)),
                             },
                         },
                     }
+                    wleft = CenterContainer:new{
+                        dimen = { w = cover_zone_w, h = dimen_h },
+                        cover_frame,
+                    }
+                    self._cover_frame = cover_frame
                 end
             end
 
@@ -314,7 +354,7 @@ local function apply_browser_list_item_layout()
                 and _p.config.browser_page_count.show_page_count == true
             if show_page_count and pages and pages > 0 and not self.do_filename_only then
                 wright_pages = TextWidget:new{
-                    text      = tostring(pages) .. "p",
+                    text      = zen_utils.formatPageCount(pages),
                     face      = Font:getFace("cfont", math.max(7, fs_right - 2)),
                     fgcolor   = Blitbuffer.COLOR_GRAY_3,
                     padding   = 0,
@@ -415,6 +455,38 @@ local function apply_browser_list_item_layout()
 
             self.bookinfo_found = true
             self.init_done = true
+        end
+
+        -- ── Rounded-corner paintTo ─────────────────────────────────────────────
+        -- Applies corner masks + arc borders after base paint when the
+        -- browser_cover_rounded_corners feature is enabled.
+        local orig_paintTo = ListMenuItem.paintTo
+        if orig_paintTo then
+            function ListMenuItem:paintTo(bb, x, y)
+                orig_paintTo(self, bb, x, y)
+                local plug = _plugin_ref or rawget(_G, "__ZEN_UI_PLUGIN")
+                if not (plug
+                    and type(plug.config) == "table"
+                    and type(plug.config.features) == "table"
+                    and plug.config.features.browser_cover_rounded_corners == true)
+                then
+                    return
+                end
+                if not self._cover_frame then return end
+                local target = self._cover_frame
+                if not (target.dimen
+                    and target.dimen.x and target.dimen.y
+                    and target.dimen.w and target.dimen.h
+                    and target.dimen.w > 0 and target.dimen.h > 0)
+                then
+                    return
+                end
+                local tx, ty = target.dimen.x, target.dimen.y
+                local tw, th = target.dimen.w, target.dimen.h
+                local bsz    = math.max(1, target.bordersize or 0)
+                paintCornerMasks(bb, tx, ty, tw, th, corner_radius)
+                paintCornerBorderArcs(bb, tx, ty, tw, th, corner_radius, bsz, Blitbuffer.COLOR_BLACK)
+            end
         end
     end
 

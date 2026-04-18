@@ -346,15 +346,27 @@ local function apply_browser_list_item_layout()
 
             -- ── Page count (below tags) ──────────────────────────────────────
             -- Optional "N pp" line at the bottom of the right column.
-            -- Shares the same column width as status/tags so it never expands it.
+            -- We probe its natural width first so that wright_w (and therefore
+            -- main_w) accounts for it — titles will truncate before the page
+            -- count text is clipped.
             local wright_pages
             local _p = _plugin_ref or rawget(_G, "__ZEN_UI_PLUGIN")
             local show_page_count = _p
                 and type(_p.config.browser_page_count) == "table"
                 and _p.config.browser_page_count.show_page_count == true
             if show_page_count and pages and pages > 0 and not self.do_filename_only then
+                local pages_probe = TextWidget:new{
+                    text    = zen_utils.formatPageCount(pages, true),
+                    face    = Font:getFace("cfont", math.max(7, fs_right - 2)),
+                    padding = 0,
+                }
+                local pages_nat_w = pages_probe:getWidth()
+                pages_probe:free()
+                -- Expand the right column to fit the page count so the title
+                -- area shrinks rather than the page count text being cut off.
+                wright_w = math.max(wright_w, pages_nat_w)
                 wright_pages = TextWidget:new{
-                    text      = zen_utils.formatPageCount(pages),
+                    text      = zen_utils.formatPageCount(pages, true),
                     face      = Font:getFace("cfont", math.max(7, fs_right - 2)),
                     fgcolor   = Blitbuffer.COLOR_GRAY_3,
                     padding   = 0,

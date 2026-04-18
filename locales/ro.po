@@ -704,14 +704,14 @@ msgstr "Afișează etichete"
 msgid "Show progress % on mosaic covers"
 msgstr "Afișează % progres pe copertele mozaicului"
 
-msgid "Show page count on covers and in list"
-msgstr "Afișează numărul de pagini pe coperte și în listă"
+msgid "Show page count"
+msgstr "Afișează numărul de pagini"
 
 msgid "Show series number on covers"
 msgstr "Afișează numărul din serie pe coperte"
 
-msgid "Rounded corners on mosaic covers"
-msgstr "Colțuri rotunjite pe copertele mozaicului"
+msgid "Rounded cover corners"
+msgstr "Colțuri rotunjite ale copertelor"
 
 msgid "Show RAM usage"
 msgstr "Afișează utilizarea RAM"
@@ -902,3 +902,7 @@ msgstr "Șterge"
 msgctxt "page_count"
 msgid "p."
 msgstr "p."
+
+msgctxt "page_count_long"
+msgid "pages"
+msgstr "pag."

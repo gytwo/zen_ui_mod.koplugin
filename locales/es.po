@@ -704,14 +704,14 @@ msgstr "Mostrar etiquetas"
 msgid "Show progress % on mosaic covers"
 msgstr "Mostrar % de progreso en portadas mosaico"
 
-msgid "Show page count on covers and in list"
-msgstr "Mostrar número de páginas en portadas y en lista"
+msgid "Show page count"
+msgstr "Mostrar número de páginas"
 
 msgid "Show series number on covers"
 msgstr "Mostrar número de serie en portadas"
 
-msgid "Rounded corners on mosaic covers"
-msgstr "Esquinas redondeadas en portadas mosaico"
+msgid "Rounded cover corners"
+msgstr "Esquinas redondeadas de portadas"
 
 msgid "Show RAM usage"
 msgstr "Mostrar uso de RAM"
@@ -902,3 +902,7 @@ msgstr "Limpiar"
 msgctxt "page_count"
 msgid "p."
 msgstr "p."
+
+msgctxt "page_count_long"
+msgid "pages"
+msgstr "págs."

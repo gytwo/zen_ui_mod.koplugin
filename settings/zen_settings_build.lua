@@ -1538,7 +1538,7 @@ function M.build(plugin)
     })
 
     table.insert(filebrowser_items, {
-        text = _("Show page count on covers and in list"),
+        text = _("Show page count"),
         checked_func = function()
             return type(config.browser_page_count) == "table"
                 and config.browser_page_count.show_page_count == true
@@ -1572,7 +1572,7 @@ function M.build(plugin)
     })
 
     table.insert(filebrowser_items, {
-        text = _("Rounded corners on mosaic covers"),
+        text = _("Rounded cover corners"),
         checked_func = function()
             return type(config.features) == "table"
                 and config.features.browser_cover_rounded_corners == true

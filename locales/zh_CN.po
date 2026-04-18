@@ -702,14 +702,14 @@ msgstr "显示标签"
 msgid "Show progress % on mosaic covers"
 msgstr "在封面马赛克上显示进度%"
 
-msgid "Show page count on covers and in list"
-msgstr "在封面和列表中显示页数"
+msgid "Show page count"
+msgstr "显示页数"
 
 msgid "Show series number on covers"
 msgstr "在封面上显示系列编号"
 
-msgid "Rounded corners on mosaic covers"
-msgstr "马赛克封面圆角"
+msgid "Rounded cover corners"
+msgstr "封面圆角"
 
 msgid "Show RAM usage"
 msgstr "显示内存使用"
@@ -899,4 +899,8 @@ msgstr "清除"
 
 msgctxt "page_count"
 msgid "p."
+msgstr "页"
+
+msgctxt "page_count_long"
+msgid "pages"
 msgstr "页"

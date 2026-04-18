@@ -134,12 +134,17 @@ local function _C(ctx, msgid)
     return _C_cache(ctx, msgid)
 end
 
---- Returns a localised page-count label, e.g. "100\u{00A0}p." in English.
---- The abbreviation "p." is translated via pgettext(context="page_count").
+--- Returns a localised page-count label.
+--- long=false (default): abbreviated form, e.g. "100\u{00A0}p."  (for mosaic badges)
+--- long=true:            full word form,  e.g. "100\u{00A0}pages" (for list-view text)
+--- The label is translated via pgettext using the page_count / page_count_long context.
 --- @param pages number
+--- @param long  boolean|nil
 --- @return string
-function M.formatPageCount(pages)
-    return tostring(pages) .. "\u{00A0}" .. _C("page_count", "p.")
+function M.formatPageCount(pages, long)
+    local ctx = long and "page_count_long" or "page_count"
+    local msgid = long and "pages" or "p."
+    return tostring(pages) .. "\u{00A0}" .. _C(ctx, msgid)
 end
 
 return M

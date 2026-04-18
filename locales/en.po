@@ -704,14 +704,14 @@ msgstr "Show labels"
 msgid "Show progress % on mosaic covers"
 msgstr "Show progress % on mosaic covers"
 
-msgid "Show page count on covers and in list"
-msgstr "Show page count on covers and in list"
+msgid "Show page count"
+msgstr "Show page count"
 
 msgid "Show series number on covers"
 msgstr "Show series number on covers"
 
-msgid "Rounded corners on mosaic covers"
-msgstr "Rounded corners on mosaic covers"
+msgid "Rounded cover corners"
+msgstr "Rounded cover corners"
 
 msgid "Show RAM usage"
 msgstr "Show RAM usage"
@@ -900,3 +900,7 @@ msgstr "Clear"
 msgctxt "page_count"
 msgid "p."
 msgstr "p."
+
+msgctxt "page_count_long"
+msgid "pages"
+msgstr "pages"

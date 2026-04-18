@@ -6,7 +6,7 @@
         frame, producing the appearance of rounded corners on book and folder
         covers.
 
-    Controlled by the "Rounded corners on mosaic covers" Zen UI setting.
+    Controlled by the "Rounded cover corners" Zen UI setting.
     Always applied at boot; the per-paint guard is a live config read so the
     effect can be toggled at runtime with a full repaint (no restart needed).
 ]]

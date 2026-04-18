@@ -704,14 +704,14 @@ msgstr "Показать метки"
 msgid "Show progress % on mosaic covers"
 msgstr "Показать % прогресса на обложках мозаики"
 
-msgid "Show page count on covers and in list"
-msgstr "Показывать количество страниц на обложках и в списке"
+msgid "Show page count"
+msgstr "Показывать количество страниц"
 
 msgid "Show series number on covers"
 msgstr "Показывать номер серии на обложках"
 
-msgid "Rounded corners on mosaic covers"
-msgstr "Закруглённые углы на обложках мозаики"
+msgid "Rounded cover corners"
+msgstr "Закруглённые углы обложек"
 
 msgid "Show RAM usage"
 msgstr "Показать использование ОЗУ"
@@ -902,3 +902,7 @@ msgstr "Очистить"
 msgctxt "page_count"
 msgid "p."
 msgstr "с."
+
+msgctxt "page_count_long"
+msgid "pages"
+msgstr "стр."

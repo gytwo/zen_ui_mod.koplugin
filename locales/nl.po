@@ -704,14 +704,14 @@ msgstr "Labels weergeven"
 msgid "Show progress % on mosaic covers"
 msgstr "Voortgang % op mozaïekomslagen weergeven"
 
-msgid "Show page count on covers and in list"
-msgstr "Paginatelling weergeven op omslagen en in lijst"
+msgid "Show page count"
+msgstr "Paginatelling weergeven"
 
 msgid "Show series number on covers"
 msgstr "Serienummer weergeven op omslagen"
 
-msgid "Rounded corners on mosaic covers"
-msgstr "Afgeronde hoeken op mozaïekomslagen"
+msgid "Rounded cover corners"
+msgstr "Afgeronde hoeken van omslagen"
 
 msgid "Show RAM usage"
 msgstr "RAM-gebruik weergeven"
@@ -902,3 +902,7 @@ msgstr "Wissen"
 msgctxt "page_count"
 msgid "p."
 msgstr "p."
+
+msgctxt "page_count_long"
+msgid "pages"
+msgstr "pag."

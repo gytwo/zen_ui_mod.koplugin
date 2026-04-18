@@ -1423,6 +1423,20 @@ function M.build(plugin)
                 end,
             },
             {
+                text = _("Folder name opaque background"),
+                checked_func = function()
+                    local ok, bim = pcall(require, "bookinfomanager")
+                    if not ok then return true end
+                    return not bim:getSetting("folder_name_opaque")
+                end,
+                callback = function()
+                    local ok, bim = pcall(require, "bookinfomanager")
+                    if not ok then return end
+                    bim:toggleSetting("folder_name_opaque")
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
                 text = _("Folder name position"),
                 sub_item_table = {
                     {

@@ -199,6 +199,7 @@ local function apply_browser_folder_cover()
             crop_to_fit = BooleanSetting(_("Crop folder custom image"), "folder_crop_custom_image", true),
             name_centered = BooleanSetting(_("Folder name centered"), "folder_name_centered", true),
             show_folder_name = BooleanSetting(_("Show folder name"), "folder_name_show", true),
+            name_opaque = BooleanSetting(_("Folder name opaque background"), "folder_name_opaque", true),
         }
 
         -- cover item
@@ -329,14 +330,17 @@ local function apply_browser_folder_cover()
             local folder_name_widget
             if settings.show_folder_name.get() then
                 local NameContainer = settings.name_centered.get() and CenterContainer or BottomContainer
+                local name_frame = FrameContainer:new {
+                    padding = 0,
+                    bordersize = Folder.face.border_size,
+                    background = Blitbuffer.COLOR_WHITE,
+                    directory,
+                }
                 folder_name_widget = NameContainer:new {
                     dimen = dimen,
-                    FrameContainer:new {
-                        padding = 0,
-                        bordersize = Folder.face.border_size,
-                        background = Blitbuffer.COLOR_WHITE,
-                        directory,
-                    },
+                    settings.name_opaque.get()
+                        and name_frame
+                        or AlphaContainer:new { alpha = Folder.face.alpha, name_frame },
                     overlap_align = "center",
                 }
             else

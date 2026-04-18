@@ -8,12 +8,14 @@
 --       warmth_group = build_warmth_slider(touch_menu, { ... })
 --   end
 
+local Blitbuffer      = require("ffi/blitbuffer")
 local Button          = require("ui/widget/button")
 local CenterContainer = require("ui/widget/container/centercontainer")
 local Device          = require("device")
 local Geom            = require("ui/geometry")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
+local LeftContainer   = require("ui/widget/container/leftcontainer")
 local TextWidget      = require("ui/widget/textwidget")
 local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
@@ -40,10 +42,24 @@ local function build_warmth_slider(touch_menu, opts)
         cur = powerd:toNativeWarmth(powerd:frontlightWarmth()),
     }
 
-    local nl_label = TextWidget:new{
-        text      = _("Warmth") .. ": " .. tostring(nl.cur),
-        face      = medium_font,
-        max_width = inner_width,
+    -- Split label: static prefix + fixed-width number box so the prefix
+    -- never shifts when the number changes width (e.g. 9 → 10).
+    local nl_prefix_text = _("Warmth") .. ": "
+    local nl_drag_prefix = TextWidget:new{ text = nl_prefix_text, face = medium_font }
+    local nl_drag_prefix_w = nl_drag_prefix:getSize().w
+    local nl_drag_num = TextWidget:new{ text = tostring(nl.cur), face = medium_font }
+    local nl_max_num_sample = TextWidget:new{ text = tostring(nl.max), face = medium_font }
+    local nl_drag_max_num_w = nl_max_num_sample:getSize().w
+    nl_max_num_sample:free()
+    local nl_drag_ref_w = nl_drag_prefix_w + nl_drag_max_num_w
+    local nl_label_h = nl_drag_prefix:getSize().h
+    local nl_num_box = LeftContainer:new{
+        dimen = Geom:new{ w = nl_drag_max_num_w, h = nl_label_h },
+        nl_drag_num,
+    }
+    local nl_label_group = HorizontalGroup:new{
+        nl_drag_prefix,
+        nl_num_box,
     }
 
     local nl_progress = ZenSlider:new{
@@ -55,6 +71,7 @@ local function build_warmth_slider(touch_menu, opts)
     }
 
     local nl_label_fn = nil
+    local nl_row  -- forward-declare for on_change closure
 
     local function setWarmth(warmth)
         if warmth == nl.cur then return end
@@ -64,7 +81,7 @@ local function build_warmth_slider(touch_menu, opts)
         if nl.cur > nl.min then nl.prev_non_min = nl.cur end
         if nl_label_fn then UIManager:unschedule(nl_label_fn) ; nl_label_fn = nil end
         nl_progress:setValue(nl.cur)
-        nl_label:setText(_("Warmth") .. ": " .. tostring(nl.cur))
+        nl_drag_num:setText(tostring(nl.cur))
         UIManager:setDirty(show_parent, "ui", touch_menu.dimen)
     end
 
@@ -80,10 +97,27 @@ local function build_warmth_slider(touch_menu, opts)
         if nl.cur > nl.min then nl.prev_non_min = nl.cur end
         if nl_progress._dragging then
             nl_progress:paintTo(Screen.bb, nl_progress.dimen.x, nl_progress.dimen.y)
+            -- Only repaint the number — prefix is static in the framebuffer.
+            local row_gap_h = Screen:scaleBySize(10)
+            local lh = nl_drag_prefix:getSize().h
+            local row_h = nl_row and nl_row:getSize().h or nl_progress.dimen.h
+            local row_top = nl_progress.dimen.y - math.floor((row_h - nl_progress.dimen.h) / 2)
+            local label_y = row_top - row_gap_h - lh
+            local sx = nl_progress.dimen.x
+            local sw = nl_progress.dimen.w
+            local num_x = sx + math.floor((sw - nl_drag_ref_w) / 2) + nl_drag_prefix_w
+            Screen.bb:paintRect(num_x, label_y, nl_drag_max_num_w, lh, Blitbuffer.COLOR_WHITE)
+            nl_drag_num:setText(tostring(nl.cur))
+            nl_drag_num:paintTo(Screen.bb, num_x, label_y)
+            -- Two non-overlapping A2s: number area and slider
+            UIManager:setDirty(nil, "fast", Geom:new{
+                x = num_x, y = label_y,
+                w = nl_drag_max_num_w, h = lh,
+            })
             UIManager:setDirty(nil, "fast", nl_progress.dimen)
         else
             if nl_label_fn then UIManager:unschedule(nl_label_fn) ; nl_label_fn = nil end
-            nl_label:setText(_("Warmth") .. ": " .. tostring(nl.cur))
+            nl_drag_num:setText(tostring(nl.cur))
             UIManager:setDirty(show_parent, "ui", touch_menu.dimen)
         end
     end
@@ -112,10 +146,10 @@ local function build_warmth_slider(touch_menu, opts)
     local row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }
 
     local nl_cap_row = CenterContainer:new{
-        dimen = Geom:new{ w = inner_width, h = nl_label:getSize().h },
-        nl_label,
+        dimen = Geom:new{ w = inner_width, h = nl_label_h },
+        nl_label_group,
     }
-    local nl_row = HorizontalGroup:new{
+    nl_row = HorizontalGroup:new{
         align = "center",
         nl_minus,
         HorizontalSpan:new{ width = slider_gap },

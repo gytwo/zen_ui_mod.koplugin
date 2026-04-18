@@ -8,12 +8,14 @@
 --       medium_font, small_btn_font, powerd, refs,
 --   })
 
+local Blitbuffer      = require("ffi/blitbuffer")
 local Button          = require("ui/widget/button")
 local CenterContainer = require("ui/widget/container/centercontainer")
 local Device          = require("device")
 local Geom            = require("ui/geometry")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
+local LeftContainer   = require("ui/widget/container/leftcontainer")
 local TextWidget      = require("ui/widget/textwidget")
 local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
@@ -40,10 +42,24 @@ local function build_brightness_slider(touch_menu, opts)
         cur = powerd:frontlightIntensity(),
     }
 
-    local fl_label = TextWidget:new{
-        text      = _("Brightness") .. ": " .. tostring(fl.cur),
-        face      = medium_font,
-        max_width = inner_width,
+    -- Split label: static prefix + fixed-width number box so the prefix
+    -- never shifts when the number changes width (e.g. 9 → 10).
+    local fl_prefix_text = _("Brightness") .. ": "
+    local fl_drag_prefix = TextWidget:new{ text = fl_prefix_text, face = medium_font }
+    local fl_drag_prefix_w = fl_drag_prefix:getSize().w
+    local fl_drag_num = TextWidget:new{ text = tostring(fl.cur), face = medium_font }
+    local fl_max_num_sample = TextWidget:new{ text = tostring(fl.max), face = medium_font }
+    local fl_drag_max_num_w = fl_max_num_sample:getSize().w
+    fl_max_num_sample:free()
+    local fl_drag_ref_w = fl_drag_prefix_w + fl_drag_max_num_w
+    local fl_label_h = fl_drag_prefix:getSize().h
+    local fl_num_box = LeftContainer:new{
+        dimen = Geom:new{ w = fl_drag_max_num_w, h = fl_label_h },
+        fl_drag_num,
+    }
+    local fl_label_group = HorizontalGroup:new{
+        fl_drag_prefix,
+        fl_num_box,
     }
 
     local fl_progress = ZenSlider:new{
@@ -66,6 +82,7 @@ local function build_brightness_slider(touch_menu, opts)
     }
 
     local fl_label_fn = nil
+    local fl_row  -- forward-declare for on_change closure
 
     local function setBrightness(intensity)
         if intensity ~= fl.min and intensity == fl.cur then return end
@@ -75,7 +92,7 @@ local function build_brightness_slider(touch_menu, opts)
         if fl.cur > fl.min then fl.prev_non_min = fl.cur end
         if fl_label_fn then UIManager:unschedule(fl_label_fn) ; fl_label_fn = nil end
         fl_progress:setValue(fl.cur)
-        fl_label:setText(_("Brightness") .. ": " .. tostring(fl.cur))
+        fl_drag_num:setText(tostring(fl.cur))
         UIManager:setDirty(show_parent, "ui", touch_menu.dimen)
     end
 
@@ -92,10 +109,27 @@ local function build_brightness_slider(touch_menu, opts)
         if fl.cur > fl.min then fl.prev_non_min = fl.cur end
         if fl_progress._dragging then
             fl_progress:paintTo(Screen.bb, fl_progress.dimen.x, fl_progress.dimen.y)
+            -- Only repaint the number — prefix is static in the framebuffer.
+            local row_gap_h = Screen:scaleBySize(10)
+            local lh = fl_drag_prefix:getSize().h
+            local row_h = fl_row and fl_row:getSize().h or fl_progress.dimen.h
+            local row_top = fl_progress.dimen.y - math.floor((row_h - fl_progress.dimen.h) / 2)
+            local label_y = row_top - row_gap_h - lh
+            local sx = fl_progress.dimen.x
+            local sw = fl_progress.dimen.w
+            local num_x = sx + math.floor((sw - fl_drag_ref_w) / 2) + fl_drag_prefix_w
+            Screen.bb:paintRect(num_x, label_y, fl_drag_max_num_w, lh, Blitbuffer.COLOR_WHITE)
+            fl_drag_num:setText(tostring(fl.cur))
+            fl_drag_num:paintTo(Screen.bb, num_x, label_y)
+            -- Two non-overlapping A2s: number area and slider
+            UIManager:setDirty(nil, "fast", Geom:new{
+                x = num_x, y = label_y,
+                w = fl_drag_max_num_w, h = lh,
+            })
             UIManager:setDirty(nil, "fast", fl_progress.dimen)
         else
             if fl_label_fn then UIManager:unschedule(fl_label_fn) ; fl_label_fn = nil end
-            fl_label:setText(_("Brightness") .. ": " .. tostring(fl.cur))
+            fl_drag_num:setText(tostring(fl.cur))
             UIManager:setDirty(show_parent, "ui", touch_menu.dimen)
         end
     end
@@ -115,10 +149,10 @@ local function build_brightness_slider(touch_menu, opts)
     local row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }
 
     local fl_cap_row = CenterContainer:new{
-        dimen = Geom:new{ w = inner_width, h = fl_label:getSize().h },
-        fl_label,
+        dimen = Geom:new{ w = inner_width, h = fl_label_h },
+        fl_label_group,
     }
-    local fl_row = HorizontalGroup:new{
+    fl_row = HorizontalGroup:new{
         align = "center",
         fl_minus,
         HorizontalSpan:new{ width = slider_gap },

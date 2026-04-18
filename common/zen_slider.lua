@@ -194,9 +194,12 @@ end
 -- Gesture handlers (called by parent container)
 -- ---------------------------------------------------------------------------
 
---- Tap anywhere on the track: jump knob to that position.
+--- Tap on the track (away from the knob): jump knob to that position.
+-- Taps near the knob are intentionally ignored — they are likely the
+-- beginning of a drag and should not trigger a navigation jump.
 function ZenSlider:handleTap(ges)
     if not self.dimen or not ges.pos:intersectWith(self.dimen) then return false end
+    if self:_isNearKnob(ges.pos.x) then return false end
     self:applyPosition(ges.pos.x)
     return true
 end
@@ -264,7 +267,7 @@ function ZenSlider:handleSwipe(ges, show_parent, dirty_dimen)
         local end_x = ges.pos.x + hSign(ges.direction) * dist
         self:applyPosition(end_x)
     else
-        -- Pan events already positioned the knob; just repaint it.
+        -- Pan events already positioned the knob; repaint to restore it.
         UIManager:setDirty(show_parent, "ui", dirty_dimen)
     end
     return true

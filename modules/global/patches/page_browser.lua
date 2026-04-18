@@ -609,13 +609,38 @@ local function apply_page_browser()
                 padding   = 0,
             }
 
+            -- Throttle interval for setDirty during drag (seconds).
+            -- GL16 takes ~450ms on Kobo; firing faster than this just queues
+            -- competing waveform cycles that produce artifacts.
+            local SCRUB_DIRTY_INTERVAL = 0.15
+
             -- Deferred full update used to debounce thumbnail re-render during drag.
             -- Fires after 250 ms of slider inactivity regardless of whether the
             -- finger is still down; if the user resumes dragging, on_change will
             -- re-enable scrubbing and reschedule.
             self._zen_deferred_update = function()
                 self._zen_scrubbing = false
+                self._zen_last_scrub_dirty = nil
+                self._zen_post_scrub = true
+                UIManager:unschedule(self._zen_post_scrub_clear)
+                UIManager:scheduleIn(0.4, self._zen_post_scrub_clear)
                 self:update()
+            end
+
+            -- Clears post-scrub suppression and fires one clean repaint to show
+            -- all tiles that loaded during the suppression window without flashing.
+            self._zen_post_scrub_clear = function()
+                self._zen_post_scrub = false
+                UIManager:setDirty(self, "ui", self._zen_scrub_dimen or self.dimen)
+            end
+
+            -- Deferred scrub dirty: fires the throttled setDirty at the end
+            -- of the throttle window so the most recent state is displayed.
+            self._zen_scrub_dirty_func = function()
+                if not self._zen_scrubbing then return end
+                self._zen_last_scrub_dirty = os.clock()
+                UIManager:setDirty(self, "ui",
+                    self._zen_scrub_dimen or self.dimen)
             end
 
             -- Only create slider if there's more than 1 page
@@ -627,21 +652,47 @@ local function apply_page_browser()
                     value_min   = 1,
                     value_max   = math.max(nb_pages, 1),
                     on_change   = function(v)
+                        -- Set scrubbing BEFORE updateFocusPage so that any
+                        -- showTile callbacks it triggers are already suppressed,
+                        -- preventing a flash of stale tile bitmaps on drag start.
+                        local dragging = self._zen_slider and self._zen_slider._dragging
+                        if dragging then
+                            self._zen_scrubbing = true
+                            -- Cancel any pending post-scrub clear so resuming a
+                            -- drag after a pause doesn't re-enable tile refreshes.
+                            UIManager:unschedule(self._zen_post_scrub_clear)
+                        end
                         if self:updateFocusPage(v, false) then
-                            if self._zen_slider and self._zen_slider._dragging then
-                                self._zen_scrubbing = true
+                            if dragging then
+                                -- Update chapter label in real-time while dragging.
+                                if self._zen_chap_label then
+                                    self._zen_chap_label:setText(chapter_title(v))
+                                end
                                 UIManager:unschedule(self._zen_deferred_update)
                                 UIManager:scheduleIn(0.25, self._zen_deferred_update)
-                                -- One "ui" (GL16) dirty covering grid + panel.
-                                -- "ui" handles gray badge backgrounds correctly;
-                                -- "fast" (A2) is pure B&W and inverts gray pixels.
-                                -- One combined call avoids two competing waveform
-                                -- cycles per pan event.
-                                UIManager:setDirty(self, "ui",
-                                    self._zen_scrub_dimen or self.dimen)
+                                -- Throttle setDirty: only fire if enough time
+                                -- has passed since the last one; schedule a
+                                -- trailing call so the final state always shows.
+                                local now = os.clock()
+                                local last = self._zen_last_scrub_dirty
+                                UIManager:unschedule(self._zen_scrub_dirty_func)
+                                if not last or (now - last) >= SCRUB_DIRTY_INTERVAL then
+                                    self._zen_last_scrub_dirty = now
+                                    UIManager:setDirty(self, "ui",
+                                        self._zen_scrub_dimen or self.dimen)
+                                else
+                                    -- Schedule trailing update at end of throttle window
+                                    local remaining = SCRUB_DIRTY_INTERVAL - (now - last)
+                                    UIManager:scheduleIn(remaining, self._zen_scrub_dirty_func)
+                                end
                             else
                                 UIManager:unschedule(self._zen_deferred_update)
+                                UIManager:unschedule(self._zen_scrub_dirty_func)
                                 self._zen_scrubbing = false
+                                self._zen_last_scrub_dirty = nil
+                                self._zen_post_scrub = true
+                                UIManager:unschedule(self._zen_post_scrub_clear)
+                                UIManager:scheduleIn(0.4, self._zen_post_scrub_clear)
                                 self:update()
                             end
                         end
@@ -966,6 +1017,14 @@ local function apply_page_browser()
                     h = tile.bb:getHeight(),
                 }
             end
+            -- During scrubbing and for one full repaint cycle after scrubbing
+            -- ends, suppress per-tile display refreshes.  Without this, each
+            -- async tile that loads fires its own hardware update, producing
+            -- the multi-flash artifact on the panel area.
+            -- _zen_post_scrub is cleared by the next paintTo call.
+            if (self._zen_scrubbing or self._zen_post_scrub) and do_refresh then
+                return _orig_showTile(self, grid_idx, page, tile, false)
+            end
             return _orig_showTile(self, grid_idx, page, tile, do_refresh)
         end
 
@@ -1123,6 +1182,9 @@ local function apply_page_browser()
                 if self._zen_scrubbing then
                     UIManager:unschedule(self._zen_deferred_update)
                     self._zen_scrubbing = false
+                    self._zen_post_scrub = true
+                    UIManager:unschedule(self._zen_post_scrub_clear)
+                    UIManager:scheduleIn(0.4, self._zen_post_scrub_clear)
                     self:update()
                 end
                 return true
@@ -1143,16 +1205,27 @@ local function apply_page_browser()
             -- A fast drag on the slider is classified as a swipe rather than
             -- pan + pan_release; ZenSlider.handleSwipe covers both cases.
             if self._zen_slider and not self._zen_slider_locked then
+                -- Pre-set scrubbing BEFORE handleSwipe so that on_change's
+                -- call to updateFocusPage (which triggers async tile loads)
+                -- already has the suppress flag set when was_dragging=false.
+                -- If handleSwipe doesn't claim the gesture we clear it below.
+                self._zen_scrubbing = true
+                UIManager:unschedule(self._zen_post_scrub_clear)
                 if self._zen_slider:handleSwipe(ges, self, self.dimen) then
-                    -- When was_dragging=true, handleSwipe skips applyPosition so
-                    -- on_change never fires; clean up scrubbing here instead.
+                    -- was_dragging=false: on_change already fired and transitioned
+                    -- to _zen_post_scrub, so _zen_scrubbing is now false. Nothing to do.
+                    -- was_dragging=true: on_change never fires; clean up here.
                     if self._zen_scrubbing then
                         UIManager:unschedule(self._zen_deferred_update)
                         self._zen_scrubbing = false
+                        self._zen_post_scrub = true
+                        UIManager:scheduleIn(0.4, self._zen_post_scrub_clear)
                         self:update()
                     end
                     return true
                 end
+                -- handleSwipe didn't claim the gesture; undo the pre-set.
+                self._zen_scrubbing = false
             end
             local direction = ges.direction
             if direction == "west" then
@@ -1187,6 +1260,9 @@ local function apply_page_browser()
             if self._zen_scrubbing then
                 UIManager:unschedule(self._zen_deferred_update)
                 self._zen_scrubbing = false
+                self._zen_post_scrub = true
+                UIManager:unschedule(self._zen_post_scrub_clear)
+                UIManager:scheduleIn(0.4, self._zen_post_scrub_clear)
                 self:update()
             end
             -- Swallow all multiswipes; never close the page browser.

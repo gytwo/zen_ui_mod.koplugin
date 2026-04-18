@@ -733,6 +733,31 @@ local function apply_navbar()
         return 0
     end
 
+    -- Top padding for the status bar in Rakuyomi's library_view, matching the
+    -- filebrowser titlebar's title_top_padding so the two look aligned.
+    local _cached_status_top_pad = nil
+
+    local function getStatusTopPadding()
+        if _cached_status_top_pad ~= nil then
+            return _cached_status_top_pad
+        end
+        -- Read the title_top_padding from the FileManager's title bar
+        local fm = FileManager.instance
+        if fm and fm.title_bar and fm.title_bar.title_group then
+            local first = fm.title_bar.title_group[1]
+            if first then
+                local s = first:getSize()
+                if s and s.h > 0 then
+                    _cached_status_top_pad = s.h
+                    return _cached_status_top_pad
+                end
+            end
+        end
+        -- Fallback: approximate KOReader's TitleBar title_top_padding
+        _cached_status_top_pad = Screen:scaleBySize(11)
+        return _cached_status_top_pad
+    end
+
     local orig_menu_init = Menu.init
 
     function Menu:init()
@@ -743,7 +768,7 @@ local function apply_navbar()
             local reserve = getNavbarHeight()
             -- Rakuyomi also gets the status bar above its content
             if self.name == "library_view" then
-                reserve = reserve + getStatusRowHeight()
+                reserve = reserve + getStatusTopPadding() + getStatusRowHeight()
             end
             self.height = Screen:getHeight() - reserve
             -- Force borderless for plugin views that forgot to set it (e.g. Rakuyomi)
@@ -944,6 +969,7 @@ local function apply_navbar()
         local FrameContainer = require("ui/widget/container/framecontainer")
         local vg_children = { align = "left" }
         if status_row_widget then
+            table.insert(vg_children, VerticalSpan:new{ width = getStatusTopPadding() })
             table.insert(vg_children, status_row_widget)
         end
         table.insert(vg_children, menu[1])

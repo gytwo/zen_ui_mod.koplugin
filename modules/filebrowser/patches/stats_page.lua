@@ -209,8 +209,9 @@ end
 --- Create and return a fully-configured stats page Menu.
 -- Uses the same TitleBar / height infrastructure as history/collections.
 -- @param createStatusRow  function from zen_shared (or nil)
+-- @param repaintTitleBar  function from zen_shared (or nil)
 -- @return Menu widget ready for injectStandaloneNavbar + UIManager:show
-function StatsPage.create(createStatusRow)
+function StatsPage.create(createStatusRow, repaintTitleBar)
     local stats = queryStats()
     -- Daily Breakdown is kept in data but hidden until enabled in settings
     local show_daily_breakdown = false
@@ -312,12 +313,12 @@ function StatsPage.create(createStatusRow)
             tb.title_group:resetLayout()
         end
 
-        -- Clock refresh callback (called by autoRefresh or self-contained timer)
+        -- Clock refresh callback (called by autoRefresh or charging/wifi events)
         menu._zen_status_refresh = function()
             if tb.title_group and #tb.title_group >= 2 then
                 tb.title_group[2] = createStatusRow(nil, FileManager.instance)
                 tb.title_group:resetLayout()
-                UIManager:setDirty(menu, "ui", tb.dimen)
+                if repaintTitleBar then repaintTitleBar(tb) end
             end
         end
     end
@@ -549,40 +550,10 @@ function StatsPage.create(createStatusRow)
         menu.page_info:resetLayout()
     end
 
-    -- ── Minute-aligned clock refresh (self-cancels when page leaves stack) ──
-    if createStatusRow then
-        local function refreshClock()
-            local stack = UIManager._window_stack
-            local alive = false
-            if stack then
-                for i = #stack, 1, -1 do
-                    if rawequal(stack[i].widget, menu) then
-                        alive = true
-                        break
-                    end
-                end
-            end
-            if not alive then
-                menu._zen_clock_timer = nil
-                return
-            end
-            if menu._zen_status_refresh then
-                menu._zen_status_refresh()
-            end
-            local t = os.date("*t")
-            UIManager:scheduleIn(60 - t.sec, refreshClock)
-        end
-        menu._zen_clock_timer = refreshClock
-        local t = os.date("*t")
-        UIManager:scheduleIn(60 - t.sec, refreshClock)
-    end
-
-    -- ── Close handler: clean up timer ──
+    -- ── Close handler ──
+    -- Periodic clock updates are driven by status_bar.lua's autoRefresh, which
+    -- calls _zen_status_refresh on this page whenever it is the topmost widget.
     menu.close_callback = function()
-        if menu._zen_clock_timer then
-            UIManager:unschedule(menu._zen_clock_timer)
-            menu._zen_clock_timer = nil
-        end
         UIManager:close(menu)
     end
 

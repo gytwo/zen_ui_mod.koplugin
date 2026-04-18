@@ -1142,11 +1142,13 @@ local function apply_collections()
             tb.has_left_icon  = false
             tb.has_right_icon = false
 
+            local repaintTitleBar = zen_plugin._zen_shared
+                and zen_plugin._zen_shared.repaintTitleBar
             menu._zen_status_refresh = function()
                 if tb.title_group and #tb.title_group >= 2 then
                     tb.title_group[2] = createStatusRowCustomBack(back_callback, collection_name)
                     tb.title_group:resetLayout()
-                    UIManager_mod:setDirty(menu, "ui", tb.dimen)
+                    if repaintTitleBar then repaintTitleBar(tb) end
                 end
             end
             UIManager_mod:setDirty(menu, "ui", tb.dimen)
@@ -1212,11 +1214,13 @@ local function apply_collections()
             tb.has_left_icon  = false
             tb.has_right_icon = false
 
+            local repaintTitleBar = zen_plugin._zen_shared
+                and zen_plugin._zen_shared.repaintTitleBar
             menu._zen_status_refresh = function()
                 if tb.title_group and #tb.title_group >= 2 then
                     tb.title_group[2] = createStatusRow(nil, FileManager.instance)
                     tb.title_group:resetLayout()
-                    UIManager_mod:setDirty(menu, "ui", tb.dimen)
+                    if repaintTitleBar then repaintTitleBar(tb) end
                 end
             end
             UIManager_mod:setDirty(menu, "ui", tb.dimen)

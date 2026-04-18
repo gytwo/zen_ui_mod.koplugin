@@ -1,0 +1,403 @@
+-- settings/zen_settings_utils.lua
+-- Pure utility functions shared across Zen UI settings sections.
+-- No dependency on plugin instance or config at module level.
+
+local _ = require("gettext")
+local UIManager = require("ui/uimanager")
+local Device = require("device")
+
+local M = {}
+
+-- ---------------------------------------------------------------------------
+-- Generic helpers
+-- ---------------------------------------------------------------------------
+
+function M.first_non_empty(...)
+    for i = 1, select("#", ...) do
+        local v = select(i, ...)
+        if type(v) == "string" and v ~= "" then
+            return v
+        end
+    end
+    return nil
+end
+
+function M.normalize_value(v)
+    if type(v) == "number" then
+        v = tostring(v)
+    end
+    if type(v) ~= "string" then
+        return nil
+    end
+    v = v:match("^%s*(.-)%s*$")
+    if v == "" then
+        return nil
+    end
+    return v
+end
+
+function M.get_path(tbl, path)
+    local node = tbl
+    for _, key in ipairs(path) do
+        node = node and node[key]
+    end
+    return node
+end
+
+function M.set_path(tbl, path, value)
+    local node = tbl
+    for i = 1, #path - 1 do
+        local key = path[i]
+        if type(node[key]) ~= "table" then
+            node[key] = {}
+        end
+        node = node[key]
+    end
+    node[path[#path]] = value
+end
+
+-- ---------------------------------------------------------------------------
+-- Version / device detection
+-- ---------------------------------------------------------------------------
+
+function M.get_plugin_version(plugin)
+    local config = plugin and plugin.config
+    local value = M.first_non_empty(
+        plugin and plugin.version,
+        plugin and plugin._meta and plugin._meta.version,
+        config and config._meta and config._meta.version
+    )
+    if value then
+        return value
+    end
+
+    local ok_meta, meta = pcall(require, "_meta")
+    if ok_meta and type(meta) == "table" then
+        value = M.first_non_empty(meta.version)
+        if value then
+            return value
+        end
+    end
+
+    -- Reliable fallback: load _meta.lua directly from this plugin's root.
+    local src = debug.getinfo(1, "S").source or ""
+    if src:sub(1, 1) == "@" then
+        local this_file = src:sub(2)
+        local plugin_root = this_file:match("^(.*)/settings/zen_settings_utils%.lua$")
+        if plugin_root then
+            local ok_file, file_meta = pcall(dofile, plugin_root .. "/_meta.lua")
+            if ok_file and type(file_meta) == "table" then
+                value = M.first_non_empty(file_meta.version)
+                if value then
+                    return value
+                end
+            end
+        end
+    end
+
+    return "dev"
+end
+
+function M.get_koreader_version()
+    local ok_version, version_mod = pcall(require, "version")
+    if ok_version then
+        if type(version_mod) == "string" and version_mod ~= "" then
+            return version_mod
+        end
+        if type(version_mod) == "table" then
+            local value = M.first_non_empty(
+                version_mod.version,
+                version_mod.short,
+                version_mod.git,
+                version_mod.git_rev,
+                version_mod.build,
+                version_mod.tag
+            )
+            if value then
+                return value
+            end
+        end
+    end
+
+    local value = M.first_non_empty(
+        rawget(_G, "KOREADER_VERSION"),
+        rawget(_G, "KO_VERSION"),
+        rawget(_G, "GIT_REV")
+    )
+    return value or "unknown"
+end
+
+function M.get_device_model_name()
+    local function call_device_method(name)
+        if not (Device and type(Device[name]) == "function") then
+            return nil
+        end
+        local ok, value = pcall(Device[name], Device)
+        value = ok and M.normalize_value(value) or nil
+        if value then
+            return value
+        end
+        ok, value = pcall(Device[name])
+        return ok and M.normalize_value(value) or nil
+    end
+
+    local value = M.normalize_value(M.first_non_empty(
+        Device and Device.model,
+        Device and Device.model_name,
+        Device and Device.device_model,
+        Device and Device.product,
+        Device and Device.name,
+        Device and Device.friendly_name,
+        Device and Device.id,
+        rawget(_G, "DEVICE_MODEL")
+    ))
+    if value then
+        return value
+    end
+
+    value = call_device_method("getModel")
+        or call_device_method("getModelName")
+        or call_device_method("getDeviceModel")
+        or call_device_method("getFriendlyName")
+        or call_device_method("getDeviceName")
+    if value then
+        return value
+    end
+
+    if Device and Device.isAndroid and Device:isAndroid() then
+        local ok_model, model = pcall(function()
+            local pipe = io.popen("getprop ro.product.model 2>/dev/null")
+            if not pipe then return nil end
+            local out = pipe:read("*l")
+            pipe:close()
+            return M.normalize_value(out)
+        end)
+        local ok_mfr, mfr = pcall(function()
+            local pipe = io.popen("getprop ro.product.manufacturer 2>/dev/null")
+            if not pipe then return nil end
+            local out = pipe:read("*l")
+            pipe:close()
+            return M.normalize_value(out)
+        end)
+        if ok_model and model then
+            if ok_mfr and mfr and not model:lower():find(mfr:lower(), 1, true) then
+                return mfr .. " " .. model
+            end
+            return model
+        end
+    end
+
+    return "Device"
+end
+
+function M.get_kindle_firmware_info()
+    if not (Device and Device.isKindle and Device:isKindle()) then
+        return "n/a", nil, nil
+    end
+
+    local function normalize_fw_value(v)
+        return M.normalize_value(v)
+    end
+
+    local function read_first_line(path)
+        local f = io.open(path, "r")
+        if not f then
+            return nil
+        end
+        local line = f:read("*l")
+        f:close()
+        return normalize_fw_value(line)
+    end
+
+    if type(Device.getFirmwareVersion) == "function" then
+        local calls = {
+            function() return Device:getFirmwareVersion() end,
+            function() return Device.getFirmwareVersion(Device) end,
+            function() return Device.getFirmwareVersion() end,
+        }
+        for _, get_fw in ipairs(calls) do
+            local ok, value = pcall(get_fw)
+            value = ok and normalize_fw_value(value) or nil
+            if value then
+                return value, "Device FW", "Device FW"
+            end
+        end
+    end
+
+    local value = M.first_non_empty(
+        Device.firmware,
+        Device.firmware_version,
+        Device.firmware_rev,
+        Device.fw_version,
+        Device.fw,
+        Device.softwareVersion,
+        rawget(_G, "KINDLE_FIRMWARE_VERSION"),
+        rawget(_G, "KINDLE_FW_VERSION")
+    )
+    value = normalize_fw_value(value)
+    if value then
+        return value, "Device FW", "Device FW"
+    end
+
+    value = read_first_line("/etc/prettyversion.txt")
+    if value then
+        return value, "prettyversion", "prettyversion"
+    end
+
+    value = read_first_line("/etc/version.txt")
+    if value then
+        return value, "version", "version"
+    end
+
+    return "unknown", "Device FW", "Device FW"
+end
+
+function M.get_kindle_firmware_version()
+    local fw = M.get_kindle_firmware_info()
+    return fw
+end
+
+function M.get_kindle_firmware_display()
+    local fw = M.get_kindle_firmware_version()
+    if fw == "n/a" then
+        return fw
+    end
+    return fw
+end
+
+-- ---------------------------------------------------------------------------
+-- Navigation helpers
+-- ---------------------------------------------------------------------------
+
+function M.get_home_dir()
+    return G_reader_settings:readSetting("home_dir")
+        or require("apps/filemanager/filemanagerutil").getDefaultDir()
+end
+
+function M.get_last_dir()
+    return G_reader_settings:readSetting("lastdir") or "/"
+end
+
+function M.get_current_dir()
+    local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
+    local fm = ok and FileManager and FileManager.instance
+    if fm and fm.file_chooser and fm.file_chooser.path then
+        return fm.file_chooser.path
+    end
+    return M.get_last_dir()
+end
+
+-- ---------------------------------------------------------------------------
+-- Time / value picker dialogs
+-- ---------------------------------------------------------------------------
+
+function M.fmt_time(h, m)
+    return string.format("%02d:%02d", h, m)
+end
+
+function M.show_time_picker(title, h, m, callback)
+    UIManager:show(require("ui/widget/doublespinwidget"):new{
+        title_text      = title,
+        left_text       = _("Hour"),
+        left_value      = h,
+        left_min        = 0,
+        left_max        = 23,
+        left_step       = 1,
+        left_hold_step  = 3,
+        left_precision  = "%02d",
+        right_text      = _("Minute"),
+        right_value     = m,
+        right_min       = 0,
+        right_max       = 59,
+        right_step      = 1,
+        right_hold_step = 15,
+        right_precision = "%02d",
+        callback        = callback,
+    })
+end
+
+function M.show_value_picker(title, value, callback)
+    UIManager:show(require("ui/widget/spinwidget"):new{
+        title_text      = title,
+        value           = value,
+        value_min       = 0,
+        value_max       = 24,
+        value_step      = 1,
+        value_hold_step = 4,
+        callback        = function(spin) callback(spin.value) end,
+    })
+end
+
+-- ---------------------------------------------------------------------------
+-- Menu item factories
+-- ---------------------------------------------------------------------------
+
+--- Build a simple checked toggle item for a named feature flag.
+-- @param feature   string key in config.features
+-- @param enable_text  display text for the item
+-- @param config    plugin config table
+-- @param save_and_apply  function(feature) that saves + re-applies
+function M.make_enable_feature_item(feature, enable_text, config, save_and_apply)
+    return {
+        text = enable_text,
+        checked_func = function()
+            return config.features[feature] == true
+        end,
+        callback = function()
+            config.features[feature] = not (config.features[feature] == true)
+            save_and_apply(feature)
+        end,
+    }
+end
+
+-- ---------------------------------------------------------------------------
+-- Ordering helpers
+-- ---------------------------------------------------------------------------
+
+function M.order_items_by_text(item_table, preferred_order)
+    local by_text = {}
+    local ordered = {}
+    local used = {}
+
+    for _, item in ipairs(item_table) do
+        if type(item.text) == "string" and item.text ~= "" then
+            if by_text[item.text] == nil then
+                by_text[item.text] = item
+            end
+        end
+    end
+
+    for _, text in ipairs(preferred_order) do
+        local item = by_text[text]
+        if item then
+            table.insert(ordered, item)
+            used[item] = true
+        end
+    end
+
+    for _, item in ipairs(item_table) do
+        if not used[item] then
+            table.insert(ordered, item)
+        end
+    end
+
+    return ordered
+end
+
+function M.reorder_nested_items_by_text(item_table, target_text, preferred_order)
+    for _, item in ipairs(item_table) do
+        if item.text == target_text and type(item.sub_item_table) == "table" then
+            item.sub_item_table = M.order_items_by_text(item.sub_item_table, preferred_order)
+            return true
+        end
+        if type(item.sub_item_table) == "table" then
+            local found = M.reorder_nested_items_by_text(item.sub_item_table, target_text, preferred_order)
+            if found then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+return M

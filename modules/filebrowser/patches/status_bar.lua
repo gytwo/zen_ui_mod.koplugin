@@ -689,6 +689,21 @@ local function apply_status_bar()
         return vg
     end
 
+    -- Safe repaint for a titlebar widget: clears the region to white first,
+    -- then repaints the widget tree, then flushes to the e-ink display.
+    -- Avoids overlap artifacts (VerticalGroup/OverlapGroup don't clear their
+    -- background) and avoids the dithered-widget freeze (never marks the
+    -- parent menu dirty).
+    local function repaintTitleBar(tb)
+        if not tb or not tb.dimen then return end
+        local bb = Screen.bb
+        if bb then
+            bb:paintRect(tb.dimen.x, tb.dimen.y, tb.dimen.w, tb.dimen.h, Blitbuffer.COLOR_WHITE)
+        end
+        UIManager:widgetRepaint(tb, tb.dimen.x, tb.dimen.y)
+        UIManager:setDirty(nil, "ui", tb.dimen)
+    end
+
     -- Expose for cross-patch use. Stored on the plugin table so it is naturally
     -- scoped to when this feature is active and cleaned up on plugin reload.
     if type(zen_plugin) == "table" then
@@ -698,6 +713,7 @@ local function apply_status_bar()
         zen_plugin._zen_shared.buildStatusRow          = buildStatusRow
         zen_plugin._zen_shared.schedulePanelRefresh    = schedulePanelRefresh
         zen_plugin._zen_shared.cancelPanelRefresh      = cancelPanelRefresh
+        zen_plugin._zen_shared.repaintTitleBar         = repaintTitleBar
     end
 
     -- === Replace title content and reposition buttons ===
@@ -766,6 +782,10 @@ local function apply_status_bar()
     end
 
     -- === Hooks ===
+
+    -- Holds the current autoRefresh function reference so onSuspend/onResume
+    -- can cancel and restart the timer without a full stack scan.
+    local _fm_autoRefresh = nil
 
     local orig_setupLayout = FileManager.setupLayout
 
@@ -839,48 +859,29 @@ local function apply_status_bar()
 
         -- Periodic refresh for time/battery/disk.
         -- Always fires at the top of the next minute so the clock stays aligned.
-        -- Also refreshes the favorites titlebar when it is open, so the clock
-        -- updates there without needing a separate timer.
+        -- Also refreshes any open zen overlay (favorites, collections, history, stats)
+        -- so their clock/battery updates without needing a separate timer per menu.
         local function autoRefresh()
             if FileManager.instance ~= fm then return end
             local stack = UIManager._window_stack
             local top = stack and stack[#stack]
             local top_widget = top and top.widget
 
-            -- Refresh filebrowser titlebar when it is the topmost widget.
-            -- Prevents painting into screensaver/lockscreen when inactive.
+            -- Only refresh when the topmost widget is ours.  If a screensaver,
+            -- dialog, or TouchMenu is on top, skip — avoids painting behind
+            -- overlays and into the sleep screen.
             if top_widget == fm or top_widget == fm.show_parent then
                 fm:_updateStatusBar()
-            end
-
-            -- Refresh favorites or named-collection titlebar when it is open.
-            -- BookList is a separate overlay so fm is never "on top" then;
-            -- we update it unconditionally whenever the menu exists.
-            local fav_menu = fm.collections and fm.collections.booklist_menu
-            if fav_menu then
-                if fav_menu._zen_status_refresh then
-                    fav_menu._zen_status_refresh()
-                else
-                    -- Favorites (or any booklist_menu without a custom refresh).
-                    local fav_tb = fav_menu.title_bar
-                    if fav_tb and fav_tb.title_group and #fav_tb.title_group >= 2 then
-                        fav_tb.title_group[2] = createStatusRow(nil, fm)
-                        fav_tb.title_group:resetLayout()
-                        UIManager:setDirty(fav_menu, "ui", fav_tb.dimen)
-                    end
-                end
-            end
-
-            -- Refresh collections list titlebar when it is open.
-            local coll_list = fm.collections and fm.collections.coll_list
-            if coll_list and coll_list._zen_status_refresh then
-                coll_list._zen_status_refresh()
+            elseif top_widget and top_widget._zen_status_refresh then
+                top_widget._zen_status_refresh()
             end
 
             -- Schedule next tick at the top of the following minute.
             local t = os.date("*t")
             UIManager:scheduleIn(60 - t.sec, autoRefresh)
         end
+        -- Store reference so onSuspend/onResume can cancel/restart this timer.
+        _fm_autoRefresh = autoRefresh
         -- First tick: align to the top of the next minute.
         local t = os.date("*t")
         UIManager:scheduleIn(60 - t.sec, autoRefresh)
@@ -906,8 +907,17 @@ local function apply_status_bar()
         local orig = FileManager[event_name]
         FileManager[event_name] = function(self)
             if orig then orig(self) end
-            if is_enabled() then
+            if not is_enabled() then return end
+            -- Only refresh the topmost widget.  If a screensaver, dialog, or
+            -- TouchMenu is on top, skip — avoids painting behind overlays
+            -- and into the sleep screen.
+            local stack = UIManager._window_stack
+            local top = stack and stack[#stack]
+            local top_widget = top and top.widget
+            if top_widget == self or top_widget == self.show_parent then
                 self:_updateStatusBar()
+            elseif top_widget and top_widget._zen_status_refresh then
+                top_widget._zen_status_refresh()
             end
         end
     end
@@ -916,6 +926,16 @@ local function apply_status_bar()
     chainHook("onNetworkDisconnected")
     chainHook("onCharging")
     chainHook("onNotCharging")
+
+    -- Suspend: cancel the periodic timer so it does not fire during sleep.
+    -- Resume: do a single refresh and restart the timer aligned to the current second.
+    local orig_onSuspend = FileManager.onSuspend
+    FileManager.onSuspend = function(self)
+        if orig_onSuspend then orig_onSuspend(self) end
+        if _fm_autoRefresh then
+            UIManager:unschedule(_fm_autoRefresh)
+        end
+    end
 
     -- Refresh the filebrowser status bar whenever any TouchMenu closes
     -- (e.g. after changing settings, toggling night mode, etc.)
@@ -966,30 +986,29 @@ local function apply_status_bar()
         if orig_onResume then orig_onResume(self) end
         if is_enabled() then
             local fm = self
-            -- Schedule two attempts: the screensaver may still be the topmost
-            -- widget immediately after resume and will block the guard below.
-            -- A second attempt at 1.5s reliably fires after it has dismissed.
+            -- Refresh whichever bar is currently visible.  Two attempts because
+            -- the screensaver may still be the topmost widget immediately after
+            -- resume and block the guard on the first try.
             local function doResumeRefresh()
                 if FileManager.instance ~= fm then return end
                 local stack = UIManager._window_stack
                 local top = stack and stack[#stack]
-                if top and (top.widget == fm or top.widget == fm.show_parent) then
+                if not top then return end
+                if top.widget == fm or top.widget == fm.show_parent then
                     fm:_updateStatusBar()
+                elseif top.widget and top.widget._zen_status_refresh then
+                    top.widget._zen_status_refresh()
                 end
             end
             UIManager:scheduleIn(0.5, doResumeRefresh)
             UIManager:scheduleIn(1.5, doResumeRefresh)
-            -- Re-align to the top of the next minute after resume,
-            -- since the device clock may have advanced arbitrarily during sleep.
+            -- Restart the periodic timer (was cancelled on suspend).
+            -- Delay slightly so the fresh alignment happens after the display settles.
             UIManager:scheduleIn(2, function()
-                if FileManager.instance ~= fm then return end
+                if FileManager.instance ~= fm or not _fm_autoRefresh then return end
+                UIManager:unschedule(_fm_autoRefresh)
                 local t = os.date("*t")
-                local secs = 60 - t.sec
-                UIManager:scheduleIn(secs, function()
-                    if FileManager.instance == fm then
-                        fm:_updateStatusBar()
-                    end
-                end)
+                UIManager:scheduleIn(60 - t.sec, _fm_autoRefresh)
             end)
         end
     end

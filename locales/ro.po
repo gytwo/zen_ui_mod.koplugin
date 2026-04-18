@@ -526,6 +526,9 @@ msgstr "Nu s-a găsit URL de descărcare. Verifică conexiunea și încearcă di
 msgid "No git checkout detected for Zen UI. Use your normal plugin installation/update workflow."
 msgstr "Nu s-a detectat niciun checkout git pentru Zen UI. Folosiți fluxul normal de instalare/actualizare."
 
+msgid "No books found"
+msgstr "Nu s-au găsit cărți"
+
 msgid "No reader engine for this file or invalid file."
 msgstr "Niciun motor de citire pentru acest fișier sau fișier invalid."
 

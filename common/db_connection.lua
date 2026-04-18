@@ -8,7 +8,7 @@ local logger = require("logger")
 
 local M = {}
 
--- ── Path helpers ──────────────────────────────────────────────────────────────
+-- Path helpers
 
 -- Returns the filesystem path to statistics.sqlite3.
 -- Tries the primary location first; falls back to the settings subdir.
@@ -22,7 +22,7 @@ function M.getStatsDbPath()
     return primary
 end
 
--- ── Connection helpers ────────────────────────────────────────────────────────
+-- Connection helpers
 
 -- Returns true when a readable SQLite file exists at path.
 function M.isAvailable(path)

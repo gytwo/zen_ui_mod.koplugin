@@ -1,18 +1,7 @@
 --[[
     browser_cover_mosaic_uniform.lua
-    ─────────────────────────────────────────────────────────────────────────────
-    Mosaic mode:
-      • Enforces a uniform portrait aspect ratio (2:3) on all native book cover
-        images so that landscape covers do not render wider than portrait ones.
-
-    Approach inspired by SeriousHornet/KOReader.patches#2---stretched-covers.lua:
-    find the local ImageWidget upvalue inside MosaicMenuItem.update's closure
-    and replace it with a subclass that constrains width/height to the target
-    aspect ratio on init, before KOReader scales and renders the cover.
-
-    Folder covers (browser_folder_cover.lua) handle their own sizing separately.
-
-    Always applied – no feature flag required.
+    Enforces portrait (2:3) aspect ratio on mosaic covers to prevent landscape
+    covers from rendering wider than others. Always applied.
 ]]
 
 local function apply_browser_cover_mosaic_uniform()

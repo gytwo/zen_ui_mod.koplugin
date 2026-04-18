@@ -9,7 +9,7 @@ local function apply_page_browser()
     -- -----------------------------------------------------------------------
     local UIManager    = require("ui/uimanager")
     local Event        = require("ui/event")
-    local ZenTocWidget = require("common/zen_toc_widget")
+    local ZenTocWidget = require("modules/reader/zen_toc_widget")
     local utils        = require("common/utils")
 
     -- -----------------------------------------------------------------------
@@ -130,9 +130,9 @@ local function apply_page_browser()
                 self.title_bar.has_right_icon = false
             end
 
-            -- Re-add close at left (overlap_align="left", tap zone extends right)
+            -- Re-add close at left as a left chevron (overlap_align="left", tap zone extends right)
             table.insert(self.title_bar, IconButton:new{
-                icon           = "close",
+                icon           = "chevron.left",
                 width          = btn_sz,
                 height         = btn_sz,
                 padding        = btn_pad,

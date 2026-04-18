@@ -524,6 +524,9 @@ msgstr "未找到下载链接。请检查网络连接后重试。"
 msgid "No git checkout detected for Zen UI. Use your normal plugin installation/update workflow."
 msgstr "未检测到 Zen UI 的 git checkout。请使用常规插件安装/更新流程。"
 
+msgid "No books found"
+msgstr "未找到书籍"
+
 msgid "No reader engine for this file or invalid file."
 msgstr "此文件没有可用的阅读引擎或文件无效。"
 

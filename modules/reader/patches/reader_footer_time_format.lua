@@ -1,11 +1,7 @@
 local function apply_reader_footer_time_format()
     --[[
-        Modifies the reader footer to display "time to chapter" in Kindle style:
-        "X mins left in chapter" instead of icon + timestamp.
-
+        Displays "time to chapter" as "X mins left in chapter" instead of icon + timestamp.
         Patches ReaderFooter.textGeneratorMap.chapter_time_to_read.
-        Reads stats.avg_time directly (seconds per page) to avoid depending on
-        the user's duration_format string representation.
     --]]
 
     local ReaderFooter = require("apps/reader/modules/readerfooter")

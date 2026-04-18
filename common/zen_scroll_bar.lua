@@ -1,11 +1,6 @@
 local function apply_zen_scroll_bar()
-    -- Replaces the pagination footer with a visual scroll indicator
-    -- showing current page position in the file browser.
-    -- Two styles are available (controlled by config.zen_scroll_bar.style):
-    --   "bar"  (default) – pill-shaped horizontal track with a sliding thumb.
-    --   "dots"           – one dot per page; the active page dot is filled black.
-    --
-    -- The indicator is purely visual – no touch handling is installed on it.
+    -- Replaces the pagination footer with a pill-bar or dot-style scroll indicator.
+    -- Style ("bar" / "dots") is read live from config; no restart needed to toggle.
     local Blitbuffer = require("ffi/blitbuffer")
     local Device     = require("device")
     local Geom       = require("ui/geometry")
@@ -31,13 +26,10 @@ local function apply_zen_scroll_bar()
     local THUMB_COLOR    = Blitbuffer.COLOR_BLACK
     local DOT_INACT_COLOR = Blitbuffer.COLOR_DARK_GRAY
 
-    -- Capture plugin reference while __ZEN_UI_PLUGIN is still set (run_feature
-    -- sets it only during pcall of this function; it is nil by paint time).
+    -- Capture plugin reference while __ZEN_UI_PLUGIN is still set.
     local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
 
-    -- Draw a filled pill (stadium) shape using scanlines.
-    -- Uses only bb:paintRect – the sole safe Blitbuffer primitive.
-    -- r  = min(w, h) / 2  →  each end cap is a perfect semicircle.
+    -- Draw a filled pill (stadium) shape using scanline paintRect.
     local function paintPill(bb, px, py, pw, ph, color)
         if pw <= 0 or ph <= 0 then return end
         local r = math.min(pw, ph) / 2.0
@@ -55,8 +47,7 @@ local function apply_zen_scroll_bar()
         end
     end
 
-    -- Read the current style from plugin config at paint time so toggling the
-    -- setting takes effect on the next repaint without a restart.
+    -- Read style from config at paint time; toggle takes effect on next repaint.
     local function get_style()
         local p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
         if p
@@ -116,7 +107,7 @@ local function apply_zen_scroll_bar()
             if nb <= 1 then return end
 
             if get_style() == "dots" then
-                -- ── Dots style ────────────────────────────────────────────────
+                -- Dots style
                 -- One circle per page; the active page is filled black.
                 local diam = DOT_DIAM
                 local gap  = DOT_GAP
@@ -139,7 +130,7 @@ local function apply_zen_scroll_bar()
                     paintPill(bb, dot_x, dot_y, diam, diam, color)
                 end
             else
-                -- ── Bar style (default) ───────────────────────────────────────
+                -- Bar style (default)
                 -- Track (full bar width, lighter colour).
                 paintPill(bb, x + bar_x, y + BAR_PAD, bar_w, BAR_H, TRACK_COLOR)
 

@@ -1,29 +1,18 @@
 local function apply_browser_folder_sort()
     --[[
-        Per-folder sort overrides for the file browser.
+        Per-folder sort overrides stored in G_reader_settings under "zen_ui_folder_sort".
+        Temporarily swaps self.collate on genItemTableFromPath for the overridden path.
 
-        Stores a path → collate-id map in G_reader_settings under the key
-        "zen_ui_folder_sort".  On every genItemTableFromPath call the patch checks
-        whether the current path has an override and, if so, temporarily swaps
-        self.collate (and self.reverse_collate / self.collate_mixed when present)
-        before calling the original function, then restores them immediately after.
-
-        Because KOReader's Lua runtime is single-threaded there is no race risk from
-        the temporary swap.
-
-        Public API (required by context_menu.lua)
-        ─────────────────────────────────────────
-          local FolderSort = require("modules/filebrowser/patches/browser_folder_sort")
-          FolderSort.get(path)            → collate_id string or nil
-          FolderSort.set(path, collate)   → persists the override for path
-          FolderSort.clear(path)          → removes the override for path
+        Public API (used by context_menu.lua via __ZEN_FOLDER_SORT global):
+          FolderSort.get(path)           → collate_id or nil
+          FolderSort.set(path, collate)  → save override
+          FolderSort.clear(path)         → remove override
     ]]
 
     local FileChooser = require("ui/widget/filechooser")
 
     local SETTINGS_KEY = "zen_ui_folder_sort"
 
-    -- ── Storage helpers ──────────────────────────────────────────────────────
 
     local function read_map()
         local g = rawget(_G, "G_reader_settings")
@@ -59,18 +48,11 @@ local function apply_browser_folder_sort()
         write_map(m)
     end
 
-    -- Expose the API on a well-known global so context_menu.lua can reach it
-    -- without a cross-module require cycle.
+    -- Expose API on a well-known global to avoid a cross-module require cycle.
     _G.__ZEN_FOLDER_SORT = M
 
-    -- ── FileChooser patch ────────────────────────────────────────────────────
-    --
-    -- getCollate() reads G_reader_settings:readSetting("collate") directly and
-    -- ignores any instance field.  The only reliable intercept point is to wrap
-    -- getCollate() itself, guarded by an instance-level flag that the
-    -- genItemTableFromPath wrapper sets for the duration of the call.
-    -- Both internal getCollate() calls (one in genItemTableFromPath, one in
-    -- genItemTable) will see the override this way.
+    -- Wrap getCollate() to inject the per-folder override for the duration of
+    -- genItemTableFromPath (keyed by _zen_sort_override instance flag).
 
     local orig_getCollate = FileChooser.getCollate
 

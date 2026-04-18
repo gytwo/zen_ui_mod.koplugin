@@ -1,33 +1,20 @@
 --[[
     browser_cover_rounded_corners.lua
-    ─────────────────────────────────────────────────────────────────────────────
-    Mosaic mode:
-      • Paints white quarter-circle masks at all four corners of each cover
-        frame, producing the appearance of rounded corners on book and folder
-        covers.
-
-    Controlled by the "Rounded cover corners" Zen UI setting.
-    Always applied at boot; the per-paint guard is a live config read so the
-    effect can be toggled at runtime with a full repaint (no restart needed).
+    Paints white corner masks on mosaic covers for a rounded appearance.
+    Toggled at runtime via config (no restart needed).
 ]]
 
 local function apply_browser_cover_rounded_corners()
     local Blitbuffer = require("ffi/blitbuffer")
     local Screen     = require("device").screen
 
-    -- Capture plugin reference at apply-time (same pattern as browser_cover_badges).
+    -- Capture plugin reference at apply-time.
     local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
 
-    -- ── Quarter-circle corner masking ─────────────────────────────────────────
-    -- Paints white pixels outside the arc in each r×r corner zone, simulating
-    -- rounded corners on the blitbuffer bb.  tx/ty/tw/th are the absolute
-    -- screen coordinates and dimensions of the cover frame.
+    -- Paint white pixels outside the arc in each corner zone.
     local function paintCornerMasks(bb, tx, ty, tw, th, r)
         local color = Blitbuffer.COLOR_WHITE
         for j = 0, r - 1 do
-            -- Number of pixels to mask from each edge at this row/column offset.
-            -- Derived from the circle equation: pixel (c, j) is outside the arc
-            -- whose centre is at (r, r) from the corner when c < r−√(r²−(r−j)²).
             local inner = math.sqrt(r * r - (r - j) * (r - j))
             local cut   = math.ceil(r - inner)
             if cut > 0 then
@@ -41,16 +28,12 @@ local function apply_browser_cover_rounded_corners()
         end
     end
 
-    -- ── Circular arc border redraw ────────────────────────────────────────────
-    -- After masking, the original rectangular border pixels in each corner are
-    -- gone.  This redraws them as a circular arc so the border looks complete.
-    -- Uses pixel-centre distances for a clean anti-alias-free arc.
+    -- Redraw border arcs over the masked corners.
     local function paintCornerBorderArcs(bb, tx, ty, tw, th, r, bsz, color)
         local r_outer = r
         local r_inner = r - bsz
         for j = 0, r - 1 do
             for c = 0, r - 1 do
-                -- Distance from the arc centre (r, r) to the centre of pixel (c, j).
                 local dx   = r - c - 0.5
                 local dy   = r - j - 0.5
                 local dist = math.sqrt(dx * dx + dy * dy)
@@ -64,7 +47,7 @@ local function apply_browser_cover_rounded_corners()
         end
     end
 
-    -- ── Mosaic patch ───────────────────────────────────────────────────────────
+
     local function patchMosaicMenu()
         local MosaicMenu = require("mosaicmenu")
         if not MosaicMenu then return end

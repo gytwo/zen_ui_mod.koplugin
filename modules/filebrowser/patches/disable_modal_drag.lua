@@ -1,14 +1,8 @@
 local function apply_disable_modal_drag()
     --[[
-        Globally prevents every MovableContainer from being dragged.
-
-        Two layers of defence are needed:
-          1. `unmovable = true` in init() prevents the container from
-             registering its own ges_events (swipe/hold/pan etc.).
-          2. Some widgets (e.g. TextViewer) bypass the event system and call
-             onMovable* methods directly on the container instance.  We no-op
-             every onMovable* method at the class level so those manual calls
-             are silently ignored.
+        Prevents every MovableContainer from being dragged.
+        Sets unmovable=true on init (suppresses ges_events) and no-ops
+        all onMovable* methods at the class level (for direct-call widgets).
     ]]
     local MovableContainer = require("ui/widget/container/movablecontainer")
 

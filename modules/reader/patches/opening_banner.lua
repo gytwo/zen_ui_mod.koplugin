@@ -2,8 +2,7 @@
 -- showReaderCoroutine can position the banner over that specific cover cell.
 local _last_cover_dimen = nil
 
--- Walk a widget tree (depth-first) looking for the first node whose _bb
--- field is a rendered blitbuffer (i.e. an ImageWidget that has been painted).
+-- Walk a widget tree (depth-first) to find the first rendered blitbuffer (_bb).
 local function _find_cover_bb(w, depth)
     if depth > 5 or type(w) ~= "table" then return nil end
     local t = type(w._bb)
@@ -43,13 +42,9 @@ local function _sample_bottom_luminance(bb)
 end
 
 local function apply_opening_banner()
-    --[[
-        Replaces KOReader's default "Opening file '...'" InfoMessage popup with a
-        slim strip pinned to the bottom of the tapped book cover cell.
-
-        If the cover dimen is unknown (list mode, History, etc.) the banner falls
-        back to a full-width strip at the bottom of the screen.
-    ]]
+    -- Replaces the default "Opening" InfoMessage with a slim strip pinned to
+    -- the tapped cover cell; falls back to a full-width strip at the bottom
+    -- of the screen when cover geometry is unknown (list mode, History, etc.).
 
     local ReaderUI = require("apps/reader/readerui")
     local UIManager = require("ui/uimanager")
@@ -72,10 +67,7 @@ local function apply_opening_banner()
     local logger  = require("logger")
     local _       = require("gettext")
 
-    -- ── Hook MosaicMenuItem.onTapSelect to capture cover cell geometry ──────
-    -- The coverbrowser plugin lives at plugins/coverbrowser.koplugin and
-    -- exports MosaicMenu as a plain require("mosaicmenu") once its directory
-    -- is on the package path.
+    -- Hook MosaicMenuItem.onTapSelect to capture cover cell geometry
     local function try_hook_mosaic()
         local ok, MosaicMenu = pcall(require, "mosaicmenu")
         if not ok or type(MosaicMenu) ~= "table" then return end
@@ -92,21 +84,16 @@ local function apply_opening_banner()
         local MosaicMenuItem = get_upvalue(MosaicMenu._updateItemsBuildUI, "MosaicMenuItem")
         if not MosaicMenuItem then return end
 
-        -- onTapSelect is the ges_events handler for "tap" on MosaicMenuItem
         if type(MosaicMenuItem.onTapSelect) ~= "function" then return end
 
         local orig_tap = MosaicMenuItem.onTapSelect
         MosaicMenuItem.onTapSelect = function(self_item, ...)
-            -- Only capture dimen for book files, not directories.
-            -- Tapping a folder navigates the browser (no reader opens), so
-            -- storing the dimen here would leave a stale value that gets
-            -- incorrectly consumed when the user later opens a book from inside
-            -- that folder (e.g. when a folder profile forces list mode).
+            -- Skip directories: a folder tap navigates the browser with no reader
+            -- opening, so storing the dimen leaves a stale value that bleeds into
+            -- the next book open (especially with folder-profile list mode).
             if not self_item.is_directory then
-                -- self[1][1][1] is the FrameContainer holding the actual cover
-                -- image (UnderlineContainer → CenterContainer → FrameContainer).
-                -- Its dimen has the exact absolute screen coordinates of the cover
-                -- art, which is narrower/shorter than the full cell (self.dimen).
+                -- self[1][1][1]: FrameContainer holding the cover image
+                -- (UnderlineContainer → CenterContainer → FrameContainer).
                 local cover_frame = self_item[1] and self_item[1][1] and self_item[1][1][1]
                 local d = cover_frame and cover_frame.dimen
                 if d and d.x and d.w then
@@ -137,10 +124,8 @@ local function apply_opening_banner()
         end
     end
 
-    -- ── Hook ListMenuItem.onTapSelect to capture list-item geometry ──────────
-    -- When a folder profile forces list mode inside a globally-mosaic browser,
-    -- MosaicMenuItem is not used.  Capture the list item's dimen so the banner
-    -- can be pinned to the right-hand edge of the tapped row.
+    -- Hook ListMenuItem.onTapSelect to capture list-item geometry
+    -- (used when a folder profile forces list mode inside a mosaic browser)
     local function try_hook_list()
         local ok, ListMenu = pcall(require, "listmenu")
         if not ok or type(ListMenu) ~= "table" then return end
@@ -180,9 +165,7 @@ local function apply_opening_banner()
     pcall(try_hook_mosaic)
     pcall(try_hook_list)
 
-    -- ── Bottom-corner masking for the banner ────────────────────────────────
-    -- Paints white pixels outside the arc in the bottom-left and bottom-right
-    -- r×r corner zones, matching the cover's rounded corner radius.
+    -- Bottom-corner masking for the banner
     local function _mask_bottom_corners(bb, x, y, w, h, r)
         local color = Blitbuffer.COLOR_WHITE
         for j = 0, r - 1 do
@@ -195,11 +178,8 @@ local function apply_opening_banner()
         end
     end
 
-    -- ── Border that follows rounded bottom corners ───────────────────────────
-    -- Draws a 1px border around the banner.  When r > 0 the bottom-left and
-    -- bottom-right corners are arcs (matching the mask radius) instead of
-    -- sharp right angles.  Must be called AFTER _mask_bottom_corners so the
-    -- border is never overwritten by the masking pass.
+    -- Border that follows rounded bottom corners
+    -- Must be called AFTER _mask_bottom_corners so the border is never overwritten.
     local function _draw_border(bb, x, y, w, h, r, color)
         -- Top edge (always straight)
         bb:paintRect(x, y, w, 1, color)
@@ -232,7 +212,7 @@ local function apply_opening_banner()
         end
     end
 
-    -- ── Tiny inline widget: black rect + centred "Opening" text ─────────────
+    -- Tiny inline widget: black rect + centred "Opening" text
     local OpeningBanner = Widget:extend{}
 
     function OpeningBanner:paintTo(bb, x, y)
@@ -265,7 +245,7 @@ local function apply_opening_banner()
         tw:free()
     end
 
-    -- ── Patch showReaderCoroutine ────────────────────────────────────────────
+    -- Patch showReaderCoroutine
     local _orig = ReaderUI.showReaderCoroutine
 
     ReaderUI.showReaderCoroutine = function(self, file, provider, seamless)
@@ -315,12 +295,9 @@ local function apply_opening_banner()
         UIManager:forceRePaint()
 
         UIManager:nextTick(function()
-            -- Close the banner before opening the reader so it does not persist
-            -- in the UIManager window stack.  An orphaned banner prevents
-            -- _gated_quit from firing (stack is never empty) which causes
-            -- KOReader to hang indefinitely when the user quits from any menu.
-            -- KOReader's own InfoMessage{timeout=0.0} auto-schedules its own
-            -- close on the same tick; this reproduces that behaviour.
+            -- Close the banner before opening the reader: an orphaned banner
+            -- prevents _gated_quit from firing (UIManager stack never empties),
+            -- causing KOReader to hang when the user quits from any menu.
             UIManager:close(banner)
 
             logger.dbg("zen-ui: creating coroutine for showing reader")

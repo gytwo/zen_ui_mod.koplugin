@@ -120,8 +120,7 @@ local function apply_reader_refresh()
     end
 end
 
--- Modes that reinitialise or re-layout the FileManager; must not run while the
--- menu is still open or they will reset the menu back to page 1.
+-- Deferred to avoid resetting the menu to page 1 while it's still open.
 local DISRUPTIVE_MODES = {
     filemanager_layout  = true,
     filemanager_reinit  = true,
@@ -133,7 +132,7 @@ local deferred_poll_active  = false
 local deferred_poll_retries = 0
 local DEFERRED_MAX_RETRIES  = 40 -- 10 s at 0.25 s intervals
 
--- True when the FileManager's TouchMenu overlay is visible.
+-- True when the FileManager's TouchMenu is open.
 local function is_filemanager_menu_open()
     local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
     if not ok or not FileManager or not FileManager.instance then return false end
@@ -155,9 +154,7 @@ local function run_apply_mode_now(mode)
     end
 end
 
--- Called on a 0.25 s interval; applies pending disruptive changes once the
--- menu has been closed.  Caps at DEFERRED_MAX_RETRIES to prevent runaway
--- scheduling if the menu container reference is never cleared.
+-- Polls at 0.25 s intervals until the menu closes, then applies deferred modes.
 local function flush_deferred()
     deferred_poll_active = false
     if is_filemanager_menu_open() and deferred_poll_retries < DEFERRED_MAX_RETRIES then

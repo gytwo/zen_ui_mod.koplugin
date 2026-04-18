@@ -31,47 +31,33 @@ end
 function M.init(logger, plugin)
     if initialized then return true end
 
-    -- Always apply: night-mode scheduler (self-disables when feature is off).
     local night_mode_schedule_fn = load_patch("night_mode_schedule")
     if night_mode_schedule_fn then
         run_patch(logger, plugin, "night_mode_schedule", night_mode_schedule_fn)
     end
 
-    -- Always apply: warmth scheduler (no-ops on devices without natural light).
     local warmth_schedule_fn = load_patch("warmth_schedule")
     if warmth_schedule_fn then
         run_patch(logger, plugin, "warmth_schedule", warmth_schedule_fn)
     end
 
-    -- Always apply: brightness scheduler.
     local brightness_schedule_fn = load_patch("brightness_schedule")
     if brightness_schedule_fn then
         run_patch(logger, plugin, "brightness_schedule", brightness_schedule_fn)
     end
 
-    -- Always apply: disable night mode on Exit/Restart from any menu.
     local disable_night_on_exit_fn = load_patch("disable_night_on_exit")
     if disable_night_on_exit_fn then
         run_patch(logger, plugin, "disable_night_on_exit", disable_night_on_exit_fn)
     end
 
-    -- Always apply: top-14% south swipe opens KOReader menu from any Menu view.
     local menu_top_swipe_fn = load_patch("menu_top_swipe")
     if menu_top_swipe_fn then
         run_patch(logger, plugin, "menu_top_swipe", menu_top_swipe_fn)
     end
 
-    -- -----------------------------------------------------------------
-    -- Device-level power hooks (bypass widget event tree).
-    --
-    -- The widget-level onResume/onSuspend hooks installed by the schedule
-    -- modules rely on KOReader dispatching Resume/Suspend events through
-    -- the entire widget tree down to our plugin.  This can fail if any
-    -- widget earlier in the tree consumes the event.  To guarantee the
-    -- schedules are always (re-)applied on wake, we also hook directly
-    -- into Device._afterResume / Device._beforeSuspend, which run on
-    -- every power transition regardless of the widget stack.
-    -- -----------------------------------------------------------------
+    -- Hook Device._afterResume / _beforeSuspend directly so schedules always
+    -- fire on power events regardless of widget-tree event dispatch.
     local Device = require("device")
     local SCHEDULE_STATES = {
         "__ZEN_UI_NIGHT_SCHEDULE",

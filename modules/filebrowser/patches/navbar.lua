@@ -1,7 +1,5 @@
 local function apply_navbar()
-    -- Bottom Navigation Bar patch for KOReader File Manager
-    -- Adds a tab bar at the bottom with Books, Manga, News, Continue
-    -- Sits below pagination controls
+    -- Bottom nav bar for the KOReader File Manager.
 
     local Blitbuffer = require("ffi/blitbuffer")
     local CenterContainer = require("ui/widget/container/centercontainer")
@@ -64,6 +62,8 @@ local function apply_navbar()
             history = false,
             favorites = false,
             collections = false,
+            authors = false,
+            series = false,
             search = false,
             stats = false,
             exit = false,
@@ -71,7 +71,7 @@ local function apply_navbar()
             page_right = false,
             menu = false,
         },
-        tab_order = { "page_left", "books", "manga", "news", "continue", "history", "favorites", "collections", "stats", "search", "exit", "page_right", "menu" },
+        tab_order = { "page_left", "books", "manga", "news", "continue", "authors", "series", "history", "favorites", "collections", "stats", "search", "exit", "page_right", "menu" },
         show_labels = true,
         books_label = "Library",
         manga_action = "rakuyomi",
@@ -162,6 +162,16 @@ local function apply_navbar()
             id = "collections",
             label = _("Collections"),
             icon = "tab_collections",
+        },
+        {
+            id = "authors",
+            label = _("Authors"),
+            icon = "tab_authors",
+        },
+        {
+            id = "series",
+            label = _("Series"),
+            icon = "tab_series",
         },
         {
             id = "search",
@@ -322,6 +332,16 @@ local function apply_navbar()
         end
     end
 
+    local function onTabAuthors()
+        local AuthorsSeries = zen_plugin._zen_shared and zen_plugin._zen_shared.authors_series
+        if AuthorsSeries then AuthorsSeries.showAuthorsView(injectStandaloneNavbar) end
+    end
+
+    local function onTabSeries()
+        local AuthorsSeries = zen_plugin._zen_shared and zen_plugin._zen_shared.authors_series
+        if AuthorsSeries then AuthorsSeries.showSeriesView(injectStandaloneNavbar) end
+    end
+
     local function onTabSearch()
         local fm = FileManager.instance
         if fm and fm.filesearcher then
@@ -390,6 +410,8 @@ local function apply_navbar()
         history = onTabHistory,
         favorites = onTabFavorites,
         collections = onTabCollections,
+        authors = onTabAuthors,
+        series = onTabSeries,
         search = onTabSearch,
         stats = onTabStats,
         exit = onTabExit,
@@ -399,8 +421,7 @@ local function apply_navbar()
     }
 
     -- === Color text support ===
-    -- TextWidget uses colorblitFrom which converts RGB to grayscale.
-    -- We need colorblitFromRGB32 for actual color rendering.
+    -- TextWidget.colorblitFrom converts to grayscale; colorblitFromRGB32 needed for color.
 
     local RenderText = require("ui/rendertext")
 
@@ -447,9 +468,7 @@ local function apply_navbar()
     end
 
     -- === Colored icon widget ===
-    -- Flattened icons are black-on-white, but colorblitFromRGB32 treats bright
-    -- pixels as full coverage. We invert the bitmap so the icon shape (now white)
-    -- gets full color and the background (now black) gets none, then restore it.
+    -- Invert icon bitmap so colored pixels get full coverage, then restore.
 
     local ColorIconWidget = IconWidget:extend{
         _tint_color = nil,
@@ -762,6 +781,10 @@ local function apply_navbar()
     local standalone_view_names = {
         history = true,
         collections = true,
+        authors = true,
+        series = true,
+        authors_detail = true,
+        series_detail = true,
         stats = true,
         library_view = true, -- Rakuyomi
     }
@@ -861,8 +884,7 @@ local function apply_navbar()
         end
     end
 
-    -- === Inject navbar INTO the existing fm_ui FrameContainer ===
-    -- Deferred to run AFTER all plugins (coverbrowser etc.) finish init
+    -- Inject navbar into FM after all plugins finish init.
 
     local function resizeFileChooser(file_chooser, target_height)
         if not file_chooser or target_height <= 0 then
@@ -964,6 +986,10 @@ local function apply_navbar()
                 menu:onClose()
             else
                 UIManager:close(menu)
+            end
+            -- Unwind any parent stack (e.g. authors/series group view under a detail view)
+            if menu._zen_close_stack then
+                menu._zen_close_stack()
             end
 
             -- Update FM navbar active tab

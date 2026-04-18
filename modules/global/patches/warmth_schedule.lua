@@ -1,19 +1,8 @@
 local function apply_warmth_schedule()
     --[[
-        Automatically sets screen warmth at two user-defined times each day.
-        Only active on devices with a natural-light (warm/cool) frontlight.
-
-        Uses UIManager:scheduleIn / unschedule with stable function references,
-        matching the same pattern as night_mode_schedule.lua.  On every resume
-        the correct warmth is applied immediately (in case the transition
-        happened during sleep), then both timers are re-armed from now.
-
-        Public reschedule() is exposed via __ZEN_UI_WARMTH_SCHEDULE so that
-        settings callbacks can trigger an immediate re-apply on config changes.
-
-        Note: Device:hasNaturalLight() is checked at call-time inside set_warmth
-        rather than at init time, because on some devices the warm-light hardware
-        is not yet fully initialised when the plugin loads.
+        Sets screen warmth at two user-defined times per day.
+        Only active on devices with natural-light frontlight.
+        State survives module reloads via __ZEN_UI_WARMTH_SCHEDULE.
     --]]
 
     local Device = require("device")
@@ -28,8 +17,7 @@ local function apply_warmth_schedule()
         _G.__ZEN_UI_WARMTH_SCHEDULE = state
     end
 
-    -- Always (re-)install hooks on the current plugin instance so they survive
-    -- FileManager:reinit (which destroys and recreates the ZenUI widget).
+    -- Re-install hooks on the current plugin instance (survives FileManager:reinit).
     do
         local orig_suspend = zen_plugin.onSuspend
         zen_plugin.onSuspend = function(self, ...)
@@ -51,9 +39,7 @@ local function apply_warmth_schedule()
 
     if state.initialized then return end
 
-    -- -------------------------------------------------------------------------
     -- Helpers
-    -- -------------------------------------------------------------------------
 
     local function is_enabled()
         local plugin   = zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")

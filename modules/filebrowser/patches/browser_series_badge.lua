@@ -1,27 +1,8 @@
 --[[
     browser_series_badge.lua
-    ─────────────────────────────────────────────────────────────────────────────
-    Paints a small series-index badge for books in mosaic mode.
-
-    Mosaic mode:  dark pill badge at the bottom-right corner of each book cover,
-                  showing "#1", "#2", etc. for the book's position in its series.
-
-    Controlled by:  config.browser_series_badge.show_series_badge  (bool)
-    Default:        false  (opt-in)
-
-    Series index source:
-      BookInfoManager.getBookInfo.series_index — SQLite DB populated by
-      CoverBrowser's background scan.  Will be nil for books never scanned,
-      and for books not in any series.
-
-    Requires CoverBrowser plugin (bookinfomanager); silently inert without it.
-    Wraps MosaicMenuItem.paintTo *after* browser_page_count has already patched
-    it, so the series badge is painted on top of all other badge layers.
-
-    Badge is drawn directly to the blitbuffer (no FrameContainer widget) to avoid
-    bordersize = 0 rendering edge-cases present in some KOReader builds.
-    Position: bottom-right of cover frame, mirroring the page count badge which
-    sits at bottom-left.
+    Mosaic: "#N" pill badge bottom-right of cover.
+    Controlled by config.browser_series_badge.show_series_badge. Requires CoverBrowser.
+    Badge drawn directly to blitbuffer; wraps paintTo after browser_page_count.
 ]]
 
 local function apply_browser_series_badge()

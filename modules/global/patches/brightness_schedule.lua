@@ -1,16 +1,7 @@
 local function apply_brightness_schedule()
     --[[
-        Automatically sets frontlight brightness at two user-defined times
-        each day.
-
-        Uses UIManager:scheduleIn / unschedule with stable function references,
-        matching the same pattern as night_mode_schedule.lua.  On every resume
-        the correct brightness is applied immediately, then both timers are
-        re-armed from now.
-
-        Public reschedule() is exposed via __ZEN_UI_BRIGHTNESS_SCHEDULE so
-        that settings callbacks can trigger an immediate re-apply on config
-        changes.
+        Sets frontlight brightness at two user-defined times per day.
+        State survives module reloads via __ZEN_UI_BRIGHTNESS_SCHEDULE.
     --]]
 
     local Device     = require("device")
@@ -25,8 +16,7 @@ local function apply_brightness_schedule()
         _G.__ZEN_UI_BRIGHTNESS_SCHEDULE = state
     end
 
-    -- Always (re-)install hooks on the current plugin instance so they survive
-    -- FileManager:reinit (which destroys and recreates the ZenUI widget).
+    -- Re-install hooks on the current plugin instance (survives FileManager:reinit).
     do
         local orig_suspend = zen_plugin.onSuspend
         zen_plugin.onSuspend = function(self, ...)
@@ -48,9 +38,7 @@ local function apply_brightness_schedule()
 
     if state.initialized then return end
 
-    -- -------------------------------------------------------------------------
     -- Helpers
-    -- -------------------------------------------------------------------------
 
     local function is_enabled()
         local plugin   = zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")

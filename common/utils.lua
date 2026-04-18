@@ -40,10 +40,8 @@ function M.set_at_path(tbl, path, value)
     node[path[#path]] = value
 end
 
---- Resolve an icon name to an absolute file path within a plugin icons directory.
---- Checks for <name>.svg then <name>.png. Returns the path string or nil.
---- Pass the result as `file =` to IconWidget/ColorIconWidget instead of `icon =`.
---- @param icons_dir string  absolute path to the icons dir, ending with "/"
+--- Resolve an icon name to an absolute file path (checks .svg then .png).
+--- @param icons_dir string  absolute path ending with "/"
 --- @param name      string  icon name without extension
 --- @return          string|nil
 function M.resolveLocalIcon(icons_dir, name)
@@ -56,20 +54,17 @@ function M.resolveLocalIcon(icons_dir, name)
     return nil
 end
 
---- Register plugin icons so short names resolve immediately via IconWidget.
---- Injects name→path entries into IconWidget's module-local ICONS_PATH cache,
---- and optionally copies the files into KOReader's user icons directory so they
---- also resolve on subsequent cold starts (without the cache injection).
+--- Register plugin icons so short names resolve via IconWidget at runtime.
+--- Optionally copies files to the user icons dir for cold-start resolution.
 ---
 --- @param icons_dir        string   absolute path to the plugin icons dir, ending with "/"
---- @param icons            table    mapping of { [icon_name] = "filename.ext", ... }
---- @param copy_to_user_dir boolean  when true, also copy files to DataStorage icons dir
+--- @param icons            table    { [icon_name] = "filename.ext", ... }
+--- @param copy_to_user_dir boolean  also copy files to DataStorage icons dir
 function M.registerPluginIcons(icons_dir, icons, copy_to_user_dir)
     if not icons_dir or type(icons) ~= "table" then return end
     pcall(function()
         local lfs = require("libs/libkoreader-lfs")
 
-        -- Copy files to user icons dir (for restart-based resolution by the scanner)
         if copy_to_user_dir then
             pcall(function()
                 local DataStorage = require("datastorage")
@@ -115,11 +110,7 @@ function M.registerPluginIcons(icons_dir, icons, copy_to_user_dir)
     end)
 end
 
---- Override built-in KOReader icons by name at runtime.
---- Wraps IconWidget.init so that after normal icon resolution,
---- the file path is swapped to our replacement for matching names.
---- Does NOT modify any original icon files on disk.
----
+--- Override built-in KOReader icons by name at runtime (does not modify disk).
 --- @param overrides table  map of icon_name → absolute replacement path
 function M.overrideIcons(overrides)
     local lfs = require("libs/libkoreader-lfs")
@@ -160,12 +151,9 @@ local function _C(ctx, msgid)
     return _C_cache(ctx, msgid)
 end
 
---- Returns a localised page-count label.
---- long=false (default): abbreviated form, e.g. "100\u{00A0}p."  (for mosaic badges)
---- long=true:            full word form,  e.g. "100\u{00A0}pages" (for list-view text)
---- The label is translated via pgettext using the page_count / page_count_long context.
+--- Localised page-count label (abbreviated or full word form).
 --- @param pages number
---- @param long  boolean|nil
+--- @param long  boolean|nil  true for full form ("pages"), false for short ("p.")
 --- @return string
 function M.formatPageCount(pages, long)
     local ctx = long and "page_count_long" or "page_count"

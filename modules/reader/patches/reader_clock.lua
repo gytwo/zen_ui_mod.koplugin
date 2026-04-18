@@ -1,27 +1,7 @@
 local function apply_reader_clock()
     --[[
-        This Zen UI feature adds a "header" into the reader display, similar to the footer at the bottom.
-
-        It draws all configured items at the top of the screen, centered, and with a small padding
-        between the text and the top edge. It is only drawn for "reflowable" documents like EPUB
-        and not for "fixed layout" documents like PDF and CBZ.
-
-        It is up to you to provide enough of a top margin so that your book contents are not
-        obscured by the header. You'll know right away if you need to increase the top margin.
-
-        Right now the header is configured manually, see the comments in the code below for details.
-        The set of variable names I added below match their equivalents in ReaderFooter, for better
-        or worse. I provided a set of "status bar items" that I thought made the most sense.
-
-        If someone wanted to make a whole settings UI, I think that'd be great. Maybe even use the
-        built-in ReaderFooter UI somehow? With the new "status bar presets", maybe saving one with a
-        special name like "header_preset" and parsing it for what to display.
-
-        But until someone does that, if what you want isn't already included here, then you can view
-        the existing ReaderFooter code at the link below. Anything it can do, this can do too, but
-        accessing values is a little different. The examples I've provided should give plenty of hints.
-
-        https://github.com/koreader/koreader/blob/master/frontend/apps/reader/modules/readerfooter.lua
+        Paints a configurable header line at the top of the reader screen (reflowable docs only).
+        Wraps ReaderView.paintTo. Config via config.reader_clock.
     --]]
 
     local Blitbuffer = require("ffi/blitbuffer")
@@ -67,7 +47,7 @@ local function apply_reader_clock()
             return
         end
         -- don't change anything above this line
-        local screen_width = Screen:getWidth() -- always fresh (handles rotation and early-init edge cases)
+        local screen_width = Screen:getWidth() -- always fresh
         local zen_clock_config = zen_plugin and zen_plugin.config and zen_plugin.config.reader_clock
 
 
@@ -82,12 +62,12 @@ local function apply_reader_clock()
             header_font_face = clock_face_cfg
         end
         local header_font_size = (type(zen_clock_config) == "table" and zen_clock_config.font_size) or 14
-        local header_font_bold = header_settings and header_settings.text_font_bold or false -- Will use your footer setting if available
-        local header_font_color = Blitbuffer.COLOR_BLACK -- black is the default, but there's 15 other shades to try
-        local header_top_padding = Size.padding.small -- replace small with default or large for more space at the top
-        local header_use_book_margins = true -- Use same margins as book for header
-        local header_margin = Size.padding.large -- Use this instead, if book margins is set to false
-        local header_max_width_pct = 100 -- this % is how much space the header can use before "truncating..."
+        local header_font_bold = header_settings and header_settings.text_font_bold or false
+        local header_font_color = Blitbuffer.COLOR_BLACK -- 16 shades of gray available
+        local header_top_padding = Size.padding.small -- small/default/large
+        local header_use_book_margins = true
+        local header_margin = Size.padding.large -- used when header_use_book_margins is false
+        local header_max_width_pct = 100 -- max width before truncating
         local separator = {
             bar     = "|",
             bullet  = "•",
@@ -100,7 +80,6 @@ local function apply_reader_clock()
 
 
         -- You probably don't need to change anything in the section below this line
-        -- Title and Author(s):
         local book_title = ""
         local book_author = ""
         if self.ui.doc_props then
@@ -111,7 +90,7 @@ local function apply_reader_clock()
             end
         end
         -- Page count and percentage
-        local pageno = self.state.page or 1 -- Current page
+        local pageno = self.state.page or 1
         local pages = self.ui.doc_settings.data.doc_pages or 1
         local page_progress = ("%d / %d"):format(pageno, pages)
         local pages_left_book  = pages - pageno
@@ -122,12 +101,12 @@ local function apply_reader_clock()
         local pages_left = 0
         local pages_done = 0
         if self.ui.toc then
-            book_chapter = self.ui.toc:getTocTitleByPage(pageno) or "" -- Chapter name
+            book_chapter = self.ui.toc:getTocTitleByPage(pageno) or ""
             pages_chapter = self.ui.toc:getChapterPageCount(pageno) or pages
             pages_left = self.ui.toc:getChapterPagesLeft(pageno) or self.ui.document:getTotalPagesLeft(pageno)
             pages_done = self.ui.toc:getChapterPagesDone(pageno) or 0
         end
-        pages_done = pages_done + 1 -- This +1 is to include the page you're looking at
+        pages_done = pages_done + 1 -- include current page
         local chapter_progress = pages_done .. " ⁄⁄ " .. pages_chapter
         -- Clock:
         local use_24h = type(zen_clock_config) == "table" and zen_clock_config.use_24h == true
@@ -149,7 +128,6 @@ local function apply_reader_clock()
         -- ===========================!!!!!!!!!!!!!!!=========================== -
         -- What you put here will show in the header:
         local centered_header = string.format("%s", time)
-        -- Look up "string.format" in Lua if you need help.
         -- ===========================!!!!!!!!!!!!!!!=========================== -
 
 

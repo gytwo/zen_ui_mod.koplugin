@@ -38,6 +38,7 @@ local PATCH_MODULES = {
     browser_page_count = "modules/filebrowser/patches/browser_page_count",
     browser_series_badge = "modules/filebrowser/patches/browser_series_badge",
     search = "modules/filebrowser/patches/search",
+    authors_series = "modules/filebrowser/patches/authors_series",
 }
 
 local function is_feature_enabled(plugin, key)
@@ -81,73 +82,54 @@ function M.init(logger, plugin)
         return true
     end
 
-    -- Always apply: disable all MovableContainer drag gestures so no modal
-    -- can be dragged around the screen.
     local disable_modal_drag_fn = load_patch("disable_modal_drag")
     if disable_modal_drag_fn then
         run_feature(logger, plugin, "disable_modal_drag", disable_modal_drag_fn)
     end
 
-    -- Always apply: suppress the screen-flash caused by swiping a Menu that
-    -- has only one page.  onNextPage/onPrevPage normally still call updateItems
-    -- even when there is nothing to scroll to.
     local menu_single_page_scroll_guard_fn = load_patch("menu_single_page_scroll_guard")
     if menu_single_page_scroll_guard_fn then
         run_feature(logger, plugin, "menu_single_page_scroll_guard", menu_single_page_scroll_guard_fn)
     end
 
-    -- Always apply: per-folder sort overrides.  Must run before context_menu so
-    -- the __ZEN_FOLDER_SORT API is available when the context menu builds its
-    -- Sort-by submenu for a long-pressed folder.
+    -- Must run before context_menu so __ZEN_FOLDER_SORT is available.
     local browser_folder_sort_fn = load_patch("browser_folder_sort")
     if browser_folder_sort_fn then
         run_feature(logger, plugin, "browser_folder_sort", browser_folder_sort_fn)
     end
 
-    -- Always apply: replaces the long-hold context menu with a minimal layout
     local context_menu_fn = load_patch("context_menu")
     if context_menu_fn then
         run_feature(logger, plugin, "context_menu", context_menu_fn)
     end
 
-    -- Always apply: custom layout for detailed list mode (title / author / series
-    -- on the left, progress % or folder item count on the right).
     local browser_list_item_layout_fn = load_patch("browser_list_item_layout")
     if browser_list_item_layout_fn then
         run_feature(logger, plugin, "browser_list_item_layout", browser_list_item_layout_fn)
     end
 
-    -- Always apply: remove dog-ears, move favorite star to top-left in mosaic,
-    -- add optional progress % badge at top-right in mosaic, hide list dog-ear.
     local browser_cover_badges_fn = load_patch("browser_cover_badges")
     if browser_cover_badges_fn then
         run_feature(logger, plugin, "browser_cover_badges", browser_cover_badges_fn)
     end
 
-    -- Always apply: uniform portrait (2:3) sizing for native book covers in
-    -- mosaic mode – prevents landscape covers from rendering wider than others.
     local browser_cover_mosaic_uniform_fn = load_patch("browser_cover_mosaic_uniform")
     if browser_cover_mosaic_uniform_fn then
         run_feature(logger, plugin, "browser_cover_mosaic_uniform", browser_cover_mosaic_uniform_fn)
     end
 
-    -- Always apply: rounded corner masks on mosaic covers (book + folder).
-    -- The per-paint guard reads the live config, so no restart is needed.
+    -- Per-paint guard reads live config; no restart needed to toggle.
     local browser_cover_rounded_corners_fn = load_patch("browser_cover_rounded_corners")
     if browser_cover_rounded_corners_fn then
         run_feature(logger, plugin, "browser_cover_rounded_corners", browser_cover_rounded_corners_fn)
     end
 
-    -- Always apply: dynamically enforce show_hidden based on home dir boundary
-    -- when the developer option is enabled.
     local browser_show_hidden_fn = load_patch("browser_show_hidden")
     if browser_show_hidden_fn then
         run_feature(logger, plugin, "browser_show_hidden", browser_show_hidden_fn)
     end
 
-    -- Conditionally apply: pre-populate BookInfoManager's SQLite cache for all
-    -- books in the current directory.  Controlled by the "Preload book metadata"
-    -- toggle in global settings (default on).  Requires CoverBrowser plugin.
+    -- Requires CoverBrowser plugin.
     local _preload_cfg = type(plugin.config.browser_preload_bookinfo) == "table"
         and plugin.config.browser_preload_bookinfo or {}
     if _preload_cfg.preload_bookinfo ~= false then
@@ -157,31 +139,26 @@ function M.init(logger, plugin)
         end
     end
 
-    -- Always apply: page-count badge on mosaic covers (bottom-left pill).
-    -- List mode page count is rendered inside browser_list_item_layout (reads the
-    -- same config flag).  Requires CoverBrowser; silently inert without it.
     local browser_page_count_fn = load_patch("browser_page_count")
     if browser_page_count_fn then
         run_feature(logger, plugin, "browser_page_count", browser_page_count_fn)
     end
 
-    -- Always apply: series-index badge on mosaic covers (bottom-right pill).
-    -- Shows "#N" for the book's position in its series.  Requires CoverBrowser;
-    -- silently inert without it.  Controlled by show_series_badge config flag.
     local browser_series_badge_fn = load_patch("browser_series_badge")
     if browser_series_badge_fn then
         run_feature(logger, plugin, "browser_series_badge", browser_series_badge_fn)
     end
 
-    -- Always apply: pill-shaped horizontal scroll bar replacing the default
-    -- chevron/page-number pagination footer in the file browser.
+    local authors_series_fn = load_patch("authors_series")
+    if authors_series_fn then
+        run_feature(logger, plugin, "authors_series", authors_series_fn)
+    end
+
     local zen_scroll_bar_fn = load_patch("zen_scroll_bar")
     if zen_scroll_bar_fn then
         run_feature(logger, plugin, "zen_scroll_bar", zen_scroll_bar_fn)
     end
 
-    -- Ensure the runtime-patches registry exists (zen_settings_apply.lua creates
-    -- it, but initialise defensively here in case load order ever changes).
     local runtime_patches = rawget(_G, "__ZEN_UI_RUNTIME_PATCHES")
     if type(runtime_patches) ~= "table" then
         runtime_patches = {}
@@ -193,9 +170,7 @@ function M.init(logger, plugin)
             local fn, err = load_patch(feature)
             if fn then
                 local ok = run_feature(logger, plugin, feature, fn)
-                -- Mark as applied so zen_settings_apply.lua's ensure_patch_loaded()
-                -- does not re-run the patch (which would double-wrap all hooks and
-                -- corrupt the widget tree, causing a crash on the next reinit).
+                -- Prevent double-wrap on reinit.
                 if ok then
                     runtime_patches[feature] = true
                 end

@@ -1,19 +1,7 @@
 local function apply_context_menu()
     --[[
-        Replaces the long-hold file/folder context menu in the file browser with
-        a clean, minimal layout:
-
-            New folder
-            Move          (opens PathChooser to pick destination, then moves immediately)
-            Add/Remove from favorites
-            Description   (files only: shows book description if one exists)
-            Book status ▶ (files only: Unread · Reading · On hold · Finished)
-            View ▶        (current dir only: Mosaic · List (detailed) · List (basic))
-            Edit ▶        (anchored submenu at right edge: Select · Rename · Delete · Cut · Copy · Paste)
-
-        Everything else (book info, collections, open with, reset, status rows,
-        scripts, converter, shortcuts, etc.) is intentionally hidden.
-        No feature toggle – always active.
+        Replaces the long-hold file/folder context menu with a minimal layout.
+        Always active; delegates to stock KOReader outside home_dir.
     ]]
 
     local BD           = require("ui/bidi")
@@ -56,8 +44,7 @@ local function apply_context_menu()
         local MAX_DEPTH = 3
         local items    = {}
 
-        -- Root / Home entry — omitted only when the book already lives there
-        -- (moving it would be a no-op).
+        -- Skip root if the item already lives there (moving would be a no-op).
         if not self.src_dir or self.src_dir ~= root then
             table.insert(items, {
                 text           = ffiUtil3.basename(root),
@@ -127,13 +114,10 @@ local function apply_context_menu()
         local file_chooser = self.file_chooser
         local file_manager = self
 
-        -- Capture the original showFileDialog installed by setupLayout so we
-        -- can delegate to it when not in the home directory.
         local orig_showFileDialog = file_chooser.showFileDialog
 
-        -- Replace the instance-level showFileDialog defined by setupLayout
         file_chooser.showFileDialog = function(self_fc, item)
-            -- Delegate to the stock KOReader dialog outside the home directory.
+            -- Delegate to stock KOReader dialog outside home directory.
             local g_settings = rawget(_G, "G_reader_settings")
             local home_dir   = g_settings and g_settings:readSetting("home_dir")
             local cur_path   = self_fc.path or ""
@@ -161,9 +145,7 @@ local function apply_context_menu()
                 self_fc:refreshPath()
             end
 
-            -- Build dialog header: cover left / text right (OverlapGroup) when a cover is
-            -- available; text-only otherwise.  dialog_title is always set (used by the
-            -- status sub-dialog and the text-only fallback).
+            -- Build dialog header: cover+text when cover available, text-only otherwise.
             local dialog_title, dialog_cover_widget, book_description
 
             -- Open the full-resolution cover art in a fullscreen ImageViewer.

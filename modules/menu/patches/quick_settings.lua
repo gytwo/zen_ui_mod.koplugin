@@ -1,12 +1,7 @@
 local function apply_quick_settings()
-    -- Quick Settings tab for KOReader top menu
-    -- Adds a new tab at the far left with Wi-Fi, action buttons, and frontlight/warmth sliders.
-    -- Works in both File Manager and Book Reader views.
-    -- Additional buttons for the Quick Settings tab.
-    -- Adds optional buttons for OPDS Catalog, NotionSync, and Reading Streak.
-    -- OPDS Catalog is included with KOReader and allows browsing OPDS book catalogs.
-    -- NotionSync plugin by Cezary Pukownik: https://github.com/CezaryPukownik/notionsync.koplugin
-    -- Reading Streak plugin by advokatb: https://github.com/advokatb/readingstreak.koplugin
+    -- Quick settings tab (Wi-Fi, action buttons, sliders) for FileManager and Reader.
+    -- Optional external plugin buttons: NotionSync (CezaryPukownik/notionsync.koplugin),
+    -- Reading Streak (advokatb/readingstreak.koplugin), OPDS Catalog (built-in KOReader).
 
     local Blitbuffer = require("ffi/blitbuffer")
     local CenterContainer = require("ui/widget/container/centercontainer")
@@ -145,7 +140,7 @@ local function apply_quick_settings()
             label = _("Wi-Fi"),
             label_func = function()
                 if NetworkMgr:isWifiOn() then
-                    local net = NetworkMgr:getCurrentNetwork()
+                    local net = NetworkMgr.getCurrentNetwork and NetworkMgr:getCurrentNetwork()
                     if net and net.ssid then
                         return net.ssid
                     end
@@ -212,7 +207,7 @@ local function apply_quick_settings()
             icon = "quick_usb",
             label = _("USB"),
             callback = function()
-                if Device:canToggleMassStorage() then
+                if Device.canToggleMassStorage and Device:canToggleMassStorage() then
                     UIManager:broadcastEvent(Event:new("RequestUSBMS"))
                 end
             end,
@@ -409,7 +404,6 @@ local function apply_quick_settings()
 
         -- ----- Top row: action buttons -----
 
-        -- Collect visible buttons in order
         local visible_buttons = {}
         for _, id in ipairs(config.button_order) do
             if config.show_buttons[id] and button_defs[id] then
@@ -422,7 +416,6 @@ local function apply_quick_settings()
         local icon_size = math.floor(action_btn_size * 0.5)
         local label_font = Font:getFace("xx_smallinfofont")
 
-        -- Active styling
         local normal_border = Screen:scaleBySize(2)
 
         local function makeActionButton(icon_name, label_text, active)
@@ -477,7 +470,6 @@ local function apply_quick_settings()
             return group, circle
         end
 
-        -- Build button row
         local top_row = HorizontalGroup:new{ align = "center" }
 
         if num_buttons > 0 then
@@ -578,7 +570,6 @@ local function apply_quick_settings()
         end
         table.insert(panel, VerticalSpan:new{ width = Screen:scaleBySize(8) })
 
-        -- Store refs on the touch_menu for gesture handlers
         touch_menu._qs_refs = refs
 
         return panel

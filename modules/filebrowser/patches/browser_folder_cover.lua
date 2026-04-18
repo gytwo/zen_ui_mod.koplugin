@@ -1,6 +1,5 @@
 local function apply_browser_folder_cover()
-    -- Capture plugin reference at apply-time (same pattern as browser_cover_rounded_corners).
-    -- __ZEN_UI_PLUGIN is only set transiently so rawget at runtime returns nil.
+    -- Capture plugin reference at apply-time.
     local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
 
     local AlphaContainer = require("ui/widget/container/alphacontainer")
@@ -86,11 +85,8 @@ local function apply_browser_folder_cover()
     local cached_list = {}
 
     function FileChooser:getListItem(dirpath, f, fullpath, attributes, collate)
-        -- For directory items under a time-based collate ("last read date" / "date modified"),
-        -- skip the cache and compute the sort key as the maximum access/modification time
-        -- among files directly inside the folder.  A folder's own filesystem atime is NOT
-        -- updated when a book inside it is read, so without this the folder would never move
-        -- to the front of a "most recently read" list.
+        -- For time-based collate on directories, compute sort key from children's
+        -- max atime/mtime (folder's own atime is not updated when books are read).
         if attributes.mode == "directory" and collate
                 and collate.can_collate_mixed and collate.mandatory_func and not collate.item_func then
             local item = orig_FileChooser_getListItem(self, dirpath, f, fullpath, attributes, collate)
@@ -124,9 +120,7 @@ local function apply_browser_folder_cover()
         return cached_list[key]
     end
 
-    -- Invalidate the list-item cache whenever the file chooser rescans a directory
-    -- (non-dummy call).  Without this the cache grows unbounded across all
-    -- directories visited during a session.
+    -- Invalidate cache on directory rescan to prevent unbounded growth.
     local orig_FileChooser_genItemTableFromPath = FileChooser.genItemTableFromPath
 
     function FileChooser:genItemTableFromPath(path)
@@ -176,10 +170,7 @@ local function apply_browser_folder_cover()
         local original_update = MosaicMenuItem.update
         local logger = require("logger")
 
-        -- ── Folder book-count badge drawn at paint time ──────────────────────────
-        -- Mirrors browser_series_badge / browser_page_count: circle is drawn
-        -- directly to the blitbuffer so it reads corner_mark_size at the moment
-        -- paintTo fires, guaranteeing it scales identically to all other badges.
+        -- Folder book-count badge drawn directly at paint time.
         local _BlitBadge = require("ffi/blitbuffer")
         local _FontBadge = require("ui/font")
         local _TW        = require("ui/widget/textwidget")
@@ -193,9 +184,7 @@ local function apply_browser_folder_cover()
             end
         end
 
-        -- Walk the MosaicMenuItem.paintTo wrapper chain to find the `uv` accessor
-        -- that lives inside browser_cover_badges' closure – same technique used by
-        -- browser_page_count and browser_series_badge.
+        -- Walk the paintTo wrapper chain for the uv accessor from browser_cover_badges.
         local function find_uv_fn(fn, depth)
             depth = depth or 0
             if depth > 10 or type(fn) ~= "function" then return nil end
@@ -210,24 +199,18 @@ local function apply_browser_folder_cover()
             end
             return nil
         end
-        -- Captured here (once, at setupLayout time); the uv closure itself reads
-        -- corner_mark_size as a live shared upvalue so it reflects grid changes.
+        -- Captured once at setupLayout time; uv reads corner_mark_size live.
         local _badge_uv_fn = find_uv_fn(MosaicMenuItem.paintTo)
 
-        -- Wrap paintTo so the folder count circle is drawn after all inner layers.
         local orig_folder_paintTo = MosaicMenuItem.paintTo
         function MosaicMenuItem:paintTo(bb, x, y)
             orig_folder_paintTo(self, bb, x, y)
             local count = rawget(self, "_zen_folder_count")
             if not count then return end
 
-            -- Use the cover geometry stored at update() time to position the badge.
-            -- The folder widget tree is deeper than a book cover, so widget-tree
-            -- navigation (self[1][1][1]) lands on the wrong widget; using stored
-            -- dimen avoids that entirely.
+            -- Use stored cover dimen to position the badge (widget-tree depth differs from books).
             local cd = rawget(self, "_zen_cover_dimen")
             if not (cd and cd.w and cd.w > 0) then return end
-
             local corner_mark_size = (_badge_uv_fn and _badge_uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
 
@@ -248,7 +231,7 @@ local function apply_browser_folder_cover()
             local diam   = math.max(tw_sz.w, tw_sz.h) + math.floor(corner_mark_size * 0.3)
             local r      = math.floor(diam / 2)
             local margin = math.floor(corner_mark_size * 0.3)
-            -- top-right corner of cover frame
+            -- top-right of cover frame
             local cx = cover_x + cd.w - r - margin
             local cy = cover_y + r + margin
 
@@ -261,36 +244,26 @@ local function apply_browser_folder_cover()
             if tw.free then tw:free() end
         end
 
-        -- Tracks file paths where we have already attempted a DB-row migration
-        -- this session, so we don't hammer the DB with repeated SQL on every
-        -- refresh call for the same path.
+        -- Per-session set to avoid repeated SQL for the same path.
         local zen_migrated_paths = {}
 
-        -- Walk up the directory tree looking for a DB entry that shares the same
-        -- filename as `path`.  Handles the common case where a book was moved into
-        -- a subfolder but the BookInfoManager DB row still points to the old path
-        -- in a parent directory.  Stops at the reader home_dir boundary or after
-        -- MAX_LEVELS ancestor directories, whichever comes first.
+        -- Walk ancestor dirs for a DB entry matching basename; handles books moved to subfolders.
         local ffiUtil = require("ffi/util")
         local MAX_ANCESTOR_LEVELS = 3
 
         local function getBookInfoWithFallback(path)
-            -- Exact match first.  Pass true (get_cover=true) so cover_bb is
-            -- loaded from the DB; callers always need the cover blitbuffer.
             local bi = BookInfoManager:getBookInfo(path, true)
             if bi then return bi, path end
 
             local basename = ffiUtil.basename(path)
             local home_dir = G_reader_settings and G_reader_settings:readSetting("home_dir") or nil
 
-            -- Only search within the reader home directory.
+            -- Search ancestor dirs only within home_dir.
             if not home_dir or path:sub(1, #home_dir) ~= home_dir then
                 return nil, nil
             end
 
-            -- Walk: at each step move one level up from the current dir and
-            -- probe  <ancestor>/<basename>.  This finds the old DB entry when
-            -- the book was moved from an ancestor directory into a subfolder.
+            -- Probe <ancestor>/<basename> at each level up.
             local dir = ffiUtil.dirname(path)  -- immediate containing dir
             for _ = 1, MAX_ANCESTOR_LEVELS do
                 local parent = ffiUtil.dirname(dir)
@@ -314,8 +287,7 @@ local function apply_browser_folder_cover()
             return nil, nil
         end
 
-        -- Best-effort: update the DB row from old_path to new_path so that future
-        -- lookups use the exact path.  Silently swallowed on any error.
+        -- Best-effort DB path migration; silently ignored on error.
         local function tryMigrateBookInfoPath(old_path, new_path)
             if old_path == new_path then return end
             pcall(function()
@@ -412,19 +384,8 @@ local function apply_browser_folder_cover()
 
         -- cover item
         function MosaicMenuItem:update(...)
-            -- Per-item guard: while we have an ancestor cover painted and bookinfo
-            -- is not yet in the DB at this path, block ALL update() calls.
-            -- orig_biu (CoverBrowser's onBookInfoUpdated handler) calls item:update()
-            -- then UIManager:setDirty() for the item region.  If original_update()
-            -- runs with nil bookinfo it rebuilds a FakeCover at slightly different
-            -- pixel dimensions than our ancestor cover (browser_cover_mosaic_uniform
-            -- subtracts 6px UNDERLINE_RESERVE that our cover doesn't).  The e-ink
-            -- partial repaint then redraws a smaller region, leaving ghost pixels
-            -- from the outer edge of our taller cover ("distorted/shifted" look).
-            -- Blocking original_update() entirely prevents that mismatch.
-            -- When bookinfo finally arrives (SQL migration or extraction), we let one
-            -- update() through with refresh_dimen cleared so the full cell repaints
-            -- and cleanly overwrites the ancestor cover.
+            -- Guard: block update() while ancestor cover is shown but bookinfo isn't
+            -- in the DB yet, to prevent dimension mismatches and ghost pixels.
             if self._zen_ancestor_cover then
                 if self.entry and (self.entry.is_file or self.entry.file) then
                     local _p = self.entry.path or self.entry.file
@@ -444,15 +405,8 @@ local function apply_browser_folder_cover()
                 if not self.do_cover_image or not self.mandatory then return end
             end
 
-            -- File items: if the book is not yet in the DB at its current path
-            -- (freshly moved), immediately render its cover from ancestor bookinfo
-            -- rather than showing KOReader's default FakeCover for several seconds.
-            -- The cover widget is built to match the standard coverbrowser structure:
-            --   _underline_container[1] = OverlapGroup
-            --     [1] = FrameContainer (bordersize set)  ← target for rounded_corners
-            -- This lets browser_cover_rounded_corners locate and mask the frame.
-            -- KOReader's native onBookInfoUpdated fires update() on the item once
-            -- extraction finishes, at which point standard rendering takes over.
+            -- For moved books: render cover from ancestor bookinfo instead of FakeCover
+            -- while KOReader's extraction runs. Standard rendering takes over on update.
             local _resolved_path = self.entry.path or self.entry.file
             if (self.entry.is_file or self.entry.file) and _resolved_path then
                 local path = _resolved_path
@@ -460,11 +414,8 @@ local function apply_browser_folder_cover()
                 if not bookinfo then
                     local ancestor_bi, ancestor_path = getBookInfoWithFallback(path)
                     if ancestor_bi and ancestor_path ~= path and ancestor_bi.cover_bb then
-                        -- Build immediate cover widget from ancestor bookinfo.
                         -- Copy the blitbuffer: BookInfoManager frees its cached copy
-                        -- when extraction completes and replaces the cache entry.
-                        -- Without a copy, paintTo crashes with "cannot render image"
-                        -- on the next repaint after extraction finishes.
+                        -- after extraction; painting a freed buffer crashes.
                         local cover_bb_copy = ancestor_bi.cover_bb:copy()
                         local border = Folder.face.border_size
                         local max_w = self.width - 2 * border

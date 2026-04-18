@@ -1,34 +1,10 @@
 local function apply_browser_preload_bookinfo()
     --[[
-        Pre-populates the CoverBrowser metadata cache (bookinfo_cache.sqlite3) for
-        every book in the current directory, not just the items on the visible page.
-
-        Without this patch, BookInfoManager only extracts cover images and page counts
-        on demand as the user pages through the file browser.  Covers and page numbers
-        for books on page 2, 3, … remain blank until navigationr reaches them.
-
-        Mechanism
-        ─────────
-        • Hooks FileChooser.refreshPath, which fires on FileManager init *and* on
-          every directory navigation (changeToPath calls refreshPath internally).
-        • After the initial render completes, waits 0.5 s so CoverMenu's per-page
-          extraction subprocess can start first (CoverMenu owns the current page).
-        • Checks isExtractingInBackground(); if busy, retries every 8 s until idle.
-        • Collects all file items in item_table that are not yet fully indexed, then
-          calls extractInBackground() with the full list.
-          - Items on the current page that CoverMenu already indexed are filtered out
-            by getBookInfo() returning a complete (in_progress = 0) record.
-          - Cover validity is checked against the live cover_specs so thumbnails of
-            the wrong size are also re-queued.
-        • Uses the same logic as extractBooksInDirectory (refresh_existing = false):
-          skip files already in the DB with a valid cover, re-queue only if the cover
-          was never fetched or the cached thumbnail is too small.
-
-        Guard: requires("bookinfomanager") fails (returns false) when the CoverBrowser
-        plugin is not installed, so this patch is entirely inert on those devices.
-
-        PathChooser / MoveChooser instances are excluded via the `name == "filemanager"`
-        check so file-picker dialogs are never affected.
+        Pre-populates the CoverBrowser metadata cache for all books in the current
+        directory on every navigation (not just the visible page).
+        Hooks FileChooser.refreshPath; delays 0.5 s so CoverMenu's page extraction
+        gets the first subprocess slot. Backs off 8 s if still busy.
+        Silently inert without CoverBrowser. Skips PathChooser/MoveChooser.
     ]]
 
     -- CoverBrowser plugin must be present; bail silently if it is not.

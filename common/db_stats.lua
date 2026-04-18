@@ -51,13 +51,13 @@ function StatsDB.queryStats()
     local one_day = 86400
 
     local ok, query_err = pcall(function()
-        -- ── Time boundaries ──────────────────────────────────────────────────
+        -- Time boundaries
         local now_t = os.date("*t")
         local from_begin_day = now_t.hour * 3600 + now_t.min * 60 + now_t.sec
         local start_today    = os.time() - from_begin_day
         local period_begin   = os.time() - 6 * one_day - from_begin_day
 
-        -- ── Today ────────────────────────────────────────────────────────────
+        -- Today
         local sql_today = [[
             SELECT count(*), sum(sum_duration)
             FROM (
@@ -73,7 +73,7 @@ function StatsDB.queryStats()
         logger.info("zen-ui db_stats: today pages=", stats.today_pages,
                     "duration=", stats.today_duration)
 
-        -- ── Last 7 days (totals) ─────────────────────────────────────────────
+        -- Last 7 days (totals)
         local sql_week = [[
             SELECT count(*), sum(sum_duration)
             FROM (
@@ -89,7 +89,7 @@ function StatsDB.queryStats()
         logger.info("zen-ui db_stats: week pages=", stats.week_pages,
                     "duration=", stats.week_duration)
 
-        -- ── Last 7 days (daily breakdown) ────────────────────────────────────
+        -- Last 7 days (daily breakdown)
         -- NOTE: %% in the format string becomes % after string.format(); SQLite
         -- then receives strftime('%Y-%m-%d', …) which is what it expects.
         local sql_daily = [[
@@ -115,7 +115,7 @@ function StatsDB.queryStats()
             end
         end
 
-        -- ── Total books with reading sessions ────────────────────────────────
+        -- Total books with reading sessions
         local sql_total = "SELECT count(DISTINCT id_book) FROM page_stat;"
         local ok_tot, total = pcall(conn.rowexec, conn, sql_total)
         if not ok_tot then

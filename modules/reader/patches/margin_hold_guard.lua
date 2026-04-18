@@ -1,20 +1,8 @@
 local function apply_margin_hold_guard()
     --[[
-        Swallows onHold gestures that land inside the page margin area to prevent
-        accidental word selection when a palm or thumb rests on the edge of the screen.
-
-        Only applies to reflowable (CRE / EPUB-like) documents. PDF and similar
-        paging documents are left untouched ("forget pdf").
-
-        getPageMargins() on a CRE document returns the four rendered margin sizes
-        in screen pixels, matching whatever the user has set (small, medium, large,
-        custom, etc.).  We compare the raw screen-space gesture coordinates against
-        those insets:
-
-          • Left / right margins  – always guarded regardless of view mode.
-          • Top / bottom margins  – guarded in page mode only.  In scroll mode the
-            viewport can be sitting in the middle of a chapter, so the margin strip
-            is not at a fixed screen edge and checking y would produce false positives.
+        Swallows onHold gestures inside page margin areas to prevent
+        accidental word selection (CRE/EPUB only; PDF left untouched).
+        Left/right margins always guarded; top/bottom only in page (not scroll) mode.
     --]]
 
     local ReaderHighlight = require("apps/reader/modules/readerhighlight")

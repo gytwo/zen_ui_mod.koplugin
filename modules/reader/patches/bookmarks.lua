@@ -36,6 +36,23 @@ local function apply_bookmarks()
             item.mandatory_dim = nil
         end
         bm_menu:updateItems(1, true)
+
+        -- Swap title-bar icons: left chevron (close) on the left,
+        -- hamburger (filter/sort menu) on the right.
+        local tb = bm_menu.title_bar
+        if tb and tb.left_button and tb.right_button then
+            local orig_left_tap  = tb.left_button.callback
+            local orig_left_hold = tb.left_button.hold_callback
+            local orig_right_tap = tb.right_button.callback
+            -- Left: chevron.left = close the bookmark list
+            tb.left_button:setIcon("chevron.left")
+            tb.left_button.callback      = orig_right_tap
+            tb.left_button.hold_callback = nil
+            -- Right: appbar.menu = original left-button action
+            tb.right_button:setIcon("appbar.menu")
+            tb.right_button.callback      = orig_left_tap
+            tb.right_button.hold_callback = orig_left_hold
+        end
     end
 end
 

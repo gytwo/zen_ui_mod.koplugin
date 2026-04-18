@@ -349,7 +349,7 @@ local function apply_collections()
                 return fs
             end
 
-            -- ── Cover thumbnail ──────────────────────────────────────────
+            -- Cover thumbnail
             local wleft
             if self.do_cover_image then
                 local gallery_mode = BookInfoManager:getSetting("folder_gallery_mode")
@@ -510,7 +510,7 @@ local function apply_collections()
                 self._cover_frame = cover_frame
             end
 
-            -- ── Layout constants (match browser_list_item_layout) ────────
+            -- Layout constants (match browser_list_item_layout)
             local pad_left  = self.do_cover_image
                               and Screen:scaleBySize(6) or Screen:scaleBySize(10)
             local pad_right = Screen:scaleBySize(10)
@@ -519,7 +519,7 @@ local function apply_collections()
             local left_offset = self.do_cover_image
                                 and (cover_zone_w + pad_left) or pad_left
 
-            -- ── Right widget: book count ─────────────────────────────────
+            -- Right widget: book count
             local count_str  = tostring(book_count) .. " " .. (book_count == 1 and "book" or "books")
             local wright_status = TextWidget:new{
                 text    = count_str,
@@ -529,7 +529,7 @@ local function apply_collections()
             }
             local wright_w = wright_status:getWidth()
 
-            -- ── Main text area ───────────────────────────────────────────
+            -- Main text area
             local main_w = math.max(1,
                 self.width - left_offset - wright_w - 2 * pad_right)
 
@@ -555,7 +555,7 @@ local function apply_collections()
                 },
             }
 
-            -- ── Assemble row ─────────────────────────────────────────────
+            -- Assemble row
             local row_dimen = { w = self.width, h = dimen_h }
             local widget = OverlapGroup:new{
                 dimen = row_dimen,
@@ -572,7 +572,7 @@ local function apply_collections()
                 },
             })
 
-            -- ── Commit to underline container ────────────────────────────
+            -- Commit to underline container
             if self._underline_container[1] then
                 self._underline_container[1]:free()
             end
@@ -1088,9 +1088,6 @@ local function apply_collections()
     end
 
     ---------------------------------------------------------------------------
-    -- Shared: swipe override
-    ---------------------------------------------------------------------------
-    ---------------------------------------------------------------------------
     -- Shared: icon removal helper
     ---------------------------------------------------------------------------
     local function remove_from_overlap(group, widget)
@@ -1169,12 +1166,12 @@ local function apply_collections()
         local UIManager_mod = require("ui/uimanager")
         local Device        = require("device")
 
-        -- ── Replace onMenuHold with our context menu ────────────────────────
+        -- Replace onMenuHold with our context menu
         menu.onMenuHold = function(menu_self, item)
             return show_coll_item_menu(fm_coll, item, menu)
         end
 
-        -- ── Add blank-space hold gesture for general menu ───────────────────
+        -- Add blank-space hold gesture for general menu
         if Device:isTouchDevice() then
             local GestureRange_g = require("ui/gesturerange")
             local Geom_g         = require("ui/geometry")
@@ -1196,7 +1193,7 @@ local function apply_collections()
             end
         end
 
-        -- ── Status bar in titlebar ──────────────────────────────────────────
+        -- Status bar in titlebar
         local tb = menu.title_bar
         if not tb then return end
 
@@ -1307,11 +1304,8 @@ local function apply_collections()
     end
 
     ---------------------------------------------------------------------------
-    -- Collections search: whole-word matching, skip description field.
-    -- Uses the same find_whole_word algorithm as filebrowser/search.lua
-    -- (byte-level boundary check, handles multi-byte UTF-8 gracefully).
-    -- findInProps is temporarily swapped so the Trapper subprocess fork
-    -- (which copies parent memory) inherits the patched behaviour.
+    -- Collections search: whole-word match, skip "description" field.
+    -- findInProps temporarily swapped so the Trapper subprocess fork inherits the patch.
     ---------------------------------------------------------------------------
     local _orig_searchCollections = FileManagerCollection.searchCollections
     if _orig_searchCollections then
@@ -1348,11 +1342,8 @@ local function apply_collections()
             end
 
             local orig_findInProps = bookinfo.findInProps
-            -- Replace findInProps for the duration of this search:
-            -- • skip "description"
-            -- • whole-word matching on all other props
-            -- • case folding: lowercase both sides when not case-sensitive
-            --   (case_sensitive is a boolean from CheckButton.checked)
+            -- Replace for this search: skip "description", whole-word match,
+            -- case-fold when case_sensitive is false (CheckButton.checked).
             bookinfo.findInProps = function(info, book_props, search_str, case_sensitive)
                 local fold = not case_sensitive  -- true = case-insensitive mode
                 local needle = fold and util_lower(search_str) or search_str

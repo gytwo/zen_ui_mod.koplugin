@@ -1,16 +1,8 @@
 local function apply_night_mode_schedule()
     --[[
-        Automatically toggles KOReader's night mode on and off at two user-defined
-        times each day.
-
-        The scheduler uses UIManager:scheduleIn for precise, drift-corrected timing.
-        On every device resume the correct night-mode state is applied immediately
-        (in case the transition happened during sleep), then the next two transitions
-        are re-scheduled from the current time.
-
-        The public reschedule() function is stored in the global
-        __ZEN_UI_NIGHT_SCHEDULE table so that settings callbacks can trigger an
-        immediate re-apply + reschedule when the user changes times or the toggle.
+        Toggles night mode at two user-defined times per day.
+        State survives module reloads via __ZEN_UI_NIGHT_SCHEDULE.
+        reschedule() is exposed so settings callbacks can trigger a re-apply.
     --]]
 
     local UIManager = require("ui/uimanager")
@@ -22,20 +14,14 @@ local function apply_night_mode_schedule()
         return
     end
 
-    -- Persistent state – must survive module-cache clears so UIManager:unschedule
-    -- always receives the same stable function references.
+    -- Persistent state table; survives module-cache clears for stable UIManager references.
     local state = rawget(_G, "__ZEN_UI_NIGHT_SCHEDULE")
     if type(state) ~= "table" then
         state = {}
         _G.__ZEN_UI_NIGHT_SCHEDULE = state
     end
 
-    -- -------------------------------------------------------------------------
-    -- Device event hooks – ALWAYS (re-)install on the current plugin instance.
-    -- After a FileManager:reinit the old ZenUI widget is destroyed and a new
-    -- one is created.  The timer functions and reschedule() survive in `state`,
-    -- so we just reconnect them to the new plugin instance every time.
-    -- -------------------------------------------------------------------------
+    -- Re-install hooks on the current plugin instance (survives FileManager:reinit).
     do
         local orig_suspend = zen_plugin.onSuspend
         zen_plugin.onSuspend = function(self, ...)
@@ -55,16 +41,12 @@ local function apply_night_mode_schedule()
         end
     end
 
-    -- Guard against double-init (e.g. after a package.loaded purge without a full
-    -- Lua VM restart).  Timer functions and reschedule() only need to be created
-    -- once; the hooks above reconnect them to each new plugin instance.
+    -- Guard against double-init after a package.loaded purge.
     if state.initialized then
         return
     end
 
-    -- -------------------------------------------------------------------------
     -- Helpers
-    -- -------------------------------------------------------------------------
 
     local function is_enabled()
         local plugin   = zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")

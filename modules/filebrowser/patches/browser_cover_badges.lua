@@ -1,19 +1,12 @@
 --[[
     browser_cover_badges.lua
-    ─────────────────────────────────────────────────────────────────────────────
-    Mosaic mode:
-      • Removes dog-ear icons (reading / abandoned / complete corner marks).
-      • Moves the collection-star (favorite) from top-right → top-left.
-      • Optionally paints a progress-% badge (pentagon SVG + text) at top-right,
-        controlled by the "Show progress % on mosaic covers" Zen UI setting.
-
-    List mode:
-      • Removes the dog-ear corner mark at bottom-right. Nothing else changes.
-
-    Always applied – no feature flag required.
+    Mosaic: removes dog-ears, moves favorite star to top-left, optionally
+    paints a progress-% badge at top-right.
+    List: removes the dog-ear mark.
+    Always applied.
 ]]
 
--- Resolve the plugin icons/ directory at module-load time - kept for future use.
+-- Resolve the plugin icons/ directory at module-load time.
 local _ICONS_DIR
 do
     local src = debug.getinfo(1, "S").source or ""
@@ -32,14 +25,10 @@ local function apply_browser_cover_badges()
     local Screen         = require("device").screen
     local TextWidget     = require("ui/widget/textwidget")
 
-    -- ── Capture plugin reference NOW, while __ZEN_UI_PLUGIN is still set ──────
-    -- run_feature() sets the global only during pcall(fn), so it is nil by the
-    -- time paintTo fires. Closing over it here is the only safe approach.
+    -- Capture plugin reference while __ZEN_UI_PLUGIN is still set.
     local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
 
-    -- ── Draw a downward-pointing pentagon directly with blitbuffer ───────────
-    -- Matches icons/progress_badge.svg: viewBox "0 0 36 42",
-    --   rect 0→30 (71.4 %), then triangle tip 30→42 centred.
+    -- Draw a downward-pointing pentagon (matches progress_badge.svg viewBox 0 0 36 42).
     local function paintPentagon(bb, bx, by, bw, bh, color)
         local rect_h = math.floor(bh * 30 / 42)
         local tip_h  = bh - rect_h
@@ -52,7 +41,7 @@ local function apply_browser_cover_badges()
         end
     end
 
-    -- ── Draw a ✓ checkmark as two diagonal strokes (no background) ──────────────
+    -- Draw a checkmark as two diagonal strokes.
     local function paintCheck(bb, bx, by, bw, bh, color)
         -- stroke width scales with badge size: ~1/8 of the shorter dimension
         local tk = math.max(2, math.floor(math.min(bw, bh) / 8))
@@ -79,7 +68,7 @@ local function apply_browser_cover_badges()
         drawLine(lx1, ly1, rx1, ry1)
     end
 
-    -- ── Draw two vertical bars (pause / on-hold) ─────────────────────────────
+    -- Draw two vertical pause bars.
     local function paintPauseBars(bb, bx, by, bw, bh, color)
         local bar_w = math.max(2, math.floor(bw * 0.12))
         local bar_h = math.floor(bh * 0.68)
@@ -92,8 +81,7 @@ local function apply_browser_cover_badges()
         bb:paintRect(bar2x, bar_y, bar_w, bar_h, color)
     end
 
-    -- ── Draw a filled circle row-by-row using paintRect ───────────────────────
-    -- cx, cy: centre;  r: radius;  color: fill color.
+    -- Draw a filled circle using scanline paintRect.
     local function paintCircle(bb, cx, cy, r, color)
         for row = -r, r do
             local half_w = math.floor(math.sqrt(math.max(0, r * r - row * row)))
@@ -103,7 +91,7 @@ local function apply_browser_cover_badges()
         end
     end
 
-    -- ── Generic upvalue accessor ───────────────────────────────────────────────
+
     local function get_upvalue(fn, name)
         if type(fn) ~= "function" then return nil end
         for i = 1, 128 do
@@ -113,7 +101,7 @@ local function apply_browser_cover_badges()
         end
     end
 
-    -- ── Mosaic patch ───────────────────────────────────────────────────────────
+
     local function patchMosaicMenu()
         local MosaicMenu     = require("mosaicmenu")
         local MosaicMenuItem = get_upvalue(MosaicMenu._updateItemsBuildUI, "MosaicMenuItem")
@@ -136,9 +124,7 @@ local function apply_browser_cover_badges()
             return v
         end
 
-        -- Cached star.empty icon for the favorite circle badge.
-        -- star.empty is a black-outline SVG (no fill): normal mode → black star
-        -- outline, night mode KOReader inverts the buffer → white outline.
+        -- Cached star.empty icon for the favorite badge.
         local IconWidget   = require("ui/widget/iconwidget")
         local fav_mark     = nil
         local fav_mark_size = 0
@@ -176,9 +162,7 @@ local function apply_browser_cover_badges()
 
             local border = target.bordersize or 0
 
-            -- 3. Collection/favorite star → TOP-LEFT inside a circle ──────────
-            -- Guard on collection_mark upvalue: confirms KOReader's collections
-            -- feature has initialised and sized the mark for the current grid.
+            -- 3. Favorite star → top-left inside a circle
             local show_fav_badge = _plugin
                 and _plugin.config
                 and type(_plugin.config.browser_cover_badges) == "table"
@@ -204,7 +188,7 @@ local function apply_browser_cover_badges()
                 -- Border ring then fill (same two-call pattern as series badge)
                 paintCircle(bb, cx, cy, r + 2, Blitbuffer.COLOR_BLACK)
                 paintCircle(bb, cx, cy, r,     Blitbuffer.COLOR_LIGHT_GRAY)
-                -- star.empty (black outline, no fill) inverts correctly in night mode → white.
+                -- star.empty outline inverts correctly in night mode.
                 -- math.ceil gives symmetric placement for both even and odd sizes.
                 local mark = get_fav_mark(corner_mark_size)
                 mark:paintTo(bb,
@@ -213,9 +197,9 @@ local function apply_browser_cover_badges()
                 )
             end
 
-            -- 4. Dog-ear marks SUPPRESSED ────────────────────────────────────────
+            -- 4. Dog-ear marks suppressed
 
-            -- 5. KOReader's own bottom progress bar (show_progress_in_mosaic) ────
+            -- 5. KOReader's bottom progress bar (show_progress_in_mosaic)
             if self.show_progress_bar then
                 local progress_widget = uv("progress_widget")
                 if progress_widget then
@@ -236,7 +220,7 @@ local function apply_browser_cover_badges()
                 end
             end
 
-            -- 6. Zen UI: status/progress badge at TOP-RIGHT ──────────────────────
+            -- 6. Zen UI: status/progress badge at top-right
             local show_badge = _plugin
                 and _plugin.config
                 and type(_plugin.config.browser_cover_badges) == "table"
@@ -299,7 +283,7 @@ local function apply_browser_cover_badges()
                 end
             end
 
-            -- 7. Description indicator (unchanged from original) ─────────────────
+            -- 7. Description indicator (unchanged)
             local BookInfoManager = uv("BookInfoManager")
             if self.has_description
                 and BookInfoManager
@@ -329,7 +313,7 @@ local function apply_browser_cover_badges()
         end
     end
 
-    -- ── List patch: suppress dog-ear only ─────────────────────────────────────
+
     local function patchListMenu()
         local ListMenu     = require("listmenu")
         local ListMenuItem = get_upvalue(ListMenu._updateItemsBuildUI, "ListMenuItem")
@@ -346,7 +330,6 @@ local function apply_browser_cover_badges()
         end
     end
 
-    -- ── Hook FileManager:setupLayout (same pattern as other patches) ───────────
     local FileManager      = require("apps/filemanager/filemanager")
     local orig_setupLayout = FileManager.setupLayout
     local patched          = false

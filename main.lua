@@ -18,8 +18,7 @@ local _plugin_root = (function()
     return (src:sub(1, 1) == "@") and src:sub(2):match("^(.*)/[^/]+$") or nil
 end)()
 
--- Register local SVGs in IconWidget's ICONS_PATH cache so short names resolve
--- to our files immediately (without requiring a restart or a user-icons copy).
+-- Register local SVGs so short icon names resolve to our files at runtime.
 if _plugin_root then
     local utils = require("common/utils")
     utils.registerPluginIcons(_plugin_root .. "/icons/", {
@@ -40,8 +39,7 @@ if _plugin_root then
     })
 end
 
--- Register bundled Nerd Font (v3.4.0) so all modules can use
--- Font:getFace("zen_icons", size) for thinner Material Design icons.
+-- Register bundled Nerd Font (v3.4.0) so modules can use Font:getFace("zen_icons", size).
 if _plugin_root then
     local Font = require("ui/font")
     local FontList = require("fontlist")
@@ -50,8 +48,7 @@ if _plugin_root then
     Font.fontmap["zen_icons"] = "SymbolsNerdFont-Regular.ttf"
 end
 
--- Holds the single plugin instance so the FileManagerMenu patch can reach it
--- without needing the __ZEN_UI_PLUGIN global (which is only set transiently).
+-- Holds the single plugin instance so the FileManagerMenu patch can reach it.
 local _zen_plugin_ref = nil
 
 local ZenUI = WidgetContainer:extend{
@@ -138,8 +135,6 @@ function ZenUI:init()
     end
 
     -- First-run: default portrait list mode to 5 items per page.
-    -- We use a plugin-config flag so this fires exactly once (when the plugin is
-    -- first installed), regardless of what BookInfoManager already has saved.
     if not self.config._meta.files_per_page_defaulted then
         local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
         if ok_bim then
@@ -155,14 +150,8 @@ function ZenUI:init()
 
     self:_initModules()
 
-    -- Inject Zen UI as a dedicated second tab in both FileManager and Reader menus.
-    -- We patch setUpdateItemTable once on each class so the tab appears regardless
-    -- of how many times the menu is rebuilt.
-    -- TouchMenu uses each tab entry directly as the item_table when the tab icon is
-    -- tapped (switchMenuTab sets self.item_table = tab_item_table[n]), so the items
-    -- must be the numerically-indexed array itself with icon set on the table.
-    -- Find the index of the quicksettings tab so our Zen UI tab can be placed
-    -- immediately after it (leftmost pairing) in both FileManager and Reader menus.
+    -- Inject Zen UI tab after QuickSettings and a Home tab at the far right.
+    -- Patches setUpdateItemTable once per class so it persists across menu rebuilds.
     local function find_quicksettings_pos(tab_table)
         for i, tab in ipairs(tab_table) do
             for _, field in ipairs({ "id", "name", "icon" }) do
@@ -178,10 +167,7 @@ function ZenUI:init()
         return nil
     end
 
-    -- KOReader's TouchMenuBar packs icons 1..N-1 left and pushes icon N to the
-    -- far right via a stretch spacer.  We always append a home tab last so it
-    -- occupies the far-right slot in both FileManager (QS, ZenUI, Home) and
-    -- Reader (QS, ZenUI, [KO section], Home).
+    -- Last tab is pushed to far-right by TouchMenuBar's stretch spacer.
     local function inject_zen_tab(menu_class)
         if not menu_class or menu_class.__zen_ui_tab_patched then return end
         menu_class.__zen_ui_tab_patched = true
@@ -189,11 +175,9 @@ function ZenUI:init()
         menu_class.setUpdateItemTable = function(m_self)
             orig_sut(m_self)
             if type(m_self.tab_item_table) ~= "table" or not _zen_plugin_ref then return end
-            -- Insert Zen UI tab right after the quicksettings tab.
+            -- Insert Zen UI tab right after quicksettings.
             local zen_items = zen_settings.build(_zen_plugin_ref).sub_item_table
-            -- Use the badge icon when an update is available.  Absolute paths are
-            -- accepted by KOReader's icon resolution (checked before the icon name
-            -- lookup) so the custom SVG in the plugin's icons/ dir will be used.
+            -- Use the badge icon when an update is available.
             if zen_updater.has_update() then
                 zen_items.icon = "zen_settings_update"
             else
@@ -202,8 +186,7 @@ function ZenUI:init()
             local qs_pos = find_quicksettings_pos(m_self.tab_item_table)
             local insert_pos = qs_pos and (qs_pos + 1) or 1
             table.insert(m_self.tab_item_table, insert_pos, zen_items)
-            -- Append a Home tab at the far right (last = stretched position).
-            -- Captures m_self so the callback can close the menu before navigating.
+            -- Append Home tab at the far right (stretched position).
             local home_tab = { icon = "library", remember = false }
             home_tab.callback = function()
                 require("ui/uimanager"):scheduleIn(0, function()
@@ -240,9 +223,7 @@ function ZenUI:init()
     end
 end
 
--- Tab injection is done directly via the FileManagerMenu patch above.
--- addToMainMenu is kept as a no-op so KOReader's plugin registry is
--- satisfied but we don't get a duplicate entry inside an existing tab.
+-- addToMainMenu is a no-op; tab injection is done via the FileManagerMenu patch.
 function ZenUI:addToMainMenu(menu_items) -- luacheck: ignore
 end
 

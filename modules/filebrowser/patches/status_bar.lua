@@ -1,8 +1,5 @@
 local function apply_status_bar()
-    -- Custom Status Bar patch for KOReader File Manager
-    -- Replaces the "KOReader" title text with left/right status info
-    -- Moves home/plus buttons to the subtitle (path) row
-    -- Settings menu under File Browser > Status bar
+    -- Custom status bar for the KOReader File Manager title row.
 
     local BD = require("ui/bidi")
     local Device = require("device")
@@ -153,8 +150,7 @@ local function apply_status_bar()
     local cached_disk_time = 0
 
     -- === Color text support ===
-    -- TextWidget uses colorblitFrom which converts RGB to grayscale.
-    -- We need colorblitFromRGB32 for actual color rendering.
+    -- TextWidget.colorblitFrom is grayscale; colorblitFromRGB32 needed for color.
 
     local RenderText = require("ui/rendertext")
 

@@ -1,27 +1,8 @@
 --[[
     browser_page_count.lua
-    ─────────────────────────────────────────────────────────────────────────────
-    Paints a small page-count badge for books in the file browser.
-
-    Mosaic mode:  dark pill badge at the bottom-left corner of each book cover.
-    List mode:    extra "Np" line below the tags row in the right column
-                  (rendered by browser_list_item_layout.lua which reads the same
-                  config flag, since it owns the list widget tree).
-
-    Controlled by:  config.browser_page_count.show_page_count  (bool)
-    Default:        false  (opt-in)
-
-    Page count sources (first non-nil wins):
-      1. BookList.getBookInfo  — sidecar-based; accurate for any opened book
-      2. BookInfoManager.getBookInfo.pages — SQLite DB; accurate for PDF/CBZ;
-         nil for epub/fb2 (CREngine can't count pages without a full render)
-
-    Requires CoverBrowser plugin (bookinfomanager); silently inert without it.
-    Wraps MosaicMenuItem.paintTo *after* browser_cover_badges has already patched
-    it, so the page badge is painted on top of all other badge layers.
-
-    Badge is drawn directly to the blitbuffer (no FrameContainer widget) to avoid
-    bordersize = 0 rendering edge-cases present in some KOReader builds.
+    Mosaic: pill badge bottom-left of cover. List: rendered by browser_list_item_layout.
+    Controlled by config.browser_page_count.show_page_count. Requires CoverBrowser.
+    Badge drawn directly to blitbuffer; wraps paintTo after browser_cover_badges.
 ]]
 
 local function apply_browser_page_count()
@@ -70,8 +51,7 @@ local function apply_browser_page_count()
         return bookinfo and bookinfo.pages and bookinfo.pages > 0 and bookinfo.pages or nil
     end
 
-    -- ── Pill drawing helper ────────────────────────────────────────────────────
-    -- Draws a horizontal capsule shape row-by-row using paintRect.
+    -- Pill drawing helper: draws a horizontal capsule shape row-by-row using paintRect.
     -- bx, by: top-left corner;  bw, bh: total bounding box;  color: fill color.
     local function paintPill(bb, bx, by, bw, bh, color)
         local r = bh / 2
@@ -191,7 +171,7 @@ local function apply_browser_page_count()
         end
     end
 
-    -- ── Hook FileManager:setupLayout (same pattern as browser_cover_badges) ──
+    -- Hook FileManager:setupLayout (same pattern as browser_cover_badges)
     local FileManager      = require("apps/filemanager/filemanager")
     local orig_setupLayout = FileManager.setupLayout
     local patched          = false

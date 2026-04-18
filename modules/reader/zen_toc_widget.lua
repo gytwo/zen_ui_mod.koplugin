@@ -1,7 +1,7 @@
 -- ZenTocWidget: popup table-of-contents modal for the page browser.
 --
 -- Usage:
---   local ZenTocWidget = require("common/zen_toc_widget")
+--   local ZenTocWidget = require("modules/reader/zen_toc_widget")
 --   UIManager:show(ZenTocWidget:new{
 --       ui         = pbw.ui,          -- ReaderUI instance
 --       focus_page = pbw.focus_page,  -- current page for highlighting
@@ -12,7 +12,7 @@
 --
 -- Interaction:
 --   Tap entry         → navigate to chapter, close modal
---   Tap outside / X   → close modal
+--   Tap outside / ‹   → close modal
 --   Swipe left/right  → next / prev page of TOC entries
 --   Zen scroll bar    → shows current position in TOC list
 
@@ -139,9 +139,9 @@ function ZenTocWidget:init()
     local MODAL_X    = 0
     local MODAL_Y    = 0
 
-    -- Close-button hit-area: right TITLE_H-wide strip of the title bar.
+    -- Close-button hit-area: left TITLE_H-wide strip of the title bar.
     local CLOSE_W = TITLE_H   -- square hit zone
-    local CLOSE_X = MODAL_W - CLOSE_W
+    local CLOSE_X = 0
     local CLOSE_Y = MODAL_Y
 
     -- Y where entry rows start (absolute screen coords).
@@ -217,7 +217,7 @@ function ZenTocWidget:paintTo(bb, x, y)
     local my = y + L.modal_y
 
     -- -----------------------------------------------------------------------
-    -- Title bar: "Contents" centred, close icon right-aligned
+    -- Title bar: "Contents" centred, left chevron on the left
     -- -----------------------------------------------------------------------
     local title_tw = TextWidget:new{
         text    = "Contents",
@@ -232,15 +232,15 @@ function ZenTocWidget:paintTo(bb, x, y)
         my + math.floor((L.title_h - tsz.h) / 2))
     title_tw:free()
 
-    -- Close icon
+    -- Close icon (left chevron, positioned on the left)
     local icon_sz    = Screen:scaleBySize(26)
     local close_icon = IconWidget:new{
-        icon   = "close",
+        icon   = "chevron.left",
         width  = icon_sz,
         height = icon_sz,
     }
     close_icon:paintTo(bb,
-        L.close_x + math.floor((L.close_w - icon_sz) / 2),
+        mx + L.close_x + math.floor((L.close_w - icon_sz) / 2),
         my + math.floor((L.title_h - icon_sz) / 2))
     close_icon:free()
 
@@ -368,7 +368,7 @@ function ZenTocWidget:_onTap(ges)
         return true
     end
 
-    -- Tap on close button hit zone (top-right of title bar)
+    -- Tap on close button hit zone (top-left of title bar)
     if p.x >= L.close_x and p.x < L.close_x + L.close_w
     and p.y >= L.close_y and p.y < L.close_y + L.close_h then
         self:onClose()

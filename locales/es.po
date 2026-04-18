@@ -874,3 +874,12 @@ msgstr "Tiempo hasta el final del capítulo (detallado)"
 
 msgid "Reader footer settings"
 msgstr "Ajustes del pie de página del lector"
+
+msgid "Sort folder  ▶"
+msgstr "Ordenar carpeta  ▶"
+
+msgid "Sort folder by"
+msgstr "Ordenar carpeta por"
+
+msgid "Clear"
+msgstr "Limpiar"

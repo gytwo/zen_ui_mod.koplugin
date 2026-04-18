@@ -259,14 +259,17 @@ local function apply_context_menu()
                 else
                     -- folder
                     local name = (file:match("([^/]+)/?$") or file):gsub("/$", "")
-                    local text_str = BD.directory(name)
+                    local folder_name_str = BD.directory(name)
                     local count = item.mandatory and tostring(item.mandatory):match("^%s*(%d+)")
+                    local folder_count_str
                     if count then
                         local n = tonumber(count) or 0
-                        text_str = text_str .. "\n"
-                            .. (n == 1 and _("1 book") or (n .. " " .. _("books")))
+                        folder_count_str = n == 1 and _("1 book") or (n .. " " .. _("books"))
                     end
-                    dialog_title = text_str
+                    -- Plain-text fallback for text-only header (no cover)
+                    dialog_title = folder_count_str
+                        and (folder_name_str .. "\n" .. folder_count_str)
+                        or folder_name_str
                     -- Try to show cover of first book inside the folder.
                     local ok, BookInfoManager = pcall(require, "bookinfomanager")
                     if ok then
@@ -295,7 +298,7 @@ local function apply_context_menu()
                                     dialog_cover_widget = makeSideBySide(
                                         bookinfo.cover_bb,
                                         bookinfo.cover_w, bookinfo.cover_h,
-                                        sf, text_str, nil, nil)
+                                        sf, folder_name_str, folder_count_str, nil)
                                 end
                             end
                         end
@@ -598,6 +601,64 @@ local function apply_context_menu()
                         end,
                     },
                 })
+            end
+
+            -- ── Per-folder sort override (folders only) ───────────────────────────
+            if not is_file and is_not_parent_folder then
+                local fsd_api = rawget(_G, "__ZEN_FOLDER_SORT")
+                if fsd_api then
+                    local ffiUtil_fsd = require("ffi/util")
+                    local real_folder = ffiUtil_fsd.realpath(file) or file
+
+                    local folder_sort_options = {
+                        { key = "title",   text = "\u{F031}  " .. _("Title")    },
+                        { key = "authors", text = "\u{F007}  " .. _("Authors")  },
+                        { key = "series",  text = "\u{F0CB}  " .. _("Series")   },
+                        { key = "keywords",text = "\u{F02C}  " .. _("Keywords") },
+                    }
+
+                    table.insert(buttons, {
+                        {
+                            text     = "\u{F0DC}  " .. _("Sort folder  ▶"),
+                            align    = "left",
+                            callback = function()
+                                close_dialog()
+                                local sort_dialog
+                                local sort_buttons = {}
+                                local current_override = fsd_api.get(real_folder)
+                                for _, opt in ipairs(folder_sort_options) do
+                                    local is_active = current_override == opt.key
+                                    table.insert(sort_buttons, {{
+                                        text     = opt.text .. (is_active and "  \u{2713}" or ""),
+                                        align    = "left",
+                                        enabled  = not is_active,
+                                        callback = function()
+                                            fsd_api.set(real_folder, opt.key)
+                                            UIManager:close(sort_dialog)
+                                        end,
+                                    }})
+                                end
+                                -- "Clear" row — only shown when an override is active
+                                if current_override then
+                                    table.insert(sort_buttons, {{
+                                        text     = "\u{F0E2}  " .. _("Clear"),
+                                        align    = "left",
+                                        callback = function()
+                                            fsd_api.clear(real_folder)
+                                            UIManager:close(sort_dialog)
+                                        end,
+                                    }})
+                                end
+                                sort_dialog = ButtonDialog:new{
+                                    title       = _("Sort folder by"),
+                                    title_align = "center",
+                                    buttons     = sort_buttons,
+                                }
+                                UIManager:show(sort_dialog)
+                            end,
+                        },
+                    })
+                end
             end
 
             table.insert(buttons, {

@@ -11,6 +11,7 @@ local FEATURES = {
 
 local PATCH_MODULES = {
     context_menu = "modules/filebrowser/patches/context_menu",
+    browser_folder_sort = "modules/filebrowser/patches/browser_folder_sort",
     disable_modal_drag = "modules/filebrowser/patches/disable_modal_drag",
     partial_page_repaint = "modules/filebrowser/patches/partial_page_repaint",
     navbar = "modules/filebrowser/patches/navbar",
@@ -74,6 +75,14 @@ function M.init(logger, plugin)
     local disable_modal_drag_fn = load_patch("disable_modal_drag")
     if disable_modal_drag_fn then
         run_feature(logger, plugin, "disable_modal_drag", disable_modal_drag_fn)
+    end
+
+    -- Always apply: per-folder sort overrides.  Must run before context_menu so
+    -- the __ZEN_FOLDER_SORT API is available when the context menu builds its
+    -- Sort-by submenu for a long-pressed folder.
+    local browser_folder_sort_fn = load_patch("browser_folder_sort")
+    if browser_folder_sort_fn then
+        run_feature(logger, plugin, "browser_folder_sort", browser_folder_sort_fn)
     end
 
     -- Always apply: replaces the long-hold context menu with a minimal layout

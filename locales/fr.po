@@ -874,3 +874,12 @@ msgstr "Temps détaillé avant la fin du chapitre"
 
 msgid "Reader footer settings"
 msgstr "Paramètres du pied de page"
+
+msgid "Sort folder  ▶"
+msgstr "Trier le dossier  ▶"
+
+msgid "Sort folder by"
+msgstr "Trier le dossier par"
+
+msgid "Clear"
+msgstr "Effacer"

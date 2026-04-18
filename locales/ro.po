@@ -874,3 +874,12 @@ msgstr "Timp detaliat până la sfârșitul capitolului"
 
 msgid "Reader footer settings"
 msgstr "Setări subsol cititor"
+
+msgid "Sort folder  ▶"
+msgstr "Sortează dosar  ▶"
+
+msgid "Sort folder by"
+msgstr "Sortează dosar după"
+
+msgid "Clear"
+msgstr "Șterge"

@@ -874,3 +874,12 @@ msgstr "Gedetailleerde tijd tot einde hoofdstuk"
 
 msgid "Reader footer settings"
 msgstr "Lezer voettekst instellingen"
+
+msgid "Sort folder  ▶"
+msgstr "Map sorteren  ▶"
+
+msgid "Sort folder by"
+msgstr "Map sorteren op"
+
+msgid "Clear"
+msgstr "Wissen"

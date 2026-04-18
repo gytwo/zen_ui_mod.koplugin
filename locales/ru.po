@@ -874,3 +874,12 @@ msgstr "Подробное время до конца главы"
 
 msgid "Reader footer settings"
 msgstr "Настройки нижней панели"
+
+msgid "Sort folder  ▶"
+msgstr "Сортировать папку  ▶"
+
+msgid "Sort folder by"
+msgstr "Сортировать папку по"
+
+msgid "Clear"
+msgstr "Очистить"

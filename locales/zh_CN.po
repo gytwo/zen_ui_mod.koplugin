@@ -872,3 +872,12 @@ msgstr "详细的章节剩余时间"
 
 msgid "Reader footer settings"
 msgstr "阅读器页脚设置"
+
+msgid "Sort folder  ▶"
+msgstr "文件夹排序  ▶"
+
+msgid "Sort folder by"
+msgstr "文件夹排序方式"
+
+msgid "Clear"
+msgstr "清除"

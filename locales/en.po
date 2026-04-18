@@ -872,3 +872,12 @@ msgstr "Verbose time to chapter end"
 msgid "Reader footer settings"
 msgstr "Reader footer settings"
 
+
+msgid "Sort folder  ▶"
+msgstr "Sort folder  ▶"
+
+msgid "Sort folder by"
+msgstr "Sort folder by"
+
+msgid "Clear"
+msgstr "Clear"

@@ -46,12 +46,11 @@ local function apply_book_status()
         end
 
         local close_btn = IconButton:new{
-            icon = "close",
+            icon = "chevron.left",
             width = close_size, height = close_size,
             padding = btn_pad,
             show_parent = self,
             callback = function() self:onClose() end,
-            allow_flash = false,
         }
         local home_btn = IconButton:new{
             icon = "library",

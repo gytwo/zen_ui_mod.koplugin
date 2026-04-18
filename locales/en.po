@@ -81,6 +81,12 @@ msgstr "Arrange tabs"
 msgid "Authors"
 msgstr "Authors"
 
+msgid "avg pages/day"
+msgstr "avg pages/day"
+
+msgid "avg time/day"
+msgstr "avg time/day"
+
 msgid "Battery"
 msgstr "Battery"
 
@@ -312,11 +318,20 @@ msgstr "Format: R,G,B (0-255)"
 msgid "Brightness"
 msgstr "Brightness"
 
+msgid "books finished"
+msgstr "books finished"
+
+msgid "books started"
+msgstr "books started"
+
 msgid "Green"
 msgstr "Green"
 
 msgid "Hide up folders"
 msgstr "Hide up folders"
+
+msgid "Hide list borders"
+msgstr "Hide list borders"
 
 msgid "History"
 msgstr "History"
@@ -646,6 +661,12 @@ msgstr "Reader clock font"
 msgid "Reading"
 msgstr "Reading"
 
+msgid "Reading Stats"
+msgstr "Reading Stats"
+
+msgid "read today"
+msgstr "read today"
+
 msgid "Recently read"
 msgstr "Recently read"
 
@@ -699,6 +720,9 @@ msgstr "Search Library"
 
 msgid "Select"
 msgstr "Select"
+
+msgid "Stats"
+msgstr "Stats"
 
 msgid "Separator: "
 msgstr "Separator: "
@@ -808,18 +832,33 @@ msgstr "Streak"
 msgid "Tabs"
 msgstr "Tabs"
 
+msgid "Daily Breakdown"
+msgstr "Daily Breakdown"
+
+msgid "day streak"
+msgstr "day streak"
+
 msgid "The update will be downloaded and installed. KOReader will then restart."
 msgstr "The update will be downloaded and installed. KOReader will then restart."
 
 msgid "This change requires a restart to take effect."
 msgstr "This change requires a restart to take effect."
 
+msgid "This Week"
+msgstr "This Week"
+
 
 msgid "Title"
 msgstr "Title"
 
+msgid "Today"
+msgstr "Today"
+
 msgid "Toggle"
 msgstr "Toggle"
+
+msgid "total time"
+msgstr "total time"
 
 msgid "type"
 msgstr "type"
@@ -961,17 +1000,8 @@ msgctxt "page_count_long"
 msgid "pages"
 msgstr "pages"
 
-msgid "Enable page browser"
-msgstr "Enable page browser"
-
-msgid "Contents"
-msgstr "Contents"
-
-msgid "Font"
-msgstr "Font"
-
-msgid "Page %d of %d"
-msgstr "Page %d of %d"
+msgid "pages today"
+msgstr "pages today"
 
 msgid "Enable page browser"
 msgstr "Enable page browser"
@@ -984,3 +1014,69 @@ msgstr "Font"
 
 msgid "Page %d of %d"
 msgstr "Page %d of %d"
+
+msgid "Enable page browser"
+msgstr "Enable page browser"
+
+msgid "Contents"
+msgstr "Contents"
+
+msgid "Font"
+msgstr "Font"
+
+msgid "Page %d of %d"
+msgstr "Page %d of %d"
+
+msgid "All Time"
+msgstr "All Time"
+
+msgid "Personal Records"
+msgstr "Personal Records"
+
+msgid "total read time"
+msgstr "total read time"
+
+msgid "total pages read"
+msgstr "total pages read"
+
+msgid "books read"
+msgstr "books read"
+
+msgid "avg time/book"
+msgstr "avg time/book"
+
+msgid "best day"
+msgstr "best day"
+
+msgid "best week"
+msgstr "best week"
+
+msgid "best month"
+msgstr "best month"
+
+msgid "All Time"
+msgstr "All Time"
+
+msgid "Personal Records"
+msgstr "Personal Records"
+
+msgid "total read time"
+msgstr "total read time"
+
+msgid "total pages read"
+msgstr "total pages read"
+
+msgid "books read"
+msgstr "books read"
+
+msgid "avg time/book"
+msgstr "avg time/book"
+
+msgid "best day"
+msgstr "best day"
+
+msgid "best week"
+msgstr "best week"
+
+msgid "best month"
+msgstr "best month"

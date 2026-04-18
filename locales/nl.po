@@ -316,6 +316,9 @@ msgstr "Groen"
 msgid "Hide up folders"
 msgstr "Bovenliggende map verbergen"
 
+msgid "Hide list borders"
+msgstr "Lijstranden verbergen"
+
 msgid "History"
 msgstr "Geschiedenis"
 
@@ -951,3 +954,30 @@ msgstr ""
 
 msgid "Page %d of %d"
 msgstr ""
+
+msgid "All Time"
+msgstr "Totaaltijd"
+
+msgid "Personal Records"
+msgstr "Persoonlijke records"
+
+msgid "total read time"
+msgstr "totale leestijd"
+
+msgid "total pages read"
+msgstr "totaal pagina's gelezen"
+
+msgid "books read"
+msgstr "boeken gelezen"
+
+msgid "avg time/book"
+msgstr "gem. tijd/boek"
+
+msgid "best day"
+msgstr "beste dag"
+
+msgid "best week"
+msgstr "beste week"
+
+msgid "best month"
+msgstr "beste maand"

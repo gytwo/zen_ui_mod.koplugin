@@ -32,6 +32,12 @@ if _plugin_root then
         ["zen_favorites"]       = "tab_favorites.svg",
         ["zen_history"]         = "tab_history.svg",
     }, true)
+    -- Override KOReader's default dialog icons with the Zen UI logo.
+    local zen_icon = _plugin_root .. "/icons/zen_ui.svg"
+    utils.overrideIcons({
+        ["notice-info"]     = zen_icon,
+        ["notice-question"] = zen_icon,
+    })
 end
 
 -- Register bundled Nerd Font (v3.4.0) so all modules can use

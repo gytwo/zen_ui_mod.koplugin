@@ -593,7 +593,7 @@ local function apply_collections()
     -- Build a cover header widget for a collection (gallery of up to 4 covers
     -- with collection name + book count beside it — same aesthetic as the
     -- folder header in context_menu.lua).
-    local function build_coll_cover_header(coll_name, book_count)
+    local function build_coll_cover_header(coll_name, book_count, display_name)
         local BookInfoManager  = require("bookinfomanager")
         local Blitbuffer       = require("ffi/blitbuffer")
         local CenterContainer  = require("ui/widget/container/centercontainer")
@@ -800,7 +800,7 @@ local function apply_collections()
                                     Screen:scaleBySize(60))
         local vstack = VerticalGroup:new{ align = "left" }
         table.insert(vstack, TextWidget:new{
-            text      = coll_name,
+            text      = display_name or coll_name,
             face      = Font:getFace("cfont", 20),
             bold      = true,
             max_width = text_col_w,
@@ -836,6 +836,7 @@ local function apply_collections()
 
         local coll_name    = item.name
         local is_favorites = coll_name == ReadCollection.default_collection_name
+        local display_name = is_favorites and _("Favorites") or coll_name
         local coll         = ReadCollection.coll[coll_name]
         local book_count   = coll and util.tableSize(coll) or 0
         local button_dialog
@@ -845,7 +846,7 @@ local function apply_collections()
         end
 
         -- Cover header
-        local cover_header = build_coll_cover_header(coll_name, book_count)
+        local cover_header = build_coll_cover_header(coll_name, book_count, display_name)
 
         -- Sort submenu
         local SORT_OPTIONS = {

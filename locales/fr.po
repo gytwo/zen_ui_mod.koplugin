@@ -316,6 +316,9 @@ msgstr "Vert"
 msgid "Hide up folders"
 msgstr "Masquer le dossier parent"
 
+msgid "Hide list borders"
+msgstr "Masquer les bordures de liste"
+
 msgid "History"
 msgstr "Historique"
 
@@ -951,3 +954,30 @@ msgstr ""
 
 msgid "Page %d of %d"
 msgstr ""
+
+msgid "All Time"
+msgstr "Tout le temps"
+
+msgid "Personal Records"
+msgstr "Records personnels"
+
+msgid "total read time"
+msgstr "temps total de lecture"
+
+msgid "total pages read"
+msgstr "pages totales lues"
+
+msgid "books read"
+msgstr "livres lus"
+
+msgid "avg time/book"
+msgstr "temps moy./livre"
+
+msgid "best day"
+msgstr "meilleur jour"
+
+msgid "best week"
+msgstr "meilleure semaine"
+
+msgid "best month"
+msgstr "meilleur mois"

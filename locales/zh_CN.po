@@ -314,6 +314,9 @@ msgstr "绿色"
 msgid "Hide up folders"
 msgstr "隐藏上级文件夹"
 
+msgid "Hide list borders"
+msgstr "隐藏列表边框"
+
 msgid "History"
 msgstr "历史记录"
 
@@ -949,3 +952,30 @@ msgstr ""
 
 msgid "Page %d of %d"
 msgstr ""
+
+msgid "All Time"
+msgstr "历史总计"
+
+msgid "Personal Records"
+msgstr "个人记录"
+
+msgid "total read time"
+msgstr "总阅读时长"
+
+msgid "total pages read"
+msgstr "总阅读页数"
+
+msgid "books read"
+msgstr "已读书籍"
+
+msgid "avg time/book"
+msgstr "平均时长/本"
+
+msgid "best day"
+msgstr "单日最佳"
+
+msgid "best week"
+msgstr "单周最佳"
+
+msgid "best month"
+msgstr "单月最佳"

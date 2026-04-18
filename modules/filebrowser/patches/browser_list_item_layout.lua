@@ -569,6 +569,55 @@ local function apply_browser_list_item_layout()
         end
     end
 
+    -- ── Remove list separator lines ────────────────────────────────────────
+    -- CoverMenu.updateItems calls _updateItemsBuildUI which inserts shared
+    -- LineWidgets before the first item and after each item.
+    -- We always strip the first and last LineWidgets (top/bottom borders).
+    -- When hide_list_borders is enabled we remove ALL LineWidgets.
+    -- Patched on the CoverMenu prototype (not _updateItemsBuildUI) so that
+    -- get_upvalue() chains used by other patches remain intact.
+
+    local function isHideAllBorders()
+        local p = _plugin_ref or rawget(_G, "__ZEN_UI_PLUGIN")
+        return p
+            and type(p.config) == "table"
+            and type(p.config.browser_list_item_layout) == "table"
+            and p.config.browser_list_item_layout.hide_list_borders == true
+    end
+
+    -- Strip LineWidgets from item_group.  Always removes first/last;
+    -- removes all when hide_list_borders config is enabled.
+    local function stripListBorders(menu)
+        local ig = menu.item_group
+        if not ig or #ig == 0 then return end
+
+        if isHideAllBorders() then
+            for i = #ig, 1, -1 do
+                if ig[i] and ig[i].background then
+                    table.remove(ig, i)
+                end
+            end
+        else
+            -- Remove only the first and last LineWidgets (top/bottom borders)
+            if ig[#ig] and ig[#ig].background then
+                table.remove(ig, #ig)
+            end
+            if ig[1] and ig[1].background then
+                table.remove(ig, 1)
+            end
+        end
+    end
+
+    local ok_cm, CoverMenu = pcall(require, "covermenu")
+    if ok_cm and CoverMenu and not CoverMenu._zen_strip_list_borders_patched then
+        CoverMenu._zen_strip_list_borders_patched = true
+        local orig_cm_updateItems = CoverMenu.updateItems
+        function CoverMenu:updateItems(...)
+            orig_cm_updateItems(self, ...)
+            stripListBorders(self)
+        end
+    end
+
     -- Hook FileManager:setupLayout so we run after coverbrowser has been
     -- instantiated (same pattern as browser_folder_cover).
     local FileManager = require("apps/filemanager/filemanager")
@@ -580,6 +629,20 @@ local function apply_browser_list_item_layout()
         if not patched and self.coverbrowser then
             patchListMenu()
             patched = true
+        end
+        -- Wrap the file_chooser instance's updateItems so the library view
+        -- also gets borders stripped.  CoverBrowser assigns
+        -- CoverMenu.updateItems to FileChooser during its init() (before our
+        -- CoverMenu prototype patch), so the class-level patch doesn't reach
+        -- the library.  We fix it per-instance here, after everything is wired.
+        local fc = self.file_chooser
+        if fc and fc.updateItems and not fc._zen_strip_list_borders then
+            fc._zen_strip_list_borders = true
+            local orig_fc_updateItems = fc.updateItems
+            function fc:updateItems(...)
+                orig_fc_updateItems(self, ...)
+                stripListBorders(self)
+            end
         end
     end
 end

@@ -50,12 +50,13 @@ local defaults = {
             history = false,
             favorites = true,
             collections = false,
+            stats = false,
             exit = false,
             page_left = false,
             page_right = false,
             menu = false,
         },
-        tab_order = { "page_left", "books", "manga", "news", "continue", "history", "favorites", "collections", "exit", "page_right", "menu" },
+        tab_order = { "page_left", "books", "manga", "news", "continue", "history", "favorites", "collections", "stats", "exit", "page_right", "menu" },
         show_labels = true,
         books_label = "Library",
         manga_action = "rakuyomi",
@@ -68,6 +69,7 @@ local defaults = {
         active_tab_bold = true,
         active_tab_underline = true,
         underline_above = false,
+        show_top_border = false,
     },
     quick_settings = {
         button_order = { "wifi", "night", "rotate", "zen", "settings", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
@@ -111,6 +113,9 @@ local defaults = {
     browser_hide_up_folder = {
         hide_up_folder = true,
     },
+    browser_list_item_layout = {
+        hide_list_borders = false,
+    },
     browser_cover_badges = {
         show_mosaic_progress = true,
     },
@@ -122,6 +127,9 @@ local defaults = {
     },
     browser_preload_bookinfo = {
         preload_bookinfo = false,
+    },
+    zen_scroll_bar = {
+        style = "bar",   -- "bar" | "dots"
     },
     context_menu = {
         allow_delete = false,
@@ -156,6 +164,10 @@ local defaults = {
         night_h     = 20,
         night_m     = 0,
         night_value = 5,
+    },
+    sleep_screen = {
+        presets = {},           -- { { name=…, screensaver_type=…, … }, … }
+        active_preset = nil,   -- name of currently active preset, or nil
     },
 }
 

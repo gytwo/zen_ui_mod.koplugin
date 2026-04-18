@@ -316,6 +316,9 @@ msgstr "Зелёный"
 msgid "Hide up folders"
 msgstr "Скрыть родительскую папку"
 
+msgid "Hide list borders"
+msgstr "Скрыть границы списка"
+
 msgid "History"
 msgstr "История"
 
@@ -951,3 +954,30 @@ msgstr ""
 
 msgid "Page %d of %d"
 msgstr ""
+
+msgid "All Time"
+msgstr "За всё время"
+
+msgid "Personal Records"
+msgstr "Личные рекорды"
+
+msgid "total read time"
+msgstr "всего прочитано"
+
+msgid "total pages read"
+msgstr "всего страниц"
+
+msgid "books read"
+msgstr "книг прочитано"
+
+msgid "avg time/book"
+msgstr "сред. время/книга"
+
+msgid "best day"
+msgstr "лучший день"
+
+msgid "best week"
+msgstr "лучшая неделя"
+
+msgid "best month"
+msgstr "лучший месяц"

@@ -65,12 +65,13 @@ local function apply_navbar()
             favorites = false,
             collections = false,
             search = false,
+            stats = false,
             exit = false,
             page_left = false,
             page_right = false,
             menu = false,
         },
-        tab_order = { "page_left", "books", "manga", "news", "continue", "history", "favorites", "collections", "search", "exit", "page_right", "menu" },
+        tab_order = { "page_left", "books", "manga", "news", "continue", "history", "favorites", "collections", "stats", "search", "exit", "page_right", "menu" },
         show_labels = true,
         books_label = "Library",
         manga_action = "rakuyomi",
@@ -83,6 +84,7 @@ local function apply_navbar()
         active_tab_bold = true,
         active_tab_underline = true,
         underline_above = false,
+        show_top_border = false,
     }
 
     local function loadConfig()
@@ -167,6 +169,11 @@ local function apply_navbar()
             icon = "appbar.search",
         },
         {
+            id = "stats",
+            label = _("Stats"),
+            icon = "tab_stats",
+        },
+        {
             id = "exit",
             label = _("Exit"),
             icon = "tab_exit",
@@ -202,6 +209,7 @@ local function apply_navbar()
     local injectNavbar
     local injectStandaloneNavbar
     local hookQuickRSSInit
+    local getNavbarHeight
 
     local function setActiveTab(id)
         active_tab = id
@@ -321,6 +329,15 @@ local function apply_navbar()
         end
     end
 
+    local function onTabStats()
+        local StatsPage = require("modules/filebrowser/patches/stats_page")
+        local _createStatusRow = zen_plugin._zen_shared
+            and zen_plugin._zen_shared.createStatusRow
+        local stats_page = StatsPage.create(_createStatusRow)
+        injectStandaloneNavbar(stats_page, "stats")
+        UIManager:show(stats_page)
+    end
+
     local function onTabExit()
         local fm = FileManager.instance
         if fm then
@@ -372,6 +389,7 @@ local function apply_navbar()
         favorites = onTabFavorites,
         collections = onTabCollections,
         search = onTabSearch,
+        stats = onTabStats,
         exit = onTabExit,
         page_left = onTabPageLeft,
         page_right = onTabPageRight,
@@ -660,7 +678,16 @@ local function apply_navbar()
             HorizontalSpan:new{ width = navbar_h_padding },
         }
 
-        local visual_children = { row_with_padding }
+        local visual_children = {}
+
+        if config.show_top_border then
+            table.insert(visual_children, LineWidget:new{
+                dimen = Geom:new{ w = screen_w, h = Screen:scaleBySize(1) },
+                background = Blitbuffer.COLOR_DARK_GRAY,
+            })
+        end
+
+        table.insert(visual_children, row_with_padding)
 
         local visual = VerticalGroup:new(visual_children)
 
@@ -718,7 +745,7 @@ local function apply_navbar()
 
     local Menu = require("ui/widget/menu")
 
-    local function getNavbarHeight()
+    getNavbarHeight = function()
         if not is_navbar_enabled() then
             return 0
         end
@@ -729,10 +756,11 @@ local function apply_navbar()
         return h
     end
 
-    -- Standalone views (History, Favorites, Collections, Rakuyomi) that should get navbar
+    -- Standalone views (History, Favorites, Collections, Stats, Rakuyomi) that should get navbar
     local standalone_view_names = {
         history = true,
         collections = true,
+        stats = true,
         library_view = true, -- Rakuyomi
     }
 

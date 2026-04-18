@@ -115,6 +115,32 @@ function M.registerPluginIcons(icons_dir, icons, copy_to_user_dir)
     end)
 end
 
+--- Override built-in KOReader icons by name at runtime.
+--- Wraps IconWidget.init so that after normal icon resolution,
+--- the file path is swapped to our replacement for matching names.
+--- Does NOT modify any original icon files on disk.
+---
+--- @param overrides table  map of icon_name → absolute replacement path
+function M.overrideIcons(overrides)
+    local lfs = require("libs/libkoreader-lfs")
+    local valid = {}
+    for name, path in pairs(overrides) do
+        if lfs.attributes(path, "mode") == "file" then
+            valid[name] = path
+        end
+    end
+    if not next(valid) then return end
+
+    local iw = require("ui/widget/iconwidget")
+    local orig_init = iw.init
+    function iw:init()
+        orig_init(self)
+        if valid[self.icon] then
+            self.file = valid[self.icon]
+        end
+    end
+end
+
 -- Module-level cache so pgettext is resolved only once (lazy, safe for early require).
 local _C_cache
 local function _C(ctx, msgid)

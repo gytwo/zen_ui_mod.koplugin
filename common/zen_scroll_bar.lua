@@ -1,8 +1,11 @@
 local function apply_zen_scroll_bar()
-    -- Replaces the pagination footer with a pill-shaped horizontal scroll bar
+    -- Replaces the pagination footer with a visual scroll indicator
     -- showing current page position in the file browser.
+    -- Two styles are available (controlled by config.zen_scroll_bar.style):
+    --   "bar"  (default) – pill-shaped horizontal track with a sliding thumb.
+    --   "dots"           – one dot per page; the active page dot is filled black.
     --
-    -- The bar is purely visual – no touch handling is installed on it.
+    -- The indicator is purely visual – no touch handling is installed on it.
     local Blitbuffer = require("ffi/blitbuffer")
     local Device     = require("device")
     local Geom       = require("ui/geometry")
@@ -16,13 +19,21 @@ local function apply_zen_scroll_bar()
     }
 
     -- Visual dimensions (scaled to device DPI).
-    local BAR_H      = Screen:scaleBySize(5)   -- pill height (track and thumb share this)
+    local BAR_H      = Screen:scaleBySize(5)    -- bar track / thumb height
+    local DOT_DIAM   = Screen:scaleBySize(10)   -- dot diameter (dots style)
+    local DOT_GAP    = Screen:scaleBySize(12)   -- gap between dots
     local BAR_W_PCT  = 0.92                     -- track width as fraction of screen width
-    local BAR_PAD    = Screen:scaleBySize(5)    -- vertical padding above and below the pill
-    local FOOTER_H   = BAR_H + BAR_PAD * 2     -- total height reserved at the bottom
+    local BAR_PAD    = Screen:scaleBySize(5)    -- vertical padding above and below the indicator
+    -- Footer must be tall enough for the larger of bar or dots.
+    local FOOTER_H   = math.max(BAR_H, DOT_DIAM) + BAR_PAD * 2
 
-    local TRACK_COLOR = Blitbuffer.COLOR_LIGHT_GRAY
-    local THUMB_COLOR = Blitbuffer.COLOR_BLACK
+    local TRACK_COLOR    = Blitbuffer.COLOR_LIGHT_GRAY
+    local THUMB_COLOR    = Blitbuffer.COLOR_BLACK
+    local DOT_INACT_COLOR = Blitbuffer.COLOR_DARK_GRAY
+
+    -- Capture plugin reference while __ZEN_UI_PLUGIN is still set (run_feature
+    -- sets it only during pcall of this function; it is nil by paint time).
+    local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
 
     -- Draw a filled pill (stadium) shape using scanlines.
     -- Uses only bb:paintRect – the sole safe Blitbuffer primitive.
@@ -42,6 +53,20 @@ local function apply_zen_scroll_bar()
                 bb:paintRect(px + inset, py + row, rw, 1, color)
             end
         end
+    end
+
+    -- Read the current style from plugin config at paint time so toggling the
+    -- setting takes effect on the next repaint without a restart.
+    local function get_style()
+        local p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+        if p
+            and type(p.config) == "table"
+            and type(p.config.zen_scroll_bar) == "table"
+            and p.config.zen_scroll_bar.style == "dots"
+        then
+            return "dots"
+        end
+        return "bar"
     end
 
     local orig_menu_init = Menu.init
@@ -81,7 +106,7 @@ local function apply_zen_scroll_bar()
         -- BottomContainer positions page_info at y = inner_dimen.h - h.
         self.page_info.getSize = function() return foot end
 
-        -- Replace the chevron rendering with a pill scroll bar.
+        -- Replace the chevron rendering with the configured scroll indicator.
         -- x, y: absolute screen position supplied by BottomContainer.
         self.page_info.paintTo = function(_, bb, x, y)
             local nb   = menu.page_num or 1
@@ -90,18 +115,44 @@ local function apply_zen_scroll_bar()
             -- Nothing to show if the list fits on one page.
             if nb <= 1 then return end
 
-            -- Track (full bar width, lighter colour).
-            paintPill(bb, x + bar_x, y + BAR_PAD, bar_w, BAR_H, TRACK_COLOR)
+            if get_style() == "dots" then
+                -- ── Dots style ────────────────────────────────────────────────
+                -- One circle per page; the active page is filled black.
+                local diam = DOT_DIAM
+                local gap  = DOT_GAP
+                local step = diam + gap
 
-            -- Thumb (darker, positioned to reflect the current page).
-            -- Thumb width is proportional to 1/nb, floored at BAR_H*2 so it
-            -- remains recognisably pill-shaped even with many pages.
-            local thumb_w = math.max(BAR_H * 2, math.floor(bar_w / nb))
-            thumb_w       = math.min(thumb_w, bar_w)
-            local travel  = bar_w - thumb_w
-            local pct     = (page - 1) / (nb - 1)
-            local thumb_x = bar_x + math.floor(pct * travel)
-            paintPill(bb, x + thumb_x, y + BAR_PAD, thumb_w, BAR_H, THUMB_COLOR)
+                -- If dots overflow the available width, shrink to fit.
+                if step * nb - gap > bar_w then
+                    step = math.max(2, math.floor(bar_w / nb))
+                    diam = math.max(1, step - 1)
+                end
+
+                local total_w = step * (nb - 1) + diam
+                local start_x = x + bar_x + math.floor((bar_w - total_w) / 2)
+                -- Centre dots vertically within the footer strip.
+                local dot_y   = y + math.floor((FOOTER_H - diam) / 2)
+
+                for i = 1, nb do
+                    local dot_x = start_x + (i - 1) * step
+                    local color = (i == page) and THUMB_COLOR or DOT_INACT_COLOR
+                    paintPill(bb, dot_x, dot_y, diam, diam, color)
+                end
+            else
+                -- ── Bar style (default) ───────────────────────────────────────
+                -- Track (full bar width, lighter colour).
+                paintPill(bb, x + bar_x, y + BAR_PAD, bar_w, BAR_H, TRACK_COLOR)
+
+                -- Thumb (darker, positioned to reflect the current page).
+                -- Thumb width is proportional to 1/nb, floored at BAR_H*2 so it
+                -- remains recognisably pill-shaped even with many pages.
+                local thumb_w = math.max(BAR_H * 2, math.floor(bar_w / nb))
+                thumb_w       = math.min(thumb_w, bar_w)
+                local travel  = bar_w - thumb_w
+                local pct     = (page - 1) / (nb - 1)
+                local thumb_x = bar_x + math.floor(pct * travel)
+                paintPill(bb, x + thumb_x, y + BAR_PAD, thumb_w, BAR_H, THUMB_COLOR)
+            end
         end
 
         -- Re-run layout so the new sizes take effect before the first paint.

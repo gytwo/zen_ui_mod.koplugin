@@ -316,6 +316,9 @@ msgstr "Verde"
 msgid "Hide up folders"
 msgstr "Ascunde dosarul superior"
 
+msgid "Hide list borders"
+msgstr "Ascunde marginile listei"
+
 msgid "History"
 msgstr "Istoric"
 
@@ -951,3 +954,30 @@ msgstr ""
 
 msgid "Page %d of %d"
 msgstr ""
+
+msgid "All Time"
+msgstr "Tot timpul"
+
+msgid "Personal Records"
+msgstr "Recorduri personale"
+
+msgid "total read time"
+msgstr "timp total de citit"
+
+msgid "total pages read"
+msgstr "pagini totale citite"
+
+msgid "books read"
+msgstr "cărți citite"
+
+msgid "avg time/book"
+msgstr "timp med./carte"
+
+msgid "best day"
+msgstr "cea mai bună zi"
+
+msgid "best week"
+msgstr "cea mai bună săptămână"
+
+msgid "best month"
+msgstr "cea mai bună lună"

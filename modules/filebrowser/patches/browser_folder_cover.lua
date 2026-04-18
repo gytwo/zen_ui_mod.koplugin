@@ -184,6 +184,91 @@ local function apply_browser_folder_cover()
         local original_update = MosaicMenuItem.update
         local logger = require("logger")
 
+        -- ── Folder book-count badge drawn at paint time ──────────────────────────
+        -- Mirrors browser_series_badge / browser_page_count: circle is drawn
+        -- directly to the blitbuffer so it reads corner_mark_size at the moment
+        -- paintTo fires, guaranteeing it scales identically to all other badges.
+        local _BlitBadge = require("ffi/blitbuffer")
+        local _FontBadge = require("ui/font")
+        local _TW        = require("ui/widget/textwidget")
+
+        local function paintCircle(bb, cx, cy, r, color)
+            for row = -r, r do
+                local half_w = math.floor(math.sqrt(math.max(0, r * r - row * row)))
+                if half_w > 0 then
+                    bb:paintRect(cx - half_w, cy + row, 2 * half_w, 1, color)
+                end
+            end
+        end
+
+        -- Walk the MosaicMenuItem.paintTo wrapper chain to find the `uv` accessor
+        -- that lives inside browser_cover_badges' closure – same technique used by
+        -- browser_page_count and browser_series_badge.
+        local function find_uv_fn(fn, depth)
+            depth = depth or 0
+            if depth > 10 or type(fn) ~= "function" then return nil end
+            for i = 1, 128 do
+                local name, val = debug.getupvalue(fn, i)
+                if not name then break end
+                if name == "uv" and type(val) == "function" then return val end
+                if name == "orig_paintTo" then
+                    local found = find_uv_fn(val, depth + 1)
+                    if found then return found end
+                end
+            end
+            return nil
+        end
+        -- Captured here (once, at setupLayout time); the uv closure itself reads
+        -- corner_mark_size as a live shared upvalue so it reflects grid changes.
+        local _badge_uv_fn = find_uv_fn(MosaicMenuItem.paintTo)
+
+        -- Wrap paintTo so the folder count circle is drawn after all inner layers.
+        local orig_folder_paintTo = MosaicMenuItem.paintTo
+        function MosaicMenuItem:paintTo(bb, x, y)
+            orig_folder_paintTo(self, bb, x, y)
+            local count = rawget(self, "_zen_folder_count")
+            if not count then return end
+
+            -- Use the cover geometry stored at update() time to position the badge.
+            -- The folder widget tree is deeper than a book cover, so widget-tree
+            -- navigation (self[1][1][1]) lands on the wrong widget; using stored
+            -- dimen avoids that entirely.
+            local cd = rawget(self, "_zen_cover_dimen")
+            if not (cd and cd.w and cd.w > 0) then return end
+
+            local corner_mark_size = (_badge_uv_fn and _badge_uv_fn("corner_mark_size"))
+                or Screen:scaleBySize(20)
+
+            -- Cover is centered within the cell (same math as _setFolderCover).
+            local cover_x = x + math.floor((self.width  - cd.w) / 2)
+            local cover_y = y + math.floor((self.height - cd.h) / 2)
+
+            local count_str  = tostring(count)
+            local font_size  = math.max(7, math.floor(corner_mark_size * 0.24))
+            local tw = _TW:new{
+                text    = count_str,
+                face    = _FontBadge:getFace("cfont", font_size),
+                bold    = true,
+                fgcolor = _BlitBadge.COLOR_BLACK,
+                padding = 0,
+            }
+            local tw_sz = tw:getSize()
+            local diam   = math.max(tw_sz.w, tw_sz.h) + math.floor(corner_mark_size * 0.3)
+            local r      = math.floor(diam / 2)
+            local margin = math.floor(corner_mark_size * 0.3)
+            -- top-right corner of cover frame
+            local cx = cover_x + cd.w - r - margin
+            local cy = cover_y + r + margin
+
+            paintCircle(bb, cx, cy, r + 2, _BlitBadge.COLOR_BLACK)
+            paintCircle(bb, cx, cy, r,     _BlitBadge.COLOR_LIGHT_GRAY)
+            tw:paintTo(bb,
+                cx - math.floor(tw_sz.w / 2),
+                cy - math.floor(tw_sz.h / 2)
+            )
+            if tw.free then tw:free() end
+        end
+
         -- Tracks file paths where we have already attempted a DB-row migration
         -- this session, so we don't hammer the DB with repeated SQL on every
         -- refresh call for the same path.
@@ -696,15 +781,12 @@ local function apply_browser_folder_cover()
 
             -- Pass inner image dimensions; the FrameContainer (bordersize) brings the
             -- banner flush with the outer cover edge (dimen.w = size.w + 2*border_size).
-            -- Badge sizing derived from portrait_h (cover height), which directly
-            -- reflects grid density: larger in 2×2, smaller in 4×3 etc.  This
-            -- guarantees the badge grows/shrinks with the grid just like all other
-            -- badge layers, but without relying on paintTo-time upvalue walks.
-            -- ~8 % of portrait height ≈ corner_mark_size on a typical KOReader grid.
-            local badge_d      = math.max(Screen:scaleBySize(14), math.floor(portrait_h * 0.08))
-            local badge_fs     = math.max(8, math.floor(badge_d * 0.38))
-            local badge_offset = math.floor(badge_d * 0.25)
-            local directory, nbitems = self:_getTextBoxes { w = size.w, h = size.h, book_count = img.book_count, badge_font_size = badge_fs }
+            -- Cover geometry is stored on self so the paintTo wrapper can position
+            -- the badge correctly without walking the widget tree at paint time.
+            self._zen_cover_dimen = dimen
+            self._zen_folder_count = (img.book_count and img.book_count > 0)
+                and img.book_count or nil
+            local directory = self:_getTextBoxes { w = size.w, h = size.h }
 
             local folder_name_widget
             if settings.show_folder_name.get() then
@@ -726,31 +808,8 @@ local function apply_browser_folder_cover()
                 folder_name_widget = VerticalSpan:new { width = 0 }
             end
 
-            local nbitems_widget
-            if nbitems.text ~= "" then
-                nbitems_widget = TopContainer:new {
-                    dimen = dimen,
-                    RightContainer:new {
-                        dimen = {
-                            w = dimen.w - Screen:scaleBySize(4),
-                            h = badge_d + badge_offset,
-                        },
-                        VerticalGroup:new {
-                            VerticalSpan:new{ width = badge_offset },
-                            FrameContainer:new {
-                                padding = 0,
-                                bordersize = 0,
-                                radius = math.floor(badge_d / 2),
-                                background = Blitbuffer.COLOR_WHITE,
-                                CenterContainer:new { dimen = { w = badge_d, h = badge_d }, nbitems },
-                            },
-                        },
-                    },
-                    overlap_align = "center",
-                }
-            else
-                nbitems_widget = VerticalSpan:new { width = 0 }
-            end
+            -- Badge is now drawn in paintTo (paint-time, scales with corner_mark_size).
+            local nbitems_widget = VerticalSpan:new { width = 0 }
 
             -- Center the image exactly like a book cover so folder covers align with
             -- their row neighbours in all grid layouts.
@@ -856,22 +915,11 @@ local function apply_browser_folder_cover()
         function MosaicMenuItem:_getTextBoxes(dimen)
             -- Use entry-counted books when available (correct in search results and
             -- move-dialog folders where mandatory uses a different/absent glyph format).
-            local nbitems_text
-            if dimen.book_count ~= nil then
-                nbitems_text = dimen.book_count > 0 and tostring(dimen.book_count) or ""
-            else
-                nbitems_text = (self.mandatory and self.mandatory:match("(%d+) \u{F016}")) or ""
-            end
             local nb_font_size = dimen.badge_font_size or Folder.face.nb_items_font_size
-            local nbitems = TextWidget:new {
-                text = nbitems_text, -- nb books
-                face = Font:getFace("cfont", nb_font_size),
-                bold = true,
-                padding = 0,
-            }
 
-            -- Always reserve the same badge height so the title font stays
-            -- consistent whether the folder is empty or not.
+            -- Reserve a fixed height so the directory text doesn't crowd the badge
+            -- area at the top of the cover.  Use the same font as before for the
+            -- height probe so we don't need to know corner_mark_size here.
             local badge_ref = TextWidget:new {
                 text = "0",
                 face = Font:getFace("cfont", nb_font_size),
@@ -942,7 +990,7 @@ local function apply_browser_folder_cover()
                 }
             end
 
-            return directory, nbitems
+            return directory
         end
 
         -- list mode cover

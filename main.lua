@@ -94,6 +94,49 @@ function ZenUI:init()
     self.config = ConfigManager.load()
     _zen_plugin_ref = self
 
+    -- First-run: backup user's original screensaver settings as a preset.
+    if not self.config._meta.screensaver_backup_created then
+        if type(self.config.sleep_screen) ~= "table" then
+            self.config.sleep_screen = { presets = {}, active_preset = nil }
+        end
+        if type(self.config.sleep_screen.presets) ~= "table" then
+            self.config.sleep_screen.presets = {}
+        end
+        local backup = {
+            name = "Backup of Original",
+            screensaver_type = G_reader_settings:readSetting("screensaver_type"),
+            screensaver_message = G_reader_settings:readSetting("screensaver_message"),
+            screensaver_show_message = G_reader_settings:isTrue("screensaver_show_message"),
+            screensaver_img_background = G_reader_settings:readSetting("screensaver_img_background"),
+            screensaver_document_cover = G_reader_settings:readSetting("screensaver_document_cover"),
+            screensaver_stretch_images = G_reader_settings:isTrue("screensaver_stretch_images"),
+            screensaver_stretch_limit_percentage = G_reader_settings:readSetting("screensaver_stretch_limit_percentage"),
+        }
+        table.insert(self.config.sleep_screen.presets, 1, backup)
+        self.config._meta.screensaver_backup_created = true
+        self:saveConfig()
+    end
+
+    -- First-run: backup user's original footer settings as a preset.
+    if not self.config._meta.footer_backup_created then
+        local footer_settings = G_reader_settings:readSetting("footer")
+        if footer_settings then
+            local util = require("util")
+            if type(self.config.reader_footer) ~= "table" then
+                self.config.reader_footer = {}
+            end
+            self.config.reader_footer.backup_preset = {
+                name = "Backup of Original",
+                footer = util.tableDeepCopy(footer_settings),
+                reader_footer_mode = G_reader_settings:readSetting("reader_footer_mode") or 1,
+                reader_footer_custom_text = G_reader_settings:readSetting("reader_footer_custom_text") or "KOReader",
+                reader_footer_custom_text_repetitions = G_reader_settings:readSetting("reader_footer_custom_text_repetitions") or 1,
+            }
+            self.config._meta.footer_backup_created = true
+            self:saveConfig()
+        end
+    end
+
     -- First-run: default portrait list mode to 5 items per page.
     -- We use a plugin-config flag so this fires exactly once (when the plugin is
     -- first installed), regardless of what BookInfoManager already has saved.

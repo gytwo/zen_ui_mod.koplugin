@@ -2,6 +2,8 @@ local defaults = {
     _meta = {
         schema_version = 1,
         files_per_page_defaulted = false,
+        screensaver_backup_created = false,
+        footer_backup_created = false,
     },
     localization = {
         default_locale = "en",
@@ -142,6 +144,7 @@ local defaults = {
     },
     reader_footer = {
         verbose_chapter_time = false,
+        backup_preset = nil,
     },
     night_mode_schedule = {
         night_on_h  = 22,

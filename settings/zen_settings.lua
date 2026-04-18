@@ -2157,39 +2157,49 @@ function M.build(plugin)
             if not (ui and ui.view and ui.view.footer) then
                 return {}
             end
+            local function apply_footer_preset(preset)
+                -- Preserve current font settings across preset load
+                local saved_face = ui.view.footer.settings.text_font_face
+                local saved_size = ui.view.footer.settings.text_font_size
+                local saved_bold = ui.view.footer.settings.text_font_bold
+                ui.view.footer:loadPreset(preset)
+                ui.view.footer.settings.text_font_face = saved_face
+                ui.view.footer.settings.text_font_size = saved_size
+                ui.view.footer.settings.text_font_bold = saved_bold
+                ui.view.footer:updateFooterFont()
+                ui.view.footer:refreshFooter(true, true)
+                -- Enable reader clock
+                config.features["reader_clock"] = true
+                save_and_apply("reader_clock")
+                -- Disable CRE alt status bar (epub/cre documents)
+                if ui.rolling then
+                    ui.document.configurable.status_line = 1
+                    ui:handleEvent(Event:new("SetStatusLine", 1))
+                end
+                -- Apply zen extras
+                if preset.zen then
+                    if type(config.reader_footer) ~= "table" then config.reader_footer = {} end
+                    if preset.zen.verbose_chapter_time ~= nil then
+                        config.reader_footer.verbose_chapter_time = preset.zen.verbose_chapter_time
+                    end
+                    plugin:saveConfig()
+                end
+            end
             local items = {}
+            -- Show backup of original settings first
+            if type(config.reader_footer) == "table" and config.reader_footer.backup_preset then
+                local backup = config.reader_footer.backup_preset
+                table.insert(items, {
+                    text = _(backup.name),
+                    callback = function() apply_footer_preset(backup) end,
+                    separator = true,
+                })
+            end
             local footer_presets = require("modules/reader/patches/reader-footer-presets")
             for _i, preset in ipairs(footer_presets) do
                 table.insert(items, {
                     text = _(preset.name),
-                    callback = function()
-                        -- Preserve current font settings across preset load
-                        local saved_face = ui.view.footer.settings.text_font_face
-                        local saved_size = ui.view.footer.settings.text_font_size
-                        local saved_bold = ui.view.footer.settings.text_font_bold
-                        ui.view.footer:loadPreset(preset)
-                        ui.view.footer.settings.text_font_face = saved_face
-                        ui.view.footer.settings.text_font_size = saved_size
-                        ui.view.footer.settings.text_font_bold = saved_bold
-                        ui.view.footer:updateFooterFont()
-                        ui.view.footer:refreshFooter(true, true)
-                        -- Enable reader clock
-                        config.features["reader_clock"] = true
-                        save_and_apply("reader_clock")
-                        -- Disable CRE alt status bar (epub/cre documents)
-                        if ui.rolling then
-                            ui.document.configurable.status_line = 1
-                            ui:handleEvent(Event:new("SetStatusLine", 1))
-                        end
-                        -- Apply zen extras
-                        if preset.zen then
-                            if type(config.reader_footer) ~= "table" then config.reader_footer = {} end
-                            if preset.zen.verbose_chapter_time ~= nil then
-                                config.reader_footer.verbose_chapter_time = preset.zen.verbose_chapter_time
-                            end
-                            plugin:saveConfig()
-                        end
-                    end,
+                    callback = function() apply_footer_preset(preset) end,
                 })
             end
             return items

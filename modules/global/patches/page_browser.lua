@@ -66,6 +66,7 @@ local function apply_page_browser()
         local Screen          = Device.screen
         local GestureRange    = require("ui/gesturerange")
         local ZenSlider       = require("common/zen_slider")
+        local ZenIconButton   = require("common/zen_icon_button")
         local logger          = require("logger")
 
         -- ----------------------------------------------------------------
@@ -148,8 +149,12 @@ local function apply_page_browser()
             local slot_w  = btn_sz + btn_pad * 2
             local right_x = Screen:getWidth()
 
-            local function make_right_btn(icon, x_pos, cb)
-                return IconButton:new{
+            local _toc_icon_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "toc")
+
+            local function make_right_btn(icon, x_pos, cb, file_path)
+                local cls = file_path and ZenIconButton or IconButton
+                return cls:new{
+                    file           = file_path,
                     icon           = icon,
                     width          = btn_sz,
                     height         = btn_sz,
@@ -374,11 +379,11 @@ local function apply_page_browser()
                 show_dialog()
             end
 
-            -- Search at far right, TOC next, Font, Bookmark leftmost of the four
+            -- Left to right: TOC, Bookmark, Font, Search
             table.insert(self.title_bar, make_right_btn("appbar.search",     right_x - slot_w,     open_search))
-            table.insert(self.title_bar, make_right_btn("appbar.navigation", right_x - slot_w * 2, open_toc))
-            table.insert(self.title_bar, make_right_btn("appbar.textsize",   right_x - slot_w * 3, open_font_menu))
-            table.insert(self.title_bar, make_right_btn("bookmark",          right_x - slot_w * 4, open_bookmarks))
+            table.insert(self.title_bar, make_right_btn("appbar.textsize",   right_x - slot_w * 2, open_font_menu))
+            table.insert(self.title_bar, make_right_btn("bookmark",          right_x - slot_w * 3, open_bookmarks))
+            table.insert(self.title_bar, make_right_btn("appbar.navigation", right_x - slot_w * 4, open_toc, _toc_icon_path))
 
             -- Restore last-used layout; default to single page if no preference saved.
             local _saved_layout = G_reader_settings

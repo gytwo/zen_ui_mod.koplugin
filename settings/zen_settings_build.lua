@@ -1510,71 +1510,89 @@ function M.build(plugin)
     })
 
     table.insert(filebrowser_items, {
-        text = _("Rounded cover corners"),
-        checked_func = function()
-            return type(config.features) == "table"
-                and config.features.browser_cover_rounded_corners == true
-        end,
-        callback = function()
-            if type(config.features) ~= "table" then
-                config.features = {}
-            end
-            config.features.browser_cover_rounded_corners =
-                not (config.features.browser_cover_rounded_corners == true)
-            plugin:saveConfig()
-            UIManager:setDirty(nil, "full")
-        end,
-    })
-
-    table.insert(filebrowser_items, {
-        text = _("Show progress % on mosaic covers"),
-        checked_func = function()
-            return type(config.browser_cover_badges) == "table"
-                and config.browser_cover_badges.show_mosaic_progress == true
-        end,
-        callback = function()
-            if type(config.browser_cover_badges) ~= "table" then
-                config.browser_cover_badges = {}
-            end
-            config.browser_cover_badges.show_mosaic_progress =
-                not (config.browser_cover_badges.show_mosaic_progress == true)
-            plugin:saveConfig()
-            UIManager:setDirty(nil, "full")
-        end,
-    })
-
-    table.insert(filebrowser_items, {
-        text = _("Show page count"),
-        checked_func = function()
-            return type(config.browser_page_count) == "table"
-                and config.browser_page_count.show_page_count == true
-        end,
-        callback = function()
-            if type(config.browser_page_count) ~= "table" then
-                config.browser_page_count = {}
-            end
-            config.browser_page_count.show_page_count =
-                not (config.browser_page_count.show_page_count == true)
-            plugin:saveConfig()
-            UIManager:setDirty(nil, "full")
-        end,
-    })
-
-    table.insert(filebrowser_items, {
-        text = _("Show series number on covers"),
-        checked_func = function()
-            return type(config.browser_series_badge) == "table"
-                and config.browser_series_badge.show_series_badge == true
-        end,
-        callback = function()
-            if type(config.browser_series_badge) ~= "table" then
-                config.browser_series_badge = {}
-            end
-            config.browser_series_badge.show_series_badge =
-                not (config.browser_series_badge.show_series_badge == true)
-            plugin:saveConfig()
-            UIManager:setDirty(nil, "full")
-        end,
+        text = _("Covers"),
+        sub_item_table = {
+            {
+                text = _("Rounded cover corners"),
+                checked_func = function()
+                    return type(config.features) == "table"
+                        and config.features.browser_cover_rounded_corners == true
+                end,
+                callback = function()
+                    if type(config.features) ~= "table" then
+                        config.features = {}
+                    end
+                    config.features.browser_cover_rounded_corners =
+                        not (config.features.browser_cover_rounded_corners == true)
+                    plugin:saveConfig()
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
+                text = _("Show progress % on mosaic covers"),
+                checked_func = function()
+                    return type(config.browser_cover_badges) == "table"
+                        and config.browser_cover_badges.show_mosaic_progress == true
+                end,
+                callback = function()
+                    if type(config.browser_cover_badges) ~= "table" then
+                        config.browser_cover_badges = {}
+                    end
+                    config.browser_cover_badges.show_mosaic_progress =
+                        not (config.browser_cover_badges.show_mosaic_progress == true)
+                    plugin:saveConfig()
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
+                text = _("Show page count"),
+                checked_func = function()
+                    return type(config.browser_page_count) == "table"
+                        and config.browser_page_count.show_page_count == true
+                end,
+                callback = function()
+                    if type(config.browser_page_count) ~= "table" then
+                        config.browser_page_count = {}
+                    end
+                    config.browser_page_count.show_page_count =
+                        not (config.browser_page_count.show_page_count == true)
+                    plugin:saveConfig()
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
+                text = _("Show series number on covers"),
+                checked_func = function()
+                    return type(config.browser_series_badge) == "table"
+                        and config.browser_series_badge.show_series_badge == true
+                end,
+                callback = function()
+                    if type(config.browser_series_badge) ~= "table" then
+                        config.browser_series_badge = {}
+                    end
+                    config.browser_series_badge.show_series_badge =
+                        not (config.browser_series_badge.show_series_badge == true)
+                    plugin:saveConfig()
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
+                text = _("Show favorite badge"),
+                checked_func = function()
+                    return type(config.browser_cover_badges) == "table"
+                        and config.browser_cover_badges.show_favorite_badge == true
+                end,
+                callback = function()
+                    if type(config.browser_cover_badges) ~= "table" then
+                        config.browser_cover_badges = {}
+                    end
+                    config.browser_cover_badges.show_favorite_badge =
+                        not (config.browser_cover_badges.show_favorite_badge == true)
+                    plugin:saveConfig()
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+        },
     })
 
     table.insert(filebrowser_items, {

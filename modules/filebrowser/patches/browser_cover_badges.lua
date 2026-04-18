@@ -92,6 +92,17 @@ local function apply_browser_cover_badges()
         bb:paintRect(bar2x, bar_y, bar_w, bar_h, color)
     end
 
+    -- ── Draw a filled circle row-by-row using paintRect ───────────────────────
+    -- cx, cy: centre;  r: radius;  color: fill color.
+    local function paintCircle(bb, cx, cy, r, color)
+        for row = -r, r do
+            local half_w = math.floor(math.sqrt(math.max(0, r * r - row * row)))
+            if half_w > 0 then
+                bb:paintRect(cx - half_w, cy + row, 2 * half_w, 1, color)
+            end
+        end
+    end
+
     -- ── Generic upvalue accessor ───────────────────────────────────────────────
     local function get_upvalue(fn, name)
         if type(fn) ~= "function" then return nil end
@@ -125,6 +136,26 @@ local function apply_browser_cover_badges()
             return v
         end
 
+        -- Cached star.empty icon for the favorite circle badge.
+        -- star.empty is a black-outline SVG (no fill): normal mode → black star
+        -- outline, night mode KOReader inverts the buffer → white outline.
+        local IconWidget   = require("ui/widget/iconwidget")
+        local fav_mark     = nil
+        local fav_mark_size = 0
+
+        local function get_fav_mark(size)
+            if fav_mark and fav_mark_size == size then return fav_mark end
+            if fav_mark and fav_mark.free then fav_mark:free() end
+            fav_mark = IconWidget:new{
+                icon   = "star.empty",
+                width  = size,
+                height = size,
+                alpha  = true,
+            }
+            fav_mark_size = size
+            return fav_mark
+        end
+
         function MosaicMenuItem:paintTo(bb, x, y)
             -- 1. Base widget painting (cover image / FakeCover / folder tree)
             InputContainer.paintTo(self, bb, x, y)
@@ -145,28 +176,41 @@ local function apply_browser_cover_badges()
 
             local border = target.bordersize or 0
 
-            -- 3. Collection/favorite star → TOP-LEFT (was top-right) ────────────
-            local collection_mark = uv("collection_mark")
-            if collection_mark
+            -- 3. Collection/favorite star → TOP-LEFT inside a circle ──────────
+            -- Guard on collection_mark upvalue: confirms KOReader's collections
+            -- feature has initialised and sized the mark for the current grid.
+            local show_fav_badge = _plugin
+                and _plugin.config
+                and type(_plugin.config.browser_cover_badges) == "table"
+                and _plugin.config.browser_cover_badges.show_favorite_badge == true
+            if show_fav_badge
+                and uv("collection_mark")
                 and self.filepath
                 and self.menu.name ~= "collections"
                 and ReadCollection:isFileInCollections(self.filepath)
             then
-                local ix, rect_ix
+                local r      = math.floor(corner_mark_size / 2)
+                local margin = math.floor(corner_mark_size * 0.3)
+                local cx, cy
                 if BD.mirroredUILayout() then
-                    ix      = self.width - math.ceil((self.width - target.dimen.w) / 2) - corner_mark_size
-                    rect_ix = 0
+                    local cover_right = x + self.width
+                        - math.ceil((self.width - target.dimen.w) / 2)
+                    cx = cover_right - r - margin
                 else
-                    ix      = math.floor((self.width - target.dimen.w) / 2)
-                    rect_ix = border
+                    local cover_left = x + math.floor((self.width - target.dimen.w) / 2)
+                    cx = cover_left + r + margin
                 end
-                local rect_size = corner_mark_size - border
-                bb:paintRect(
-                    x + ix + rect_ix, target.dimen.y + border,
-                    rect_size, rect_size,
-                    Blitbuffer.COLOR_GRAY
+                cy = target.dimen.y + r + margin
+                -- Border ring then fill (same two-call pattern as series badge)
+                paintCircle(bb, cx, cy, r + 2, Blitbuffer.COLOR_BLACK)
+                paintCircle(bb, cx, cy, r,     Blitbuffer.COLOR_LIGHT_GRAY)
+                -- star.empty (black outline, no fill) inverts correctly in night mode → white.
+                -- math.ceil gives symmetric placement for both even and odd sizes.
+                local mark = get_fav_mark(corner_mark_size)
+                mark:paintTo(bb,
+                    cx - math.ceil(corner_mark_size / 2),
+                    cy - math.ceil(corner_mark_size / 2)
                 )
-                collection_mark:paintTo(bb, x + ix, target.dimen.y)
             end
 
             -- 4. Dog-ear marks SUPPRESSED ────────────────────────────────────────

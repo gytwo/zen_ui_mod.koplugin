@@ -710,6 +710,12 @@ msgstr "Show page count"
 msgid "Show series number on covers"
 msgstr "Show series number on covers"
 
+msgid "Covers"
+msgstr "Covers"
+
+msgid "Show favorite badge"
+msgstr "Show favorite badge"
+
 msgid "Rounded cover corners"
 msgstr "Rounded cover corners"
 

@@ -541,6 +541,9 @@ msgstr "Abrir Rakuyomi"
 msgid "Opening"
 msgstr "Abrindo"
 
+msgid "Partial pages refresh"
+msgstr "Atualização de páginas parciais"
+
 msgid "percent - unopened - finished last"
 msgstr "percentual - não aberto - concluído por último"
 

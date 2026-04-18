@@ -7,6 +7,7 @@ local FEATURES = {
     "browser_folder_cover",
     "browser_hide_underline",
     "browser_hide_up_folder",
+    "partial_page_repaint",
 }
 
 local PATCH_MODULES = {
@@ -98,13 +99,6 @@ function M.init(logger, plugin)
     local context_menu_fn = load_patch("context_menu")
     if context_menu_fn then
         run_feature(logger, plugin, "context_menu", context_menu_fn)
-    end
-
-    -- Always apply: full repaint when landing on a partial page to clear
-    -- e-ink ghost images left by the previous page's items.
-    local partial_page_repaint_fn = load_patch("partial_page_repaint")
-    if partial_page_repaint_fn then
-        run_feature(logger, plugin, "partial_page_repaint", partial_page_repaint_fn)
     end
 
     -- Always apply: custom layout for detailed list mode (title / author / series

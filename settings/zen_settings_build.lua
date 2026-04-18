@@ -2110,6 +2110,18 @@ function M.build(plugin)
     })
 
     table.insert(global_items, {
+        text = _("Partial pages refresh"),
+        checked_func = function()
+            return config.features.partial_page_repaint == true
+        end,
+        callback = function()
+            config.features.partial_page_repaint = not (config.features.partial_page_repaint == true)
+            plugin:saveConfig()
+            settings_apply.prompt_restart()
+        end,
+    })
+
+    table.insert(global_items, {
         text = _("Night mode schedule"),
         sub_item_table = {
             {

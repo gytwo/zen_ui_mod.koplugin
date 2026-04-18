@@ -539,6 +539,9 @@ msgstr "打开 Rakuyomi"
 msgid "Opening"
 msgstr "正在打开"
 
+msgid "Partial pages refresh"
+msgstr "局部页面刷新"
+
 msgid "percent - unopened - finished last"
 msgstr "进度 - 未打开 - 已完成排最后"
 

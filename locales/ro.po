@@ -541,6 +541,9 @@ msgstr "Deschide Rakuyomi"
 msgid "Opening"
 msgstr "Se deschide"
 
+msgid "Partial pages refresh"
+msgstr "Reîmprospătare pagini parțiale"
+
 msgid "percent - unopened - finished last"
 msgstr "procent - nedeschis - terminat ultimul"
 

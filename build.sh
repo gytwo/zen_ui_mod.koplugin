@@ -38,8 +38,11 @@ rsync -a \
   --exclude '.vscode/' \
   --exclude 'dist/' \
   --exclude '.DS_Store' \
+  --exclude '.gitignore' \
   --exclude '*.zip' \
-  --exclude 'build_koplugin_zip.sh' \
+  --exclude '*.sh' \
+  --exclude '*.md' \
+  --exclude 'images/' \
   "$REPO_ROOT/" "$STAGE_DIR/"
 
 rm -f "$OUT_ZIP"

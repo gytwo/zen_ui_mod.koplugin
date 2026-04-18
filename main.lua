@@ -1,3 +1,8 @@
+-- i18n must be installed before any other require() so every subsequent
+-- require("gettext") in every sub-module receives the wrapped version.
+local i18n = require("common/i18n")
+i18n.install()
+
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local logger = require("logger")
 local _ = require("gettext")
@@ -164,6 +169,10 @@ end
 -- addToMainMenu is kept as a no-op so KOReader's plugin registry is
 -- satisfied but we don't get a duplicate entry inside an existing tab.
 function ZenUI:addToMainMenu(menu_items) -- luacheck: ignore
+end
+
+function ZenUI:onCloseWidget()
+    i18n.uninstall()
 end
 
 return ZenUI

@@ -160,7 +160,7 @@ local function apply_night_mode_schedule()
         UIManager:unschedule(night_off_fn)
     end
     state._on_resume = function()
-        reschedule()
+        UIManager:nextTick(function() reschedule() end)
     end
     state.initialized = true
 

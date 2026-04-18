@@ -218,13 +218,14 @@ local function apply_browser_folder_cover()
             if not (cd and cd.w and cd.w > 0) then return end
             local corner_mark_size = (_badge_uv_fn and _badge_uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
+            local eff_size = math.max(corner_mark_size, math.floor((cd.w or 0) * 0.14))
 
             -- Cover is centered within the cell (same math as _setFolderCover).
             local cover_x = x + math.floor((self.width  - cd.w) / 2)
             local cover_y = y + math.floor((self.height - cd.h) / 2)
 
             local count_str  = tostring(count)
-            local font_size  = math.max(7, math.floor(corner_mark_size * 0.24))
+            local font_size  = math.max(7, math.floor(eff_size * 0.24))
             local tw = _TW:new{
                 text    = count_str,
                 face    = _FontBadge:getFace("cfont", font_size),
@@ -233,9 +234,9 @@ local function apply_browser_folder_cover()
                 padding = 0,
             }
             local tw_sz = tw:getSize()
-            local diam   = math.max(tw_sz.w, tw_sz.h) + math.floor(corner_mark_size * 0.3)
+            local diam   = math.max(tw_sz.w, tw_sz.h) + math.floor(eff_size * 0.3)
             local r      = math.floor(diam / 2)
-            local margin = math.floor(corner_mark_size * 0.3)
+            local margin = math.floor(eff_size * 0.3)
             -- top-right of cover frame
             local cx = cover_x + cd.w - r - margin
             local cy = cover_y + r + margin
@@ -817,7 +818,9 @@ local function apply_browser_folder_cover()
             -- shorter.  Rounded corners inset the lines on both sides.
             local centered_top  = math.floor((self.height - dimen.h) / 2)
             local top_h         = 2 * (Folder.edge.thick + Folder.edge.margin)
+            local spine_gap     = Screen:scaleBySize(9)
             local use_top_lines = centered_top >= top_h
+                or math.floor((self.width - dimen.w) / 2) < spine_gap
 
             local plug = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
             local rounded = plug
@@ -855,7 +858,6 @@ local function apply_browser_folder_cover()
             else
                 -- Vertical spine lines to the left of the cover image.
                 -- line1 (outer / farther from cover): shorter.  line2 (inner / closer): longer.
-                local spine_gap = Screen:scaleBySize(9)
                 local spine_x   = math.max(0, math.floor((self.width - dimen.w) / 2))
                 local line1_h   = math.max(0, math.floor(dimen.h * (Folder.edge.width ^ 2)) - 2 * line_inset)
                 local line2_h   = math.max(0, math.floor(dimen.h * Folder.edge.width)       - 2 * line_inset)

@@ -133,13 +133,14 @@ local function apply_browser_page_count()
             -- Read corner_mark_size fresh each paint so it tracks layout changes.
             local corner_mark_size = (_uv_fn and _uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
+            local eff_size = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
             local cover_left   = x + math.floor((self.width - target.dimen.w) / 2)
             local cover_bottom = y + self.height
                 - math.floor((self.height - target.dimen.h) / 2)
 
-            -- 6. Measure text — font, height, padding all scale with corner_mark_size
+            -- 6. Measure text — font, height, padding all scale with eff_size
             --    matching the cover badge proportions exactly.
-            local font_size = math.max(7, math.floor(corner_mark_size * 0.24))
+            local font_size = math.max(7, math.floor(eff_size * 0.24))
             local page_str  = utils.formatPageCount(pages)
             local tw = TextWidget:new{
                 text    = page_str,
@@ -149,12 +150,12 @@ local function apply_browser_page_count()
                 padding = 0,
             }
             local tw_sz  = tw:getSize()
-            -- Height fixed by corner_mark_size (same scale as cover badge bh).
-            local bh     = math.floor(corner_mark_size * 0.95)
-            -- Horizontal padding proportional to corner_mark_size (≈ bw * 0.12).
-            local h_pad  = math.floor(corner_mark_size * 0.12)
+            -- Height fixed by eff_size (same scale as cover badge bh).
+            local bh     = math.floor(eff_size * 0.95)
+            -- Horizontal padding proportional to eff_size (≈ bw * 0.12).
+            local h_pad  = math.floor(eff_size * 0.12)
             local bw     = tw_sz.w + 2 * h_pad
-            local margin = math.floor(corner_mark_size * 0.3)
+            local margin = math.floor(eff_size * 0.3)
             local bx     = cover_left + margin
             local by     = cover_bottom - bh - margin
 

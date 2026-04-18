@@ -155,13 +155,13 @@ local function apply_browser_cover_badges()
                 and type(_plugin.config.browser_cover_badges) == "table"
                 and _plugin.config.browser_cover_badges.show_favorite_badge == true
             if show_fav_badge
-                and uv("collection_mark")
                 and self.filepath
                 and self.menu.name ~= "collections"
-                and ReadCollection:isFileInCollections(self.filepath)
+                and ReadCollection:isFileInCollections(self.filepath, true)
             then
-                local r      = math.floor(corner_mark_size / 2)
-                local margin = math.floor(corner_mark_size * 0.3)
+                local eff_corner = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+                local r      = math.floor(eff_corner / 2)
+                local margin = math.floor(eff_corner * 0.3)
                 local cx, cy
                 if BD.mirroredUILayout() then
                     local cover_right = x + self.width
@@ -177,10 +177,10 @@ local function apply_browser_cover_badges()
                 paintCircle(bb, cx, cy, r,     Blitbuffer.COLOR_LIGHT_GRAY)
                 -- star.empty outline inverts correctly in night mode.
                 -- math.ceil gives symmetric placement for both even and odd sizes.
-                local mark = get_fav_mark(corner_mark_size)
+                local mark = get_fav_mark(eff_corner)
                 mark:paintTo(bb,
-                    cx - math.ceil(corner_mark_size / 2),
-                    cy - math.ceil(corner_mark_size / 2)
+                    cx - math.ceil(eff_corner / 2),
+                    cy - math.ceil(eff_corner / 2)
                 )
             end
 
@@ -219,8 +219,9 @@ local function apply_browser_cover_badges()
                 local do_pct   = not do_check and not do_pause and self.percent_finished ~= nil
 
                 if do_check or do_pause or do_pct then
-                    local bw = math.floor(corner_mark_size * 1.2)
-                    local bh = math.floor(corner_mark_size * 1.1)
+                    local eff_size = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+                    local bw = math.floor(eff_size * 1.2)
+                    local bh = math.floor(eff_size * 1.1)
 
                     -- Align to top-right edge of cover frame, inset slightly
                     local cover_left = x + math.floor((self.width - target.dimen.w) / 2)
@@ -248,7 +249,7 @@ local function apply_browser_cover_badges()
                         local sq_y = icon_y + math.floor((icon_h - sq) / 2)
                         paintCheck(bb, sq_x, sq_y, sq, sq, Blitbuffer.COLOR_BLACK)
                     elseif do_pause then
-                        local font_sz = math.max(7, math.floor(corner_mark_size * 0.40))
+                        local font_sz = math.max(7, math.floor(eff_size * 0.40))
                         local tw = TextWidget:new{
                             text    = "\u{F0150}",  -- nf-md-clock_outline
                             face    = Font:getFace("cfont", font_sz),
@@ -264,7 +265,7 @@ local function apply_browser_cover_badges()
                     else
                         local pct     = math.floor(100 * self.percent_finished)
                         local pct_str = pct .. "%"
-                        local font_sz = math.max(7, math.floor(corner_mark_size * 0.24))
+                        local font_sz = math.max(7, math.floor(eff_size * 0.24))
                         local tw = TextWidget:new{
                             text    = pct_str,
                             face    = Font:getFace("cfont", font_sz),

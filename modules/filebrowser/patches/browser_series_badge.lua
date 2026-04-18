@@ -114,6 +114,7 @@ local function apply_browser_series_badge()
             --    this one sits at bottom-right of the same cover frame.
             local corner_mark_size = (_uv_fn and _uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
+            local eff_size = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
             local cover_left   = x + math.floor((self.width - target.dimen.w) / 2)
             local cover_right  = cover_left + target.dimen.w
             local cover_bottom = y + self.height
@@ -128,7 +129,7 @@ local function apply_browser_series_badge()
                 idx_str = "#" .. string.format("%.1f", series_idx)
             end
 
-            local font_size = math.max(7, math.floor(corner_mark_size * 0.24))
+            local font_size = math.max(7, math.floor(eff_size * 0.24))
             local tw = TextWidget:new{
                 text    = idx_str,
                 face    = Font:getFace("cfont", font_size),
@@ -138,9 +139,9 @@ local function apply_browser_series_badge()
             }
             local tw_sz = tw:getSize()
             -- Diameter: large enough to contain the text with padding on all sides.
-            local diam   = math.max(tw_sz.w, tw_sz.h) + math.floor(corner_mark_size * 0.3)
+            local diam   = math.max(tw_sz.w, tw_sz.h) + math.floor(eff_size * 0.3)
             local r      = math.floor(diam / 2)
-            local margin = math.floor(corner_mark_size * 0.3)
+            local margin = math.floor(eff_size * 0.3)
             -- Centre of the circle, anchored to bottom-right of cover.
             local cx = cover_right  - r - margin
             local cy = cover_bottom - r - margin

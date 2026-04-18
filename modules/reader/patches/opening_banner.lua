@@ -2,6 +2,46 @@
 -- showReaderCoroutine can position the banner over that specific cover cell.
 local _last_cover_dimen = nil
 
+-- Walk a widget tree (depth-first) looking for the first node whose _bb
+-- field is a rendered blitbuffer (i.e. an ImageWidget that has been painted).
+local function _find_cover_bb(w, depth)
+    if depth > 5 or type(w) ~= "table" then return nil end
+    local t = type(w._bb)
+    if t == "userdata" or t == "cdata" then return w._bb end
+    for i = 1, 8 do
+        if not w[i] then break end
+        local r = _find_cover_bb(w[i], depth + 1)
+        if r then return r end
+    end
+    return nil
+end
+
+-- Sample the bottom 30 % of a blitbuffer and return the average luminance
+-- (0 = black … 255 = white), or nil on failure.
+local function _sample_bottom_luminance(bb)
+    local w, h
+    local ok = pcall(function() w = bb:getWidth(); h = bb:getHeight() end)
+    if not ok or not w or w < 1 or not h or h < 1 then return nil end
+    local y0 = math.max(0, math.floor(h * 0.70))
+    local total, count = 0, 0
+    local dx = math.max(1, math.floor(w / 12))
+    local dy = math.max(1, math.floor(math.max(1, h - y0) / 4))
+    pcall(function()
+        for y = y0, h - 1, dy do
+            for x = 0, w - 1, dx do
+                local pix = bb:getPixel(x, y)
+                local c8  = pix:getColor8()
+                if c8 and c8.a then
+                    total = total + c8.a
+                    count = count + 1
+                end
+            end
+        end
+    end)
+    if count == 0 then return nil end
+    return total / count
+end
+
 local function apply_opening_banner()
     --[[
         Replaces KOReader's default "Opening file '...'" InfoMessage popup with a
@@ -75,6 +115,15 @@ local function apply_opening_banner()
                         h = self_item.dimen.h,
                     }
                 end
+                -- Determine banner contrast color from the cover's bottom strip.
+                -- Bright cover (lum > 128) → dark banner; dark cover → light banner.
+                if _last_cover_dimen then
+                    local cover_bb = _find_cover_bb(cover_frame or self_item, 0)
+                    if cover_bb then
+                        local lum = _sample_bottom_luminance(cover_bb)
+                        _last_cover_dimen.light_banner = lum ~= nil and lum >= 128
+                    end
+                end
             else
                 -- Navigating into a folder: discard any previously stored dimen
                 -- so it cannot bleed into a subsequent book open in list mode.
@@ -133,12 +182,14 @@ local function apply_opening_banner()
     function OpeningBanner:paintTo(bb, x, y)
         self.dimen.x = x
         self.dimen.y = y
-        bb:paintRect(x, y, self.dimen.w, self.dimen.h, Blitbuffer.COLOR_BLACK)
+        local bg = self.light_banner and Blitbuffer.COLOR_WHITE or Blitbuffer.COLOR_BLACK
+        local fg = self.light_banner and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_WHITE
+        bb:paintRect(x, y, self.dimen.w, self.dimen.h, bg)
 
         local tw = TextWidget:new{
             text      = self.label or _("Opening"),
             face      = Font:getFace("cfont", Screen:scaleBySize(7)),
-            fgcolor   = Blitbuffer.COLOR_WHITE,
+            fgcolor   = fg,
             bold      = true,
         }
         local tsz = tw:getSize()
@@ -182,7 +233,8 @@ local function apply_opening_banner()
         end
 
         local banner = OpeningBanner:new{
-            dimen = Geom:new{ x = bx, y = by, w = bw, h = banner_h },
+            dimen        = Geom:new{ x = bx, y = by, w = bw, h = banner_h },
+            light_banner = cover and cover.light_banner or false,
         }
 
         UIManager:show(banner, "ui", Geom:new{x=bx, y=by, w=bw, h=banner_h}, bx, by)

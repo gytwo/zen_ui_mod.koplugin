@@ -906,3 +906,15 @@ msgstr "с."
 msgctxt "page_count_long"
 msgid "pages"
 msgstr "стр."
+
+msgid "Enable page browser"
+msgstr ""
+
+msgid "Contents"
+msgstr ""
+
+msgid "Font"
+msgstr ""
+
+msgid "Page %d of %d"
+msgstr ""

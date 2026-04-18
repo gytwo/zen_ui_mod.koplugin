@@ -28,6 +28,8 @@ local function apply_quick_settings()
     local VerticalGroup = require("ui/widget/verticalgroup")
     local VerticalSpan = require("ui/widget/verticalspan")
     local utils = require("common/utils")
+    local build_brightness_slider = require("modules/menu/patches/brightness_slider")
+    local build_warmth_slider     = require("modules/menu/patches/warmth_slider")
     local _ = require("gettext")
     local Screen = Device.screen
 
@@ -426,23 +428,37 @@ local function apply_quick_settings()
         local function makeActionButton(icon_name, label_text, active)
             local icon_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, icon_name)
             local icon = IconWidget:new{
-                file = icon_path or nil,
-                icon = icon_path and nil or icon_name,
-                width = icon_size,
+                file   = icon_path or nil,
+                icon   = icon_path and nil or icon_name,
+                width  = icon_size,
                 height = icon_size,
-                alpha = true,
+                -- alpha=false → BlitBuffer8 (opaque grayscale); invertRect flips
+                -- pixel values so the icon renders white-on-black for active state.
+                alpha  = not active,
             }
+            if active then
+                -- Force the cached buffer to be populated, then copy it before
+                -- inverting so the shared cache entry is never mutated (otherwise
+                -- invertRect would flip back on every second open).
+                icon:_render()
+                if icon._bb then
+                    local bb_copy = icon._bb:copy()
+                    bb_copy:invertRect(0, 0, bb_copy:getWidth(), bb_copy:getHeight())
+                    icon._bb = bb_copy
+                end
+            end
+            local border = active and 0 or normal_border
             local circle = FrameContainer:new{
-                width = action_btn_size,
-                height = action_btn_size,
-                radius = math.floor(action_btn_size / 2),
-                bordersize = normal_border,
-                background = active and Blitbuffer.COLOR_LIGHT_GRAY or Blitbuffer.COLOR_WHITE,
-                padding = 0,
+                width      = action_btn_size,
+                height     = action_btn_size,
+                radius     = math.floor(action_btn_size / 2),
+                bordersize = border,
+                background = active and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_WHITE,
+                padding    = 0,
                 CenterContainer:new{
                     dimen = Geom:new{
-                        w = action_btn_size - normal_border * 2,
-                        h = action_btn_size - normal_border * 2,
+                        w = action_btn_size - border * 2,
+                        h = action_btn_size - border * 2,
                     },
                     icon,
                 },
@@ -493,265 +509,35 @@ local function apply_quick_settings()
             end
         end
 
-        -- ----- Frontlight section -----
+        -- ----- Frontlight / warmth sliders -----
 
-        local medium_font = Font:getFace("ffont")
-        local small_btn_font = Font:getFace("cfont")
+        local medium_font     = Font:getFace("ffont")
+        local small_btn_font  = Font:getFace("cfont")
         local small_btn_width = Screen:scaleBySize(56)
-        local toggle_width = Screen:scaleBySize(56)
-        local slider_gap = Screen:scaleBySize(4)
-        local slider_width = inner_width - 2 * small_btn_width - 2 * slider_gap
-        local section_span = VerticalSpan:new{ width = Screen:scaleBySize(8) }
+        local toggle_width    = Screen:scaleBySize(56)
+        local slider_gap      = Screen:scaleBySize(4)
+        local slider_width    = inner_width - 2 * small_btn_width - 2 * slider_gap
+
+        local slider_opts = {
+            inner_width     = inner_width,
+            slider_width    = slider_width,
+            small_btn_width = small_btn_width,
+            toggle_width    = toggle_width,
+            slider_gap      = slider_gap,
+            medium_font     = medium_font,
+            small_btn_font  = small_btn_font,
+            powerd          = powerd,
+            refs            = refs,
+        }
 
         local fl_group = VerticalGroup:new{ align = "center" }
-
         if config.show_frontlight then
-            -- Frontlight state
-            local fl = {
-                min = powerd.fl_min,
-                max = powerd.fl_max,
-                cur = powerd:frontlightIntensity(),
-            }
-            local fl_label = TextWidget:new{
-                text = _("Brightness") .. ": " .. tostring(fl.cur),
-                face = medium_font,
-                max_width = inner_width,
-            }
-
-            local fl_progress = ZenSlider:new{
-                width = slider_width,
-                value = fl.cur,
-                value_min = fl.min,
-                value_max = fl.max,
-                show_parent = touch_menu.show_parent,
-            }
-
-            local fl_minus = Button:new{
-                text = "−",
-                face = small_btn_font,
-                width = small_btn_width,
-                bordersize = 0,
-                show_parent = touch_menu.show_parent,
-                callback = function() end, -- placeholder, set below
-            }
-
-            local fl_label_fn = nil
-
-            local function setBrightness(intensity)
-                if intensity ~= fl.min and intensity == fl.cur then return end
-                intensity = math.max(fl.min, math.min(fl.max, intensity))
-                powerd:setIntensity(intensity)
-                fl.cur = intensity  -- use set value directly; no hardware readback
-                if fl.cur > fl.min then
-                    fl.prev_non_min = fl.cur
-                end
-                -- Cancel any pending label debounce and update immediately
-                if fl_label_fn then UIManager:unschedule(fl_label_fn) ; fl_label_fn = nil end
-                fl_progress:setValue(fl.cur)
-                fl_label:setText(_("Brightness") .. ": " .. tostring(fl.cur))
-                UIManager:setDirty(touch_menu.show_parent, "ui", touch_menu.dimen)
-            end
-
-            fl.prev_non_min = fl.cur > fl.min and fl.cur or math.min(fl.max, fl.min + 1)
-
-            -- Wire slider: hardware updates every frame; label debounces 100ms
-            fl_progress.on_change = function(v)
-                powerd:setIntensity(v)
-                fl.cur = v
-                if fl.cur > fl.min then fl.prev_non_min = fl.cur end
-                UIManager:setDirty(touch_menu.show_parent, "ui", touch_menu.dimen)
-                if fl_label_fn then UIManager:unschedule(fl_label_fn) end
-                fl_label_fn = function()
-                    fl_label_fn = nil
-                    fl_progress.hide_knob = false
-                    fl_label:setText(_("Brightness") .. ": " .. tostring(fl.cur))
-                    UIManager:setDirty(touch_menu.show_parent, "ui", touch_menu.dimen)
-                end
-                UIManager:scheduleIn(0.1, fl_label_fn)
-            end
-
-            -- Now wire up the real callback
-            fl_minus.callback = function() setBrightness(fl.cur - 1) end
-            local fl_plus = Button:new{
-                text = "＋",
-                face = small_btn_font,
-                width = small_btn_width,
-                bordersize = 0,
-                show_parent = touch_menu.show_parent,
-                callback = function() setBrightness(fl.cur + 1) end,
-            }
-            local fl_toggle = ZenToggle:new{
-                width = toggle_width,
-                value_func = function() return fl.cur > fl.min end,
-            }
-            table.insert(refs.toggles, {
-                toggle = fl_toggle,
-                callback = function()
-                    if fl.cur > fl.min then
-                        fl.prev_non_min = fl.cur
-                        setBrightness(fl.min)
-                    else
-                        setBrightness(fl.prev_non_min or math.min(fl.max, fl.min + 1))
-                    end
-                end,
-            })
-            local row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }
-            local label_width = inner_width - 2 * toggle_width
-
-            -- Cap row: [Toggle]  [Frontlight: N]  [spacer]
-            local fl_cap_row = HorizontalGroup:new{
-                align = "center",
-                fl_toggle,
-                CenterContainer:new{
-                    dimen = Geom:new{ w = label_width, h = fl_toggle:getSize().h },
-                    fl_label,
-                },
-                HorizontalSpan:new{ width = toggle_width },
-            }
-            -- Slider row: [−] [slider] [+]
-            local fl_row = HorizontalGroup:new{
-                align = "center",
-                fl_minus,
-                HorizontalSpan:new{ width = slider_gap },
-                fl_progress,
-                HorizontalSpan:new{ width = slider_gap },
-                fl_plus,
-            }
-
-            -- Store ref so external code can call setValue if needed
-            refs.fl_progress = fl_progress
-            refs.fl_state = fl
-            refs.setBrightness = setBrightness
-            table.insert(refs.sliders, { slider = fl_progress })
-
-            local section_pad = VerticalSpan:new{ width = Screen:scaleBySize(10) }
-
-            table.insert(fl_group, section_pad)
-            table.insert(fl_group, fl_cap_row)
-            table.insert(fl_group, row_gap)
-            table.insert(fl_group, fl_row)
-            table.insert(fl_group, section_pad)
+            fl_group = build_brightness_slider(touch_menu, slider_opts)
         end
-
-        -- ----- Warmth section (conditional) -----
 
         local warmth_group = VerticalGroup:new{ align = "center" }
         if config.show_warmth and Device:hasNaturalLight() then
-            local nl = {
-                min = powerd.fl_warmth_min,
-                max = powerd.fl_warmth_max,
-                cur = powerd:toNativeWarmth(powerd:frontlightWarmth()),
-            }
-            local warmth_slider_width = inner_width - 2 * small_btn_width - 2 * slider_gap
-
-            local nl_label = TextWidget:new{
-                text = _("Warmth") .. ": " .. tostring(nl.cur),
-                face = medium_font,
-                max_width = inner_width,
-            }
-
-            local nl_progress = ZenSlider:new{
-                width = warmth_slider_width,
-                value = nl.cur,
-                value_min = nl.min,
-                value_max = nl.max,
-                show_parent = touch_menu.show_parent,
-            }
-
-            local nl_label_fn = nil
-
-            local function setWarmth(warmth)
-                if warmth == nl.cur then return end
-                warmth = math.max(nl.min, math.min(nl.max, warmth))
-                powerd:setWarmth(powerd:fromNativeWarmth(warmth))
-                nl.cur = warmth  -- use set value directly; no hardware readback
-                if nl.cur > nl.min then
-                    nl.prev_non_min = nl.cur
-                end
-                -- Cancel any pending label debounce and update immediately
-                if nl_label_fn then UIManager:unschedule(nl_label_fn) ; nl_label_fn = nil end
-                nl_progress:setValue(nl.cur)
-                nl_label:setText(_("Warmth") .. ": " .. tostring(nl.cur))
-                UIManager:setDirty(touch_menu.show_parent, "ui", touch_menu.dimen)
-            end
-
-            nl.prev_non_min = nl.cur > nl.min and nl.cur or math.min(nl.max, nl.min + 1)
-
-            -- Wire slider: hardware updates every frame; label debounces 100ms
-            nl_progress.on_change = function(v)
-                powerd:setWarmth(powerd:fromNativeWarmth(v))
-                nl.cur = v
-                if nl.cur > nl.min then nl.prev_non_min = nl.cur end
-                UIManager:setDirty(touch_menu.show_parent, "ui", touch_menu.dimen)
-                if nl_label_fn then UIManager:unschedule(nl_label_fn) end
-                nl_label_fn = function()
-                    nl_label_fn = nil
-                    nl_progress.hide_knob = false
-                    nl_label:setText(_("Warmth") .. ": " .. tostring(nl.cur))
-                    UIManager:setDirty(touch_menu.show_parent, "ui", touch_menu.dimen)
-                end
-                UIManager:scheduleIn(0.1, nl_label_fn)
-            end
-
-            local nl_minus = Button:new{
-                text = "−",
-                face = small_btn_font,
-                width = small_btn_width,
-                bordersize = 0,
-                show_parent = touch_menu.show_parent,
-                callback = function() setWarmth(nl.cur - 1) end,
-            }
-            local nl_plus = Button:new{
-                text = "＋",
-                face = small_btn_font,
-                width = small_btn_width,
-                bordersize = 0,
-                show_parent = touch_menu.show_parent,
-                callback = function() setWarmth(nl.cur + 1) end,
-            }
-            local nl_toggle = ZenToggle:new{
-                width = toggle_width,
-                value_func = function() return nl.cur > nl.min end,
-            }
-            table.insert(refs.toggles, {
-                toggle = nl_toggle,
-                callback = function()
-                    if nl.cur > nl.min then
-                        nl.prev_non_min = nl.cur
-                        setWarmth(nl.min)
-                    else
-                        setWarmth(nl.prev_non_min or math.min(nl.max, nl.min + 1))
-                    end
-                end,
-            })
-            local nl_row_gap = VerticalSpan:new{ width = Screen:scaleBySize(10) }
-            local nl_label_width = inner_width - 2 * toggle_width
-
-            -- Cap row: [Toggle]  [Warmth: N]  [spacer]
-            local nl_cap_row = HorizontalGroup:new{
-                align = "center",
-                nl_toggle,
-                CenterContainer:new{
-                    dimen = Geom:new{ w = nl_label_width, h = nl_toggle:getSize().h },
-                    nl_label,
-                },
-                HorizontalSpan:new{ width = toggle_width },
-            }
-            -- Slider row: [−] [slider] [+]
-            local nl_row = HorizontalGroup:new{
-                align = "center",
-                nl_minus,
-                HorizontalSpan:new{ width = slider_gap },
-                nl_progress,
-                HorizontalSpan:new{ width = slider_gap },
-                nl_plus,
-            }
-
-            table.insert(warmth_group, VerticalSpan:new{ width = Screen:scaleBySize(14) })
-            table.insert(warmth_group, nl_cap_row)
-            table.insert(warmth_group, nl_row_gap)
-            table.insert(warmth_group, nl_row)
-            table.insert(refs.sliders, { slider = nl_progress })
+            warmth_group = build_warmth_slider(touch_menu, slider_opts)
         end
 
         -- ----- Assemble panel -----
@@ -833,6 +619,7 @@ local function apply_quick_settings()
     local function handleSliderPan(touch_menu, ges, is_release)
         local refs = touch_menu._qs_refs
         if not refs then return false end
+        if touch_menu._qs_slider_locked then return false end
         for _, sr in ipairs(refs.sliders or {}) do
             if sr.dragging or (sr.slider.dimen and ges.pos:intersectWith(sr.slider.dimen)) then
                 sr.dragging = not is_release
@@ -908,6 +695,15 @@ local function apply_quick_settings()
         end
 
         -- Custom panel mode: render the panel widget instead of menu items
+        -- Lock sliders briefly whenever we (re-)enter panel mode so the
+        -- southward swipe that opens the menu cannot accidentally move the
+        -- slider before the user intentionally touches it.
+        if not self._qs_refs then
+            self._qs_slider_locked = true
+            UIManager:scheduleIn(0.35, function()
+                self._qs_slider_locked = false
+            end)
+        end
         self.item_group:clear()
         self.layout = {}
         table.insert(self.item_group, self.bar)
@@ -1026,27 +822,29 @@ local function apply_quick_settings()
             -- ges_ev.pos is the START position, so we must NOT pass it to
             -- applyPosition() — that would snap the slider back to origin.
             local refs = self._qs_refs
-            for _, sr in ipairs(refs.sliders or {}) do
-                if sr.dragging or (sr.slider.dimen and ges_ev.pos:intersectWith(sr.slider.dimen)) then
-                    local was_dragging = sr.dragging
-                    sr.dragging = false
-                    sr.slider.hide_knob = false
-                    if not was_dragging then
-                        -- Pure quick-swipe (no preceding pan events): apply end position.
-                        local dist = ges_ev.distance or 0
-                        local end_x = ges_ev.pos.x
-                        if ges_ev.direction == "east" then
-                            end_x = end_x + dist
-                        elseif ges_ev.direction == "west" then
-                            end_x = end_x - dist
+            if not self._qs_slider_locked then
+                for _, sr in ipairs(refs.sliders or {}) do
+                    if sr.dragging or (sr.slider.dimen and ges_ev.pos:intersectWith(sr.slider.dimen)) then
+                        local was_dragging = sr.dragging
+                        sr.dragging = false
+                        sr.slider.hide_knob = false
+                        if not was_dragging then
+                            -- Pure quick-swipe (no preceding pan events): apply end position.
+                            local dist = ges_ev.distance or 0
+                            local end_x = ges_ev.pos.x
+                            if ges_ev.direction == "east" then
+                                end_x = end_x + dist
+                            elseif ges_ev.direction == "west" then
+                                end_x = end_x - dist
+                            end
+                            sr.slider:applyPosition(end_x)
+                        else
+                            -- Was dragging: pan events placed the knob, just repaint.
+                            UIManager:setDirty(self.show_parent, "ui", self.dimen)
                         end
-                        sr.slider:applyPosition(end_x)
-                    else
-                        -- Was dragging: pan events placed the knob, just repaint.
-                        UIManager:setDirty(self.show_parent, "ui", self.dimen)
+                        -- If was_dragging: pan events already placed the knob correctly.
+                        return true
                     end
-                    -- If was_dragging: pan events already placed the knob correctly.
-                    return true
                 end
             end
             -- Not on a slider: handle as button tap (consume to prevent page-nav crash).

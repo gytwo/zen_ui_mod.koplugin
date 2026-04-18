@@ -35,6 +35,7 @@ local defaults = {
         night_mode_schedule = false,
         warmth_schedule     = false,
         brightness_schedule = false,
+        page_browser        = false,
     },
     navbar = {
         show_tabs = {

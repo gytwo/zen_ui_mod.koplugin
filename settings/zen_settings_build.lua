@@ -1986,6 +1986,9 @@ function M.build(plugin)
     table.insert(reader_items, make_enable_feature_item(
         "reader_bottom_menu", _("Enable bottom menu")))
 
+    table.insert(reader_items, make_enable_feature_item(
+        "page_browser", _("Enable page browser")))
+
     table.insert(reader_items, {
         text = _("Verbose time to chapter end"),
         checked_func = function()

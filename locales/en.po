@@ -904,3 +904,27 @@ msgstr "p."
 msgctxt "page_count_long"
 msgid "pages"
 msgstr "pages"
+
+msgid "Enable page browser"
+msgstr "Enable page browser"
+
+msgid "Contents"
+msgstr "Contents"
+
+msgid "Font"
+msgstr "Font"
+
+msgid "Page %d of %d"
+msgstr "Page %d of %d"
+
+msgid "Enable page browser"
+msgstr "Enable page browser"
+
+msgid "Contents"
+msgstr "Contents"
+
+msgid "Font"
+msgstr "Font"
+
+msgid "Page %d of %d"
+msgstr "Page %d of %d"

@@ -904,3 +904,15 @@ msgstr "页"
 msgctxt "page_count_long"
 msgid "pages"
 msgstr "页"
+
+msgid "Enable page browser"
+msgstr ""
+
+msgid "Contents"
+msgstr ""
+
+msgid "Font"
+msgstr ""
+
+msgid "Page %d of %d"
+msgstr ""

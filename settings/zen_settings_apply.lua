@@ -15,7 +15,8 @@ local PATCH_MODULES = {
     browser_folder_cover = "modules/filebrowser/patches/browser_folder_cover",
     browser_hide_underline = "modules/filebrowser/patches/browser_hide_underline",
     browser_hide_up_folder = "modules/filebrowser/patches/browser_hide_up_folder",
-    reader_clock = "modules/reader/patches/reader_clock",
+    reader_clock   = "modules/reader/patches/reader_clock",
+    page_browser   = "modules/global/patches/page_browser",
 }
 
 local RESTART_REQUIRED = {
@@ -32,6 +33,7 @@ local APPLY_MODE = {
     disable_top_menu_swipe_zones = "menu_refresh",
     browser_hide_up_folder = "filemanager_refresh",
     reader_clock = "reader_refresh",
+    page_browser = "reader_refresh",
 }
 
 local RUNTIME_PATCHES = rawget(_G, "__ZEN_UI_RUNTIME_PATCHES")

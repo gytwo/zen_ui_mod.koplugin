@@ -192,10 +192,10 @@ local function apply_browser_list_item_layout()
             local status_label, progress_str
             if status == "complete" then
                 status_label = _("Finished")
-                progress_str = "✓"
+                progress_str = "\u{F00C}"
             elseif status == "abandoned" then
                 status_label = _("On hold")
-                progress_str = "⏸"
+                progress_str = "\u{F04C}"
             elseif status == "reading" or percent_finished then
                 if percent_finished then
                     status_label = string.format(_("%d%% Read"), math.floor(100 * percent_finished))

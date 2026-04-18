@@ -675,6 +675,9 @@ msgstr "显示磁盘空间"
 msgid "Show folder name"
 msgstr "显示文件夹名称"
 
+msgid "Show item count on folder covers"
+msgstr "在文件夹封面上显示项目数量"
+
 msgid "Show brightness"
 msgstr "显示亮度"
 

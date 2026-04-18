@@ -352,6 +352,7 @@ local function apply_browser_folder_cover()
             crop_to_fit = BooleanSetting(_("Crop folder custom image"), "folder_crop_custom_image", true),
             name_centered = BooleanSetting(_("Folder name centered"), "folder_name_centered", true),
             show_folder_name = BooleanSetting(_("Show folder name"), "folder_name_show", true),
+            show_item_count = BooleanSetting(_("Show item count on folder covers"), "folder_item_count_show", true),
             name_opaque = BooleanSetting(_("Folder name opaque background"), "folder_name_opaque", true),
             gallery_mode = BooleanSetting(_("Gallery view"), "folder_gallery_mode"),
         }
@@ -784,7 +785,7 @@ local function apply_browser_folder_cover()
             -- Cover geometry is stored on self so the paintTo wrapper can position
             -- the badge correctly without walking the widget tree at paint time.
             self._zen_cover_dimen = dimen
-            self._zen_folder_count = (img.book_count and img.book_count > 0)
+            self._zen_folder_count = (settings.show_item_count.get() and img.book_count and img.book_count > 0)
                 and img.book_count or nil
             local directory = self:_getTextBoxes { w = size.w, h = size.h }
 

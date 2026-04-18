@@ -1438,6 +1438,20 @@ function M.build(plugin)
                 end,
             },
             {
+                text = _("Show item count on folder covers"),
+                checked_func = function()
+                    local ok, bim = pcall(require, "bookinfomanager")
+                    if not ok then return true end
+                    return not bim:getSetting("folder_item_count_show")
+                end,
+                callback = function()
+                    local ok, bim = pcall(require, "bookinfomanager")
+                    if not ok then return end
+                    bim:toggleSetting("folder_item_count_show")
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
                 text = _("Folder name opaque background"),
                 checked_func = function()
                     local ok, bim = pcall(require, "bookinfomanager")

@@ -677,6 +677,9 @@ msgstr "Show disk space"
 msgid "Show folder name"
 msgstr "Show folder name"
 
+msgid "Show item count on folder covers"
+msgstr "Show item count on folder covers"
+
 msgid "Show brightness"
 msgstr "Show brightness"
 

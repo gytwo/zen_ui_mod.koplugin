@@ -677,6 +677,9 @@ msgstr "Schijfruimte weergeven"
 msgid "Show folder name"
 msgstr "Mapnaam weergeven"
 
+msgid "Show item count on folder covers"
+msgstr "Aantal items op mapcovers weergeven"
+
 msgid "Show brightness"
 msgstr "Helderheid weergeven"
 

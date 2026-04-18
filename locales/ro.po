@@ -677,6 +677,9 @@ msgstr "Afișează spațiul pe disc"
 msgid "Show folder name"
 msgstr "Afișează numele dosarului"
 
+msgid "Show item count on folder covers"
+msgstr "Afișează numărul de elemente pe copertele dosarelor"
+
 msgid "Show brightness"
 msgstr "Afișează luminozitatea"
 

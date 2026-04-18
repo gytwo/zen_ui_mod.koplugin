@@ -115,6 +115,21 @@ function M.build(ctx)
     })
 
     table.insert(items, {
+        text = _("Tools"),
+        sub_item_table_func = function()
+            local ok, FM = pcall(require, "apps/filemanager/filemanager")
+            local fm = ok and FM and FM.instance
+            if fm and type(fm.tab_item_table) == "table" then
+                local tools = fm.tab_item_table["tools"]
+                if type(tools) == "table" then
+                    return tools
+                end
+            end
+            return {}
+        end,
+    })
+
+    table.insert(items, {
         text = _("Plugin management"),
         sub_item_table_func = function()
             local ok, PluginLoader = pcall(require, "pluginloader")

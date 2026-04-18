@@ -1,11 +1,10 @@
 -- touch_menu_footer.lua
 -- Redesigns the TouchMenu footer for all menu tabs:
---   LEFT slot   ← pagination (page_info: chevrons + page text).
---                 Previously held the "back/up" chevron button.
+--   LEFT slot   ← cleared.
 --   CENTER slot ← wide button using icons/large_chevron_up.svg
 --                 (2× icon width, same height). Goes up a level when
 --                 in a sub-menu, or closes when at the top level.
---   RIGHT slot  ← cleared (time/battery shown in the panel status row instead).
+--   RIGHT slot  ← pagination (page_info: chevrons + page text).
 -- Applies to every TouchMenu instance (reader, file manager, all tabs).
 
 local function apply_touch_menu_footer()
@@ -81,11 +80,9 @@ local function apply_touch_menu_footer()
             callback  = function() self:backToUpperMenu() end,
         }
 
-        -- Move page_info (pagination) to the LEFT slot.
-        -- updateItems() still updates self.page_info_text / showHide() directly,
-        -- so pagination display continues to work correctly.
+        -- Clear the LEFT slot.
         if self.footer and self.footer[1] then
-            self.footer[1][1] = self.page_info
+            self.footer[1][1] = HorizontalGroup:new{}
         end
 
         -- Place the wide close button in the CENTER slot.
@@ -93,9 +90,11 @@ local function apply_touch_menu_footer()
             self.footer[2][1] = close_btn
         end
 
-        -- Remove the right-slot time/battery widget; the panel status row shows it.
+        -- Move page_info (pagination) to the RIGHT slot.
+        -- updateItems() still updates self.page_info_text / showHide() directly,
+        -- so pagination display continues to work correctly.
         if self.footer and self.footer[3] then
-            self.footer[3][1] = HorizontalGroup:new{}
+            self.footer[3][1] = self.page_info
         end
     end
 end

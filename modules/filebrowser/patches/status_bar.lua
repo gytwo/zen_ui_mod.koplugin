@@ -311,8 +311,8 @@ local function apply_status_bar()
         local home_locked = is_zen_mode
             or (g_settings ~= nil and g_settings:isTrue("lock_home_folder"))
 
-        -- Show back chevron in subfolders always; at home root only when home is not locked
-        local show_back = in_subfolder or (at_home and not home_locked)
+        -- Show back chevron in subfolders always; everywhere when home is not locked
+        local show_back = in_subfolder or not home_locked
 
         -- Left widget: tappable chevron.left when back navigation is available, device name otherwise
         local left_widget

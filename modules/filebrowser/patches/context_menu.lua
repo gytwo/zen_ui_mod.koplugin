@@ -93,8 +93,26 @@ local function apply_context_menu()
         local file_chooser = self.file_chooser
         local file_manager = self
 
+        -- Capture the original showFileDialog installed by setupLayout so we
+        -- can delegate to it when not in the home directory.
+        local orig_showFileDialog = file_chooser.showFileDialog
+
         -- Replace the instance-level showFileDialog defined by setupLayout
         file_chooser.showFileDialog = function(self_fc, item)
+            -- Delegate to the stock KOReader dialog outside the home directory.
+            local g_settings = rawget(_G, "G_reader_settings")
+            local home_dir   = g_settings and g_settings:readSetting("home_dir")
+            local cur_path   = self_fc.path or ""
+            if home_dir then
+                local norm_home = home_dir:gsub("/$", "")
+                local norm_cur  = cur_path:gsub("/$", "")
+                local is_at_or_under_home = norm_cur == norm_home
+                    or norm_cur:sub(1, #norm_home + 1) == norm_home .. "/"
+                if not is_at_or_under_home then
+                    return orig_showFileDialog(self_fc, item)
+                end
+            end
+
             local file               = item.path
             local is_file            = item.is_file
             local is_not_parent_folder = not item.is_go_up

@@ -2,7 +2,10 @@ local function apply_browser_show_hidden()
     -- When "show hidden outside home" is enabled, automatically enforce:
     --   • at or below home dir  → show_hidden = false, show_unsupported = false
     --   • outside home dir      → show_hidden = true, show_unsupported = true
-    -- This fires on every directory change via genItemTable.
+    --
+    -- Hook point: FileChooser:getList(), which is where lfs.dir is called and
+    -- dot-files are filtered via the class-level field FileChooser.show_hidden.
+    -- genItemTable only receives pre-filtered lists, so hooking it is too late.
 
     local FileChooser = require("ui/widget/filechooser")
 
@@ -27,26 +30,23 @@ local function apply_browser_show_hidden()
         return path == home or path:sub(1, #home + 1) == home .. "/"
     end
 
-    local orig_genItemTable = FileChooser.genItemTable
+    local orig_getList = FileChooser.getList
 
-    function FileChooser:genItemTable(dirs, files, path)
+    function FileChooser:getList(path, collate)
         if is_enabled() and self.name == "filemanager" then
             local want_hidden = not is_at_or_below_home(path or self.path)
-            local current = G_reader_settings:isTrue("show_hidden")
-            if current ~= want_hidden then
+            -- FileChooser.show_hidden is a class-level field read directly by
+            -- the getList loop — must set on the class, not the instance.
+            if FileChooser.show_hidden ~= want_hidden then
+                FileChooser.show_hidden = want_hidden
                 G_reader_settings:saveSetting("show_hidden", want_hidden)
-                -- Re-scan with the corrected setting
-                self.show_hidden = want_hidden
             end
-
-            -- Also manage show_unsupported (all file types)
-            local current_unsupported = G_reader_settings:isTrue("show_unsupported")
-            if current_unsupported ~= want_hidden then
+            if FileChooser.show_unsupported ~= want_hidden then
+                FileChooser.show_unsupported = want_hidden
                 G_reader_settings:saveSetting("show_unsupported", want_hidden)
-                self.show_unsupported = want_hidden
             end
         end
-        return orig_genItemTable(self, dirs, files, path)
+        return orig_getList(self, path, collate)
     end
 end
 

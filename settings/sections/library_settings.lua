@@ -300,7 +300,7 @@ function M.build(ctx)
                         local fc = get_fc()
                         local c = (fc and fc.nb_cols_portrait) or (bim and bim:getSetting("nb_cols_portrait")) or 3
                         local r = (fc and fc.nb_rows_portrait) or (bim and bim:getSetting("nb_rows_portrait")) or 3
-                        return _("Portrait mosaic: ") .. c .. "Ã" .. r
+                        return _("Portrait mosaic: ") .. c .. "x" .. r
                     end,
                     keep_menu_open = true,
                     callback = function(touchmenu_instance)
@@ -354,7 +354,7 @@ function M.build(ctx)
                         local fc = get_fc()
                         local c = (fc and fc.nb_cols_landscape) or (bim and bim:getSetting("nb_cols_landscape")) or 4
                         local r = (fc and fc.nb_rows_landscape) or (bim and bim:getSetting("nb_rows_landscape")) or 2
-                        return _("Landscape mosaic: ") .. c .. "Ã" .. r
+                        return _("Landscape mosaic: ") .. c .. "x" .. r
                     end,
                     keep_menu_open = true,
                     callback = function(touchmenu_instance)

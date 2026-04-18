@@ -54,6 +54,44 @@ function M.resolveLocalIcon(icons_dir, name)
     return nil
 end
 
+--- Absolute path (with trailing slash) to KOReader's user icons directory.
+function M.getUserIconsDir()
+    local ok, DataStorage = pcall(require, "datastorage")
+    if not ok or not DataStorage then return nil end
+    return DataStorage:getDataDir() .. "/icons/"
+end
+
+local _custom_icons_enabled
+function M.isCustomIconsEnabled()
+    if _custom_icons_enabled ~= nil then return _custom_icons_enabled end
+    _custom_icons_enabled = false
+    pcall(function()
+        local ConfigManager = require("config/manager")
+        local cfg = ConfigManager.load()
+        if cfg and cfg.features and cfg.features.custom_icons_enabled == true then
+            _custom_icons_enabled = true
+        end
+    end)
+    return _custom_icons_enabled
+end
+
+--- Resolve an icon honouring the custom-icons toggle: user dir first when enabled,
+--- falls back to the plugin's bundled icons dir.
+--- @param plugin_icons_dir string  absolute path ending with "/"
+--- @param name             string  icon name without extension
+--- @return                 string|nil
+function M.resolveIcon(plugin_icons_dir, name)
+    if not plugin_icons_dir or not name then return nil end
+    if M.isCustomIconsEnabled() then
+        local user_dir = M.getUserIconsDir()
+        if user_dir then
+            local p = M.resolveLocalIcon(user_dir, name)
+            if p then return p end
+        end
+    end
+    return M.resolveLocalIcon(plugin_icons_dir, name)
+end
+
 --- Register plugin icons so short names resolve via IconWidget at runtime.
 --- Optionally copies files to the user icons dir for cold-start resolution.
 ---
@@ -64,6 +102,7 @@ function M.registerPluginIcons(icons_dir, icons, copy_to_user_dir)
     if not icons_dir or type(icons) ~= "table" then return end
     pcall(function()
         local lfs = require("libs/libkoreader-lfs")
+        local user_icons_dir = M.isCustomIconsEnabled() and M.getUserIconsDir() or nil
 
         if copy_to_user_dir then
             pcall(function()
@@ -101,9 +140,14 @@ function M.registerPluginIcons(icons_dir, icons, copy_to_user_dir)
         if not icons_path then return end
         for name, filename in pairs(icons) do
             if not icons_path[name] then
-                local p = icons_dir .. filename
-                if lfs.attributes(p, "mode") == "file" then
-                    icons_path[name] = p
+                local user_p = user_icons_dir and M.resolveLocalIcon(user_icons_dir, name) or nil
+                if user_p then
+                    icons_path[name] = user_p
+                else
+                    local p = icons_dir .. filename
+                    if lfs.attributes(p, "mode") == "file" then
+                        icons_path[name] = p
+                    end
                 end
             end
         end
@@ -114,10 +158,13 @@ end
 --- @param overrides table  map of icon_name → absolute replacement path
 function M.overrideIcons(overrides)
     local lfs = require("libs/libkoreader-lfs")
+    local user_icons_dir = M.isCustomIconsEnabled() and M.getUserIconsDir() or nil
     local valid = {}
     for name, path in pairs(overrides) do
-        if lfs.attributes(path, "mode") == "file" then
-            valid[name] = path
+        local user_p = user_icons_dir and M.resolveLocalIcon(user_icons_dir, name) or nil
+        local chosen = user_p or path
+        if lfs.attributes(chosen, "mode") == "file" then
+            valid[name] = chosen
         end
     end
     if not next(valid) then return end

@@ -44,6 +44,7 @@ local defaults = {
         page_browser        = false,
         highlight_lookup     = true,
         dict_quick_lookup    = true,
+        custom_icons_enabled = false,
     },
     navbar = {
         show_tabs = {

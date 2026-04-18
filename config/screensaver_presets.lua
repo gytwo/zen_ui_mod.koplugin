@@ -2,7 +2,8 @@
 -- icons_dir is resolved at runtime so paths work on any device.
 
 local function get(icons_dir)
-    local zen_svg = icons_dir .. "zen_ui.svg"
+    local utils = require("common/utils")
+    local zen_svg = utils.resolveIcon(icons_dir, "zen_ui") or (icons_dir .. "zen_ui.svg")
     return {
         {
             name = "Book cover - Black Fill",

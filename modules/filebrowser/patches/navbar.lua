@@ -513,7 +513,7 @@ local function apply_navbar()
         local use_bold = styled and config.active_tab_bold
 
         local icon
-        local icon_path = utils.resolveLocalIcon(_icons_dir, tab.icon)
+        local icon_path = utils.resolveIcon(_icons_dir, tab.icon)
         if active_color then
             icon = ColorIconWidget:new{
                 icon   = icon_path and nil or tab.icon,

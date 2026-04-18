@@ -419,7 +419,7 @@ local function apply_quick_settings()
         local normal_border = Screen:scaleBySize(2)
 
         local function makeActionButton(icon_name, label_text, active)
-            local icon_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, icon_name)
+            local icon_path = _icons_dir and utils.resolveIcon(_icons_dir, icon_name)
             local icon = IconWidget:new{
                 file   = icon_path or nil,
                 icon   = icon_path and nil or icon_name,

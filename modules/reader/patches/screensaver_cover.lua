@@ -21,6 +21,7 @@ local function apply_screensaver_cover()
 
     if not _icons_dir then return end
 
+    local utils = require("common/utils")
     local Screensaver = require("ui/screensaver")
     local orig_setup = Screensaver.setup
 
@@ -31,9 +32,9 @@ local function apply_screensaver_cover()
             -- black background → white logo; white/none → dark logo.
             local bg = G_reader_settings:readSetting("screensaver_img_background")
             if bg == "black" then
-                self.image_file = _icons_dir .. "zen_ui_light.svg"
+                self.image_file = utils.resolveIcon(_icons_dir, "zen_ui_light") or (_icons_dir .. "zen_ui_light.svg")
             else
-                self.image_file = _icons_dir .. "zen_ui.svg"
+                self.image_file = utils.resolveIcon(_icons_dir, "zen_ui") or (_icons_dir .. "zen_ui.svg")
             end
         end
     end

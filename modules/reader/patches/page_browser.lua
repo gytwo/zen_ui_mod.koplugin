@@ -149,7 +149,7 @@ local function apply_page_browser()
             local slot_w  = btn_sz + btn_pad * 2
             local right_x = Screen:getWidth()
 
-            local _toc_icon_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "toc")
+            local _toc_icon_path = _icons_dir and utils.resolveIcon(_icons_dir, "toc")
 
             local function make_right_btn(icon, x_pos, cb, file_path)
                 local cls = file_path and ZenIconButton or IconButton
@@ -849,10 +849,10 @@ local function apply_page_browser()
             -- Determine current layout mode
             local is_single_page = (self.nb_cols == 1 and self.nb_rows == 1)
 
-            local grid_slide_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "grid_slide")
-            local grid_path       = _icons_dir and utils.resolveLocalIcon(_icons_dir, "grid")
-            local skip_left_path  = _icons_dir and utils.resolveLocalIcon(_icons_dir, "skip_left")
-            local skip_right_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "skip_right")
+            local grid_slide_path = _icons_dir and utils.resolveIcon(_icons_dir, "grid_slide")
+            local grid_path       = _icons_dir and utils.resolveIcon(_icons_dir, "grid")
+            local skip_left_path  = _icons_dir and utils.resolveIcon(_icons_dir, "skip_left")
+            local skip_right_path = _icons_dir and utils.resolveIcon(_icons_dir, "skip_right")
 
             -- Create icon widgets with active state styling
             local icon_size      = zen_icon_size

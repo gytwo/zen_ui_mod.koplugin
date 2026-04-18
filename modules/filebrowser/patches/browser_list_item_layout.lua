@@ -206,28 +206,101 @@ local function apply_browser_list_item_layout()
                 status_label = _("Unread")
             end
 
+            -- ── Book tags (Calibre keywords field from bookinfo DB) ──────────
+            -- Only show tags in "list with metadata" mode, not filename-only modes.
+            local tags_str
+            if not self.do_filename_only
+                and not bookinfo.ignore_meta and bookinfo.keywords
+                and bookinfo.keywords ~= "" then
+                -- Normalize any separator (newline, semicolon, " · ") to ", "
+                tags_str = bookinfo.keywords
+                    :gsub("%s*[\n;]%s*", ", ")
+                    :gsub("%s+·%s+", ", ")
+                    :gsub("^,%s*", ""):gsub(",%s*$", "")
+            end
+
             -- ── Layout constants ─────────────────────────────────────────────
             local pad_left  = self.do_cover_image and Screen:scaleBySize(6) or Screen:scaleBySize(10)
             local pad_right = Screen:scaleBySize(10)
-            local fs_title   = _fontSize(20, 24)
-            local fs_meta    = _fontSize(16, 20)
+            local fs_title   = _fontSize(18, 21)
+            local fs_meta    = _fontSize(14, 18)
             local fs_right   = _fontSize(14, 18)
 
-            -- Right-side status widget: "Finished ✓" / "Reading 43%" / "Unread"
-            local wright, wright_w = nil, 0
+            local left_offset = self.do_cover_image and (cover_zone_w + pad_left) or pad_left
+
+            -- ── Step 1: build status widget at its natural width ─────────────
+            local wright_status, status_nat_w = nil, 0
             if status_label then
                 local display_str = progress_str and (status_label .. " " .. progress_str) or status_label
-                wright = TextWidget:new{
-                    text = display_str,
-                    face = Font:getFace("cfont", fs_right),
+                wright_status = TextWidget:new{
+                    text    = display_str,
+                    face    = Font:getFace("cfont", fs_right),
                     fgcolor = fgcolor,
                     padding = 0,
                 }
-                wright_w = wright:getWidth() + pad_right
+                status_nat_w = wright_status:getWidth()
             end
 
-            local left_offset = self.do_cover_image and (cover_zone_w + pad_left) or pad_left
-            local main_w = self.width - left_offset - wright_w - pad_right
+            -- ── Step 2: main_w based on status only → left side takes priority
+            local main_w_first = math.max(1, self.width - left_offset - status_nat_w - 2 * pad_right)
+
+            -- ── Step 3: measure natural title/author widths (single-line probe)
+            local nat_left_w = 0
+            do
+                local tw = TextWidget:new{
+                    text    = title,
+                    face    = Font:getFace("cfont", fs_title),
+                    bold    = true,
+                    padding = 0,
+                }
+                nat_left_w = tw:getWidth()
+                tw:free()
+                if authors then
+                    local authors_flat = authors:gsub("\n", " ")
+                    local aw = TextWidget:new{
+                        text    = authors_flat,
+                        face    = Font:getFace("cfont", fs_meta),
+                        padding = 0,
+                    }
+                    nat_left_w = math.max(nat_left_w, aw:getWidth())
+                    aw:free()
+                end
+            end
+            -- Actual left occupation = min of natural width and allocated space
+            local actual_left_w = math.min(nat_left_w, main_w_first)
+
+            -- ── Step 4: tags expand left into unused title space ─────────────
+            -- Tags right-edge aligns with status right-edge: cap at the wider of
+            -- status_nat_w and the unused space left of the actual title content.
+            local wright_tags, wright_w = nil, status_nat_w
+            if tags_str then
+                local fs_tags = math.max(7, fs_right - 2)
+                local tags_avail_w = self.width - left_offset - actual_left_w - 2 * pad_right
+                -- Never wider than status line (keeps right edges flush)
+                local tags_max_w = math.max(1, math.max(status_nat_w, tags_avail_w))
+                -- But hard-cap to status_nat_w so tags don't push right column wider
+                tags_max_w = math.min(tags_max_w, math.max(status_nat_w,
+                    self.width - left_offset - actual_left_w - 2 * pad_right))
+                tags_max_w = math.max(1, tags_max_w)
+                wright_tags = TextWidget:new{
+                    text      = tags_str,
+                    face      = Font:getFace("cfont", fs_tags),
+                    fgcolor   = Blitbuffer.COLOR_GRAY_3,
+                    padding   = 0,
+                    max_width = tags_max_w,
+                }
+                -- Column width = max of status and rendered tag width, but
+                -- never wider than what avail space allows (left takes priority)
+                local tags_rendered_w = wright_tags:getWidth()
+                wright_w = math.min(
+                    math.max(status_nat_w, tags_rendered_w),
+                    self.width - left_offset - actual_left_w - 2 * pad_right
+                )
+                wright_w = math.max(status_nat_w, wright_w)
+            end
+
+            -- Final main_w: left gets its space; only shrinks if tags > status width
+            local main_w = math.max(1, self.width - left_offset - wright_w - 2 * pad_right)
 
             -- ── Text stack (title / authors / series) ────────────────────────
             local function make_text_line(text, face, bold_flag)
@@ -294,11 +367,14 @@ local function apply_browser_list_item_layout()
                 table.insert(widget, 1, wleft)
             end
 
-            if wright then
+            if wright_status or wright_tags then
+                local right_stack = VerticalGroup:new{ align = "right" }
+                if wright_status then table.insert(right_stack, wright_status) end
+                if wright_tags   then table.insert(right_stack, wright_tags)   end
                 table.insert(widget, RightContainer:new{
                     dimen = row_dimen,
                     HorizontalGroup:new{
-                        wright,
+                        right_stack,
                         HorizontalSpan:new{ width = pad_right },
                     },
                 })

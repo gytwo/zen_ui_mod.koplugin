@@ -1,4 +1,4 @@
-local function apply_zen_pagination_bar()
+local function apply_zen_scroll_bar()
     -- Replaces the pagination footer with a pill-shaped horizontal scroll bar
     -- showing current page position in the file browser.
     --
@@ -48,8 +48,17 @@ local function apply_zen_pagination_bar()
     function Menu:init()
         orig_menu_init(self)
 
+        -- Check if this is a target menu:
+        -- 1. Named menus (filemanager, history, collections)
+        -- 2. File browser style menus (covers_fullscreen + is_borderless + title_bar_fm_style)
+        -- 3. Bookmarks menu (is_borderless + title_bar_fm_style + title_bar_left_icon == "appbar.menu")
+        local is_bookmarks_menu = self.is_borderless
+            and self.title_bar_fm_style
+            and self.title_bar_left_icon == "appbar.menu"
+
         if not target_menus[self.name]
-           and not (self.covers_fullscreen and self.is_borderless and self.title_bar_fm_style) then
+           and not (self.covers_fullscreen and self.is_borderless and self.title_bar_fm_style)
+           and not is_bookmarks_menu then
             return
         end
 
@@ -77,23 +86,21 @@ local function apply_zen_pagination_bar()
             local nb   = menu.page_num or 1
             local page = menu.page     or 1
 
+            -- Nothing to show if the list fits on one page.
+            if nb <= 1 then return end
+
             -- Track (full bar width, lighter colour).
             paintPill(bb, x + bar_x, y + BAR_PAD, bar_w, BAR_H, TRACK_COLOR)
 
             -- Thumb (darker, positioned to reflect the current page).
-            if nb <= 1 then
-                -- Single page: thumb fills the whole track.
-                paintPill(bb, x + bar_x, y + BAR_PAD, bar_w, BAR_H, THUMB_COLOR)
-            else
-                -- Thumb width is proportional to 1/nb, floored at BAR_H*2 so it
-                -- remains recognisably pill-shaped even with many pages.
-                local thumb_w = math.max(BAR_H * 2, math.floor(bar_w / nb))
-                thumb_w       = math.min(thumb_w, bar_w)
-                local travel  = bar_w - thumb_w
-                local pct     = (page - 1) / (nb - 1)
-                local thumb_x = bar_x + math.floor(pct * travel)
-                paintPill(bb, x + thumb_x, y + BAR_PAD, thumb_w, BAR_H, THUMB_COLOR)
-            end
+            -- Thumb width is proportional to 1/nb, floored at BAR_H*2 so it
+            -- remains recognisably pill-shaped even with many pages.
+            local thumb_w = math.max(BAR_H * 2, math.floor(bar_w / nb))
+            thumb_w       = math.min(thumb_w, bar_w)
+            local travel  = bar_w - thumb_w
+            local pct     = (page - 1) / (nb - 1)
+            local thumb_x = bar_x + math.floor(pct * travel)
+            paintPill(bb, x + thumb_x, y + BAR_PAD, thumb_w, BAR_H, THUMB_COLOR)
         end
 
         -- Re-run layout so the new sizes take effect before the first paint.
@@ -101,4 +108,4 @@ local function apply_zen_pagination_bar()
     end
 end
 
-return apply_zen_pagination_bar
+return apply_zen_scroll_bar

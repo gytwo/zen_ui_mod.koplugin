@@ -18,7 +18,7 @@ local PATCH_MODULES = {
     partial_page_repaint = "modules/filebrowser/patches/partial_page_repaint",
     navbar = "modules/filebrowser/patches/navbar",
     status_bar = "modules/filebrowser/patches/status_bar",
-    zen_pagination_bar = "modules/filebrowser/patches/zen_pagination_bar",
+    zen_scroll_bar = "common/zen_scroll_bar",
     browser_folder_cover = "modules/filebrowser/patches/browser_folder_cover",
     browser_list_item_layout = "modules/filebrowser/patches/browser_list_item_layout",
     browser_hide_underline = "modules/filebrowser/patches/browser_hide_underline",
@@ -167,9 +167,9 @@ function M.init(logger, plugin)
 
     -- Always apply: pill-shaped horizontal scroll bar replacing the default
     -- chevron/page-number pagination footer in the file browser.
-    local zen_pagination_bar_fn = load_patch("zen_pagination_bar")
-    if zen_pagination_bar_fn then
-        run_feature(logger, plugin, "zen_pagination_bar", zen_pagination_bar_fn)
+    local zen_scroll_bar_fn = load_patch("zen_scroll_bar")
+    if zen_scroll_bar_fn then
+        run_feature(logger, plugin, "zen_scroll_bar", zen_scroll_bar_fn)
     end
 
     -- Ensure the runtime-patches registry exists (zen_settings_apply.lua creates

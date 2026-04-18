@@ -7,8 +7,22 @@ local function apply_page_browser()
     -- -----------------------------------------------------------------------
     -- Dependencies
     -- -----------------------------------------------------------------------
-    local UIManager = require("ui/uimanager")
-    local Event     = require("ui/event")
+    local UIManager    = require("ui/uimanager")
+    local Event        = require("ui/event")
+    local ZenTocWidget = require("common/zen_toc_widget")
+    local utils        = require("common/utils")
+
+    -- -----------------------------------------------------------------------
+    -- Resolve plugin icons/ dir from this file's path at apply-time
+    -- -----------------------------------------------------------------------
+    local _icons_dir
+    do
+        local src = debug.getinfo(1, "S").source or ""
+        if src:sub(1,1) == "@" then
+            local root = src:sub(2):match("^(.*)/modules/")
+            if root then _icons_dir = root .. "/icons/" end
+        end
+    end
 
     -- -----------------------------------------------------------------------
     -- Feature guard
@@ -38,6 +52,7 @@ local function apply_page_browser()
         local Font       = require("ui/font")
         local Geom       = require("ui/geometry")
         local IconButton = require("ui/widget/iconbutton")
+        local IconWidget = require("ui/widget/iconwidget")
         local HorizontalGroup = require("ui/widget/horizontalgroup")
         local HorizontalSpan  = require("ui/widget/horizontalspan")
         local VerticalGroup   = require("ui/widget/verticalgroup")
@@ -49,7 +64,9 @@ local function apply_page_browser()
         local Blitbuffer      = require("ffi/blitbuffer")
         local Size            = require("ui/size")
         local Screen          = Device.screen
+        local GestureRange    = require("ui/gesturerange")
         local ZenSlider       = require("common/zen_slider")
+        local logger          = require("logger")
 
         -- ----------------------------------------------------------------
         -- 1. Patch init: blank title, X to left, 3 icons on right
@@ -57,6 +74,19 @@ local function apply_page_browser()
         local _orig_init = PageBrowserWidget.init
         PageBrowserWidget.init = function(self)
             _orig_init(self)
+            -- Register pan_release so onPanRelease fires when the user lifts
+            -- their finger after dragging the slider.  PageBrowserWidget does
+            -- not include pan_release in its native ges_events.
+            self.ges_events.PanRelease = {
+                GestureRange:new{
+                    ges   = "pan_release",
+                    range = Geom:new{ x = 0, y = 0,
+                                      w = Screen:getWidth(), h = Screen:getHeight() },
+                }
+            }
+            -- Store original grid dimensions so view-toggle buttons can restore them.
+            self._zen_orig_nb_cols = self.nb_cols
+            self._zen_orig_nb_rows = self.nb_rows
             -- Block slider input until the opening swipe gesture completes so
             -- the northward swipe that opens us doesn't immediately move the
             -- slider (which appears right where the finger lifted).
@@ -118,7 +148,7 @@ local function apply_page_browser()
             local slot_w  = btn_sz + btn_pad * 2
             local right_x = Screen:getWidth()
 
-            local function make_right_btn(icon, x_pos)
+            local function make_right_btn(icon, x_pos, cb)
                 return IconButton:new{
                     icon           = icon,
                     width          = btn_sz,
@@ -129,14 +159,235 @@ local function apply_page_browser()
                     overlap_align  = "left",
                     allow_flash    = true,
                     show_parent    = self,
-                    callback       = function() end,
+                    callback       = cb or function() end,
                 }
             end
 
-            -- Search at far right, TOC next, Font leftmost of the three
-            table.insert(self.title_bar, make_right_btn("appbar.search",     right_x - slot_w))
-            table.insert(self.title_bar, make_right_btn("appbar.navigation", right_x - slot_w * 2))
-            table.insert(self.title_bar, make_right_btn("appbar.textsize",   right_x - slot_w * 3))
+            -- TOC button opens ZenTocWidget
+            local pbw_ref = self
+            local function open_toc()
+                UIManager:show(ZenTocWidget:new{
+                    ui         = pbw_ref.ui,
+                    focus_page = pbw_ref.focus_page or pbw_ref.cur_page or 1,
+                    on_goto    = function(page)
+                        if pbw_ref:updateFocusPage(page, false) then
+                            pbw_ref:update()
+                        end
+                    end,
+                })
+            end
+            local function open_search()
+                -- Use onClose() (synchronous) so the page browser is removed
+                -- from the widget stack before the search dialog appears,
+                -- matching how open_font_menu closes the PBW.
+                pbw_ref:onClose()
+                pbw_ref.ui:handleEvent(Event:new("ShowFulltextSearchInput"))
+            end
+            local function open_bookmarks()
+                -- Close page browser and open bookmarks list
+                pbw_ref:onClose()
+                if pbw_ref.ui.bookmark then
+                    pbw_ref.ui.bookmark:onShowBookmark()
+                end
+            end
+
+            -- Helper: read current font size from all possible sources.
+            local function read_cur_font_size(font_module, FONT_MIN, FONT_MAX)
+                local ds = pbw_ref.ui and pbw_ref.ui.doc_settings
+                local sz = font_module.configurable and font_module.configurable.font_size
+                if not sz or sz == 0 then
+                    sz = ds and ds:readSetting("font_size")
+                end
+                if not sz or sz == 0 then
+                    sz = G_reader_settings and G_reader_settings:readSetting("copt_font_size")
+                end
+                return math.max(FONT_MIN, math.min(FONT_MAX, sz or 22))
+            end
+
+            local function open_font_menu()
+                local font_module = pbw_ref.ui and pbw_ref.ui.font
+                if not font_module then return end
+
+                local FONT_MIN     = 12
+                local FONT_MAX     = 44
+                local PRESET_SIZES = {12, 16, 20, 22, 24, 26, 28, 30, 34, 38, 44}
+
+                local cur_size = read_cur_font_size(font_module, FONT_MIN, FONT_MAX)
+
+                -- Close page browser so book text is visible behind the dialog.
+                pbw_ref:onClose()
+
+                -- ButtonTable maps font_size → text_font_size, font_bold → text_font_bold.
+                -- It hardcodes bordersize=0 on every button (no dividers).
+                -- Button default is text_font_bold=true, so font_bold must be explicit.
+                local ButtonDialog = require("ui/widget/buttondialog")
+                local dialog
+                local show_dialog
+
+                -- Returns the largest preset ≤ cur_size.
+                -- When cur_size sits between two presets (e.g. 23 or 22.5), this
+                -- bolds the lower neighbour (22), matching the "-1 step" convention.
+                local function bold_preset()
+                    local best = PRESET_SIZES[1]
+                    for _, sz in ipairs(PRESET_SIZES) do
+                        if sz <= cur_size then best = sz end
+                    end
+                    return best
+                end
+
+                -- Modules needed only for the custom title bar widget.
+                local Size           = require("ui/size")
+                local RightContainer = require("ui/widget/container/rightcontainer")
+                local Button         = require("ui/widget/button")
+
+                show_dialog = function()
+                    if dialog then UIManager:close(dialog) end
+
+                    local bold_sz = bold_preset()
+
+                    -- ⋮ sub-menu defined here so it can close `dialog` via upvalue.
+                    local function open_sub()
+                        local sub
+                        sub = ButtonDialog:new{
+                            buttons = {
+                                {{
+                                    text     = "Reset to Default",
+                                    callback = function()
+                                        local default_size =
+                                            (G_defaults and G_defaults:readSetting("DCREREADER_CONFIG_FONT_SIZE"))
+                                            or 22
+                                        cur_size = math.max(FONT_MIN, math.min(FONT_MAX, default_size))
+                                        font_module:onSetFontSize(cur_size)
+                                        UIManager:close(sub)
+                                        show_dialog()
+                                    end,
+                                }},
+                                {{
+                                    text     = "Apply to All Books",
+                                    callback = function()
+                                        if G_reader_settings then
+                                            G_reader_settings:saveSetting("copt_font_size", cur_size)
+                                        end
+                                        local ds = pbw_ref.ui and pbw_ref.ui.doc_settings
+                                        if ds then
+                                            ds:delSetting("font_size")
+                                            ds:delSetting("copt_font_size")
+                                        end
+                                        UIManager:close(sub)
+                                        UIManager:close(dialog)
+                                    end,
+                                }},
+                                {{
+                                    text     = "Cancel",
+                                    callback = function() UIManager:close(sub) end,
+                                }},
+                            },
+                        }
+                        UIManager:show(sub)
+                    end
+
+                    -- Custom title bar: "Font Size" centered, ⋮ pinned to far right.
+                    --
+                    -- ButtonDialog._added_widgets are placed in its title area VerticalGroup
+                    -- before the button table. We pre-compute the width to exactly match
+                    -- what ButtonDialog derives internally:
+                    --   dialog_w  → explicit width we pass
+                    --   inner_w   = dialog_w - 2*border - 2*btn_pad   (ButtonTable width)
+                    --   title_w   = inner_w - 2*(info_padding+info_margin)   (title_group_width)
+                    local dialog_w = math.floor(math.min(Screen:getWidth(), Screen:getHeight()) * 0.9)
+                    local inner_w  = dialog_w - 2 * Size.border.window - 2 * Size.padding.button
+                    local title_w  = inner_w  - 2 * (Size.padding.default + Size.margin.default)
+                    local title_h  = Screen:scaleBySize(44)
+
+                    local title_header = OverlapGroup:new{
+                        dimen         = Geom:new{ w = title_w, h = title_h },
+                        not_focusable = true,   -- let ButtonDialog skip focus registration
+                        -- Centered label
+                        CenterContainer:new{
+                            dimen = Geom:new{ w = title_w, h = title_h },
+                            TextWidget:new{
+                                text = "Font Size",
+                                face = Font:getFace("cfont", 18),
+                                bold = true,
+                            },
+                        },
+                        -- ⋮ anchored to the right edge
+                        RightContainer:new{
+                            dimen = Geom:new{ w = title_w, h = title_h },
+                            Button:new{
+                                text      = "⋮",
+                                font_size = 18,
+                                bordersize = 0,
+                                padding   = Screen:scaleBySize(6),
+                                callback  = open_sub,
+                            },
+                        },
+                    }
+
+                    local size_row = {}
+                    for _, sz in ipairs(PRESET_SIZES) do
+                        size_row[#size_row + 1] = {
+                            text      = tostring(sz),
+                            font_size = sz,
+                            font_bold = (sz == bold_sz),
+                            callback  = function()
+                                cur_size = sz
+                                font_module:onSetFontSize(cur_size)
+                                show_dialog()
+                            end,
+                        }
+                    end
+
+                    dialog = ButtonDialog:new{
+                        width          = dialog_w,
+                        _added_widgets = { title_header },
+                        buttons = {
+                            size_row,
+                            {
+                                {
+                                    text     = "−",
+                                    enabled  = cur_size > FONT_MIN,
+                                    callback = function()
+                                        cur_size = math.max(FONT_MIN, cur_size - 1)
+                                        font_module:onSetFontSize(cur_size)
+                                        show_dialog()
+                                    end,
+                                },
+                                {
+                                    text     = "+",
+                                    enabled  = cur_size < FONT_MAX,
+                                    callback = function()
+                                        cur_size = math.min(FONT_MAX, cur_size + 1)
+                                        font_module:onSetFontSize(cur_size)
+                                        show_dialog()
+                                    end,
+                                },
+                            },
+                            {{
+                                text     = "Done",
+                                callback = function() UIManager:close(dialog) end,
+                            }},
+                        },
+                    }
+                    UIManager:show(dialog)
+                end
+                show_dialog()
+            end
+
+            -- Search at far right, TOC next, Font, Bookmark leftmost of the four
+            table.insert(self.title_bar, make_right_btn("appbar.search",     right_x - slot_w,     open_search))
+            table.insert(self.title_bar, make_right_btn("appbar.navigation", right_x - slot_w * 2, open_toc))
+            table.insert(self.title_bar, make_right_btn("appbar.textsize",   right_x - slot_w * 3, open_font_menu))
+            table.insert(self.title_bar, make_right_btn("bookmark",          right_x - slot_w * 4, open_bookmarks))
+
+            -- Restore last-used layout; default to single page if no preference saved.
+            local _saved_layout = G_reader_settings
+                and G_reader_settings:readSetting("zen_page_browser_layout")
+            if _saved_layout ~= "grid" then
+                self._zen_nb_cols_override = 1
+                self._zen_nb_rows_override = 1
+                self:updateLayout()
+            end
         end
 
         -- ----------------------------------------------------------------
@@ -149,12 +400,15 @@ local function apply_page_browser()
         -- grid_height = screen_h - title_h - panel_h, sizes thumbnails to fit
         -- that exact space, and positions them with correct offsets. No
         -- post-hoc shrinking = no thumbnail overlap.
-        local zen_btn_sz = Screen:scaleBySize(28)
-        local zen_btn_pad = Screen:scaleBySize(6)
+        local zen_icon_size = Screen:scaleBySize(24)
+        local zen_icon_pad_h = Screen:scaleBySize(20)  -- horizontal padding (wider buttons)
+        local zen_icon_pad_v = Screen:scaleBySize(10)  -- vertical padding (taller buttons)
+        local zen_panel_pad_v = Screen:scaleBySize(6)  -- panel vertical padding (between elements)
+        local zen_panel_pad_top = Screen:scaleBySize(12)  -- extra top padding
+        local zen_panel_pad_bottom = Screen:scaleBySize(12)  -- extra bottom padding
 
-        local function zen_measure_panel_h()
-            -- Measure slider height from ZenSlider formula (knob_radius default)
-            local knob_r   = Screen:scaleBySize(16.5)
+        local function zen_measure_panel_h(nb_pages)
+            local knob_r   = Screen:scaleBySize(16.5)  -- matches ZenSlider default
             local slider_h = knob_r * 2 + Screen:scaleBySize(6)
             -- Measure label height from a live TextWidget
             local tw = TextWidget:new{ text = "Wg",
@@ -162,9 +416,15 @@ local function apply_page_browser()
                                        padding = 0 }
             local lh = tw:getSize().h
             tw:free()
-            local btn_h = zen_btn_sz + zen_btn_pad * 2
-            -- 5× pad(2) + 2× label + 1× slider + 1× icon row
-            return 5 * Screen:scaleBySize(2) + 2 * lh + slider_h + btn_h
+            -- Button group: icon + vert padding * 2 + border * 2
+            local btn_h = zen_icon_size + zen_icon_pad_v * 2 + Screen:scaleBySize(2) * 2
+            -- top_pad + panel_pads + 1× label + (optional slider) + 1× icon row + bottom_pad
+            -- Only include slider height and spacing if there's more than 1 page
+            if nb_pages and nb_pages > 1 then
+                return zen_panel_pad_top + 2 * zen_panel_pad_v + lh + slider_h + btn_h + zen_panel_pad_bottom
+            else
+                return zen_panel_pad_top + zen_panel_pad_v + lh + btn_h + zen_panel_pad_bottom
+            end
         end
 
         PageBrowserWidget.updateLayout = function(self)
@@ -187,7 +447,7 @@ local function apply_page_browser()
             -- then rebuild self.grid (OverlapGroup) with the corrected height.
             -- The native code rebuilds self.grid from scratch inside
             -- _orig_updateLayout, so we just need to redo that part.
-            local zen_panel_h = zen_measure_panel_h()
+            local zen_panel_h = zen_measure_panel_h(self.nb_pages or 1)
 
             -- The native row_height formula is:
             --   ceil((nb_toc_spans + page_slots_height_ratio + 1) * span_height + 2*border)
@@ -215,10 +475,52 @@ local function apply_page_browser()
             local orig_span_h = self.span_height
             self.span_height  = target_span
 
+            -- _orig_updateLayout UNCONDITIONALLY overwrites self.nb_cols/nb_rows
+            -- by reading from doc_settings (key: "page_browser_nb_cols/rows").
+            -- Temporarily patch those keys so our forced layout survives.
+            local ds = self.ui and self.ui.doc_settings
+            local _saved_ds_cols, _saved_ds_rows, _zen_ds_patched
+            if self._zen_nb_cols_override then
+                local nc = self._zen_nb_cols_override
+                local nr = self._zen_nb_rows_override or nc
+                self._zen_nb_cols_override = nil
+                self._zen_nb_rows_override = nil
+                logger.dbg("ZenUI page_browser: forcing cols="..nc.." rows="..nr)
+                if ds then
+                    _saved_ds_cols = ds:readSetting("page_browser_nb_cols")
+                    _saved_ds_rows = ds:readSetting("page_browser_nb_rows")
+                    logger.dbg("ZenUI page_browser: saved ds cols="..tostring(_saved_ds_cols).." rows="..tostring(_saved_ds_rows))
+                    ds:saveSetting("page_browser_nb_cols", nc)
+                    ds:saveSetting("page_browser_nb_rows", nr)
+                    _zen_ds_patched = true
+                else
+                    -- no doc_settings: set directly (won't be overwritten)
+                    self.nb_cols = nc
+                    self.nb_rows = nr
+                end
+            end
+
             _orig_updateLayout(self)
+
+            logger.dbg("ZenUI page_browser: after orig nb_cols="..tostring(self.nb_cols).." nb_rows="..tostring(self.nb_rows).." nb_grid_items="..tostring(self.nb_grid_items))
 
             -- Restore span_height so the detached BookMapRow is self-consistent.
             self.span_height = orig_span_h
+            -- Restore doc_settings to original values (undo temporary patch).
+            -- If the key didn't exist before, delete it rather than saveSetting(nil).
+            if _zen_ds_patched and ds then
+                if _saved_ds_cols ~= nil then
+                    ds:saveSetting("page_browser_nb_cols", _saved_ds_cols)
+                else
+                    ds:delSetting("page_browser_nb_cols")
+                end
+                if _saved_ds_rows ~= nil then
+                    ds:saveSetting("page_browser_nb_rows", _saved_ds_rows)
+                else
+                    ds:delSetting("page_browser_nb_rows")
+                end
+                logger.dbg("ZenUI page_browser: restored ds cols="..tostring(_saved_ds_cols).." rows="..tostring(_saved_ds_rows))
+            end
 
             -- Suppress native left-side page number widgets: we draw our own
             -- badges in paintTo() instead.  showTile() checks show_pagenum on
@@ -260,81 +562,249 @@ local function apply_page_browser()
                 return self.ui.toc:getTocTitleByPage(pg) or ""
             end
 
-            -- Center page: the thumbnail in the middle of the grid.
-            -- focus_page sits at index (focus_page_shift + 1) in the grid.
-            -- Center index = ceil(nb_grid_items / 2).
-            -- center_page = focus_page - focus_page_shift + ceil(nb_grid_items/2) - 1
-            local function center_page()
-                local fp    = self.focus_page or cur_page
-                local shift = self.focus_page_shift or 0
-                local items = self.nb_grid_items or 1
-                return math.max(1, math.min(nb_pages,
-                    fp - shift + math.ceil(items / 2) - 1))
-            end
-
             local label_face = Font:getFace("cfont", 14)
-            local pad_v      = Screen:scaleBySize(2)
+            local pad_v      = zen_panel_pad_v
 
-            local cp = center_page()
+            -- Use focus_page consistently so slider position doesn't jump when switching views
+            local cp = self.focus_page or cur_page
             local chap_label = TextWidget:new{
                 text      = chapter_title(cp),
                 face      = label_face,
                 max_width = slider_w,
                 padding   = 0,
             }
-            local page_label = TextWidget:new{
-                text      = string.format("Page %d / %d", cp, nb_pages),
-                face      = label_face,
-                max_width = slider_w,
-                padding   = 0,
-            }
-            local zen_slider = ZenSlider:new{
-                width     = slider_w,
-                value     = cp,
-                value_min = 1,
-                value_max = math.max(nb_pages, 1),
-                on_change = function(v)
-                    if self:updateFocusPage(v, false) then
-                        self:update()
-                    end
-                end,
-            }
+
+            -- Only create slider if there's more than 1 page
+            local zen_slider
+            if nb_pages > 1 then
+                zen_slider = ZenSlider:new{
+                    width       = slider_w,
+                    value       = cp,
+                    value_min   = 1,
+                    value_max   = math.max(nb_pages, 1),
+                    on_change   = function(v)
+                        if self:updateFocusPage(v, false) then
+                            self:update()
+                        end
+                    end,
+                }
+            end
 
             self._zen_slider     = zen_slider
-            self._zen_page_label = page_label
             self._zen_chap_label = chap_label
 
-            -- Two view-mode toggle buttons shown below the page label.
-            -- SVG icons will replace these placeholders when available.
-            local btn_view = IconButton:new{
-                icon           = "appbar.pageview",
-                width          = zen_btn_sz,
-                height         = zen_btn_sz,
-                padding        = zen_btn_pad,
-                allow_flash    = true,
-                show_parent    = self,
-                callback       = function() end,
+            -- View-mode toggle buttons: single page / grid.
+            -- Create a unified button group with divider and active state styling.
+            local pbw = self
+
+            -- Determine current layout mode
+            local is_single_page = (self.nb_cols == 1 and self.nb_rows == 1)
+
+            local grid_slide_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "grid_slide")
+            local grid_path = _icons_dir and utils.resolveLocalIcon(_icons_dir, "grid")
+
+            -- Create icon widgets with active state styling
+            local icon_size = zen_icon_size
+            local icon_pad_h = zen_icon_pad_h
+            local icon_pad_v = zen_icon_pad_v
+
+            local icon_view = IconWidget:new{
+                file   = grid_slide_path,
+                icon   = grid_slide_path and nil or "grid_slide",
+                width  = icon_size,
+                height = icon_size,
+                alpha  = not is_single_page, -- opaque when active, alpha when inactive
             }
-            local btn_grid = IconButton:new{
-                icon           = "column.three",
-                width          = zen_btn_sz,
-                height         = zen_btn_sz,
-                padding        = zen_btn_pad,
-                allow_flash    = true,
-                show_parent    = self,
-                callback       = function() end,
+
+            local icon_grid = IconWidget:new{
+                file   = grid_path,
+                icon   = grid_path and nil or "grid",
+                width  = icon_size,
+                height = icon_size,
+                alpha  = is_single_page, -- opaque when active, alpha when inactive
             }
-            local btn_gap  = Screen:scaleBySize(16)
-            local btn_row  = HorizontalGroup:new{
+
+            -- Invert the active icon (white icon on black bg)
+            if is_single_page then
+                icon_view:_render()
+                if icon_view._bb then
+                    local bb_copy = icon_view._bb:copy()
+                    bb_copy:invertRect(0, 0, bb_copy:getWidth(), bb_copy:getHeight())
+                    icon_view._bb = bb_copy
+                end
+            else
+                icon_grid:_render()
+                if icon_grid._bb then
+                    local bb_copy = icon_grid._bb:copy()
+                    bb_copy:invertRect(0, 0, bb_copy:getWidth(), bb_copy:getHeight())
+                    icon_grid._bb = bb_copy
+                end
+            end
+
+            -- Wrap icons in fixed-width containers to ensure perfect centering
+            local CenterContainer_ic = require("ui/widget/container/centercontainer")
+            local icon_view_centered = CenterContainer_ic:new{
+                dimen = Geom:new{ w = icon_size, h = icon_size },
+                icon_view,
+            }
+            local icon_grid_centered = CenterContainer_ic:new{
+                dimen = Geom:new{ w = icon_size, h = icon_size },
+                icon_grid,
+            }
+
+            -- Container for left button (single page view) - no rounded inner corners
+            local btn_view_frame = FrameContainer:new{
+                padding_top    = icon_pad_v,
+                padding_bottom = icon_pad_v,
+                padding_left   = icon_pad_h,
+                padding_right  = icon_pad_h,
+                bordersize     = 0,
+                background     = is_single_page and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_WHITE,
+                icon_view_centered,
+            }
+
+            -- Container for right button (grid view) - no rounded inner corners
+            local btn_grid_frame = FrameContainer:new{
+                padding_top    = icon_pad_v,
+                padding_bottom = icon_pad_v,
+                padding_left   = icon_pad_h,
+                padding_right  = icon_pad_h,
+                bordersize     = 0,
+                background     = is_single_page and Blitbuffer.COLOR_WHITE or Blitbuffer.COLOR_BLACK,
+                icon_grid_centered,
+            }
+
+            -- Vertical divider
+            local LineWidget = require("ui/widget/linewidget")
+            local divider = LineWidget:new{
+                dimen          = Geom:new{
+                    w = Screen:scaleBySize(1),
+                    h = icon_size + icon_pad_v * 2,
+                },
+                background     = Blitbuffer.COLOR_DARK_GRAY,
+                direction      = "vert",
+            }
+
+            -- Unified button group
+            local btn_group = HorizontalGroup:new{
                 align = "center",
-                btn_view,
-                HorizontalSpan:new{ width = btn_gap },
-                btn_grid,
+                btn_view_frame,
+                divider,
+                btn_grid_frame,
             }
+
+            -- Wrap in frame with border and rounded corners
+            local btn_row = FrameContainer:new{
+                padding        = 0,
+                margin         = 0,
+                bordersize     = Screen:scaleBySize(2),
+                background     = Blitbuffer.COLOR_WHITE,
+                radius         = Screen:scaleBySize(4),
+                btn_group,
+            }
+
+            -- Switch callbacks
+            local _switch_single = function()
+                pbw._zen_nb_cols_override = 1
+                pbw._zen_nb_rows_override = 1
+                if G_reader_settings then
+                    G_reader_settings:saveSetting("zen_page_browser_layout", "single")
+                end
+                logger.dbg("ZenUI page_browser: switch to single page")
+                pbw:updateLayout()
+                UIManager:setDirty(pbw, function() return "partial", pbw.dimen end)
+            end
+            local _switch_grid = function()
+                pbw._zen_nb_cols_override = pbw._zen_orig_nb_cols or 3
+                pbw._zen_nb_rows_override = pbw._zen_orig_nb_rows or 5
+                if G_reader_settings then
+                    G_reader_settings:saveSetting("zen_page_browser_layout", "grid")
+                end
+                logger.dbg("ZenUI page_browser: switch to grid")
+                pbw:updateLayout()
+                UIManager:setDirty(pbw, function() return "partial", pbw.dimen end)
+            end
+            self._zen_switch_single = _switch_single
+            self._zen_switch_grid   = _switch_grid
+
+            -- Store button group reference for tap handling
+            self._zen_btn_group = btn_row
+            self._zen_btn_view_frame = btn_view_frame
+            self._zen_btn_grid_frame = btn_grid_frame
+
+            -- Compute hit zones analytically from known panel layout.
+            -- The button group is a unified widget, split into left/right tap zones.
+            -- Panel top Y (screen-absolute):
+            local panel_abs_y = (self.dimen.y or 0) + self.dimen.h - zen_panel_h
+            -- Stack the VerticalGroup rows to find btn_row top:
+            local btn_zone_y = panel_abs_y
+                + zen_panel_pad_top
+                + chap_label:getSize().h
+                + pad_v
+
+            -- Only add slider height if slider exists
+            if zen_slider then
+                btn_zone_y = btn_zone_y + zen_slider:getSize().h + pad_v
+            end
+
+            -- btn_row is CenterContainer'd horizontally in grid_w
+            local btn_row_sz = btn_row:getSize()
+            local btn_row_w = btn_row_sz.w
+            local btn_row_h = btn_row_sz.h
+            local btn_origin_x = (self.dimen.x or 0) + math.floor((grid_w - btn_row_w) / 2)
+
+            -- Split button group into left (view) and right (grid) hit zones
+            local half_w = math.floor(btn_row_w / 2)
+
+            self._zen_btn_view_zone = Geom:new{
+                x = btn_origin_x,
+                y = btn_zone_y,
+                w = half_w,
+                h = btn_row_h,
+            }
+            self._zen_btn_grid_zone = Geom:new{
+                x = btn_origin_x + half_w,
+                y = btn_zone_y,
+                w = btn_row_w - half_w,
+                h = btn_row_h,
+            }
+            logger.dbg("ZenUI page_browser: btn_view_zone x="..self._zen_btn_view_zone.x.." y="..self._zen_btn_view_zone.y.." w="..self._zen_btn_view_zone.w.." h="..self._zen_btn_view_zone.h)
+            logger.dbg("ZenUI page_browser: btn_grid_zone x="..self._zen_btn_grid_zone.x.." y="..self._zen_btn_grid_zone.y.." w="..self._zen_btn_grid_zone.w.." h="..self._zen_btn_grid_zone.h)
+
+            -- Store panel height for onHold suppression.
+            self._zen_panel_h = zen_panel_h
 
             -- Panel spans full grid width, pinned to the absolute bottom of
             -- the screen via OverlapGroup offset (set below).  Height is the
             -- measured content height, not the (larger) native row_height.
+
+            -- Build panel content dynamically based on whether slider should be shown
+            local panel_content = {
+                align = "center",
+                VerticalSpan:new{ width = zen_panel_pad_top },
+                CenterContainer:new{
+                    dimen = Geom:new{ w = grid_w, h = chap_label:getSize().h },
+                    chap_label,
+                },
+            }
+
+            -- Only add slider and its spacing if there's more than 1 page
+            if zen_slider then
+                table.insert(panel_content, VerticalSpan:new{ width = pad_v })
+                table.insert(panel_content, CenterContainer:new{
+                    dimen = Geom:new{ w = grid_w, h = zen_slider:getSize().h },
+                    zen_slider,
+                })
+            end
+
+            -- Add button group
+            table.insert(panel_content, VerticalSpan:new{ width = pad_v })
+            table.insert(panel_content, CenterContainer:new{
+                dimen = Geom:new{ w = grid_w, h = btn_row:getSize().h },
+                btn_row,
+            })
+            table.insert(panel_content, VerticalSpan:new{ width = zen_panel_pad_bottom })
+
             local panel = FrameContainer:new{
                 width      = grid_w,
                 height     = zen_panel_h,
@@ -342,30 +812,7 @@ local function apply_page_browser()
                 margin     = 0,
                 bordersize = 0,
                 background = Blitbuffer.COLOR_WHITE,
-                VerticalGroup:new{
-                    align = "center",
-                    VerticalSpan:new{ width = pad_v },
-                    CenterContainer:new{
-                        dimen = Geom:new{ w = grid_w, h = chap_label:getSize().h },
-                        chap_label,
-                    },
-                    VerticalSpan:new{ width = pad_v },
-                    CenterContainer:new{
-                        dimen = Geom:new{ w = grid_w, h = zen_slider:getSize().h },
-                        zen_slider,
-                    },
-                    VerticalSpan:new{ width = pad_v },
-                    CenterContainer:new{
-                        dimen = Geom:new{ w = grid_w, h = page_label:getSize().h },
-                        page_label,
-                    },
-                    VerticalSpan:new{ width = pad_v },
-                    CenterContainer:new{
-                        dimen = Geom:new{ w = grid_w, h = btn_row:getSize().h },
-                        btn_row,
-                    },
-                    VerticalSpan:new{ width = pad_v },
-                },
+                VerticalGroup:new(panel_content),
             }
             -- Pin panel to absolute screen bottom; grid gets the full space above.
             panel.overlap_offset = { 0, self.dimen.h - zen_panel_h }
@@ -431,20 +878,13 @@ local function apply_page_browser()
                 end
             end
 
-            -- Display info for the center thumbnail, not the focus thumbnail.
+            -- Display info for the focus page.
             local fp    = self.focus_page or self.cur_page or 1
-            local sh    = self.focus_page_shift or 0
-            local it    = self.nb_grid_items or 1
             local np    = self.nb_pages or 1
-            local cp    = math.max(1, math.min(np,
-                              fp - sh + math.ceil(it / 2) - 1))
+            local cp    = math.max(1, math.min(np, fp))
 
             if self._zen_slider then
                 self._zen_slider:setValue(cp)
-            end
-            if self._zen_page_label then
-                self._zen_page_label:setText(
-                    string.format("Page %d / %d", cp, np))
             end
             if self._zen_chap_label then
                 local title = ""
@@ -530,28 +970,77 @@ local function apply_page_browser()
         end
 
         -- ----------------------------------------------------------------
-        -- 5. Slider tap/pan gesture handling
+        -- 5. Gesture handling: slider, view-toggle buttons, panel boundary
         -- ----------------------------------------------------------------
         local _orig_onTap = PageBrowserWidget.onTap
         PageBrowserWidget.onTap = function(self, arg, ges)
+            logger.dbg("ZenUI page_browser: onTap at "..ges.pos.x..","..ges.pos.y)
+            -- 1. Slider tap → navigate to that page.
             if self._zen_slider and self._zen_slider:hitTest(ges.pos) then
+                logger.dbg("ZenUI page_browser: onTap → slider")
                 self._zen_slider:applyPosition(ges.pos.x)
                 return true
             end
+            -- 2. View-toggle buttons: fallback for taps before the first paintTo,
+            --    when btn.dimen.x/y are still 0 so the button's own ges_events
+            --    won't match.  After first paint, the IconButton's onTapIconButton
+            --    fires the callback directly (children-first propagation).
+            --    Use zone:contains() — GestureRange also uses contains() for
+            --    matching, so zero-area tap points on a border stay inclusive.
+            if self._zen_btn_view_zone
+               and self._zen_btn_view_zone:contains(ges.pos) then
+                logger.dbg("ZenUI page_browser: onTap → btn_view (single)")
+                if self._zen_switch_single then self._zen_switch_single() end
+                return true
+            end
+            if self._zen_btn_grid_zone
+               and self._zen_btn_grid_zone:contains(ges.pos) then
+                logger.dbg("ZenUI page_browser: onTap → btn_grid")
+                if self._zen_switch_grid then self._zen_switch_grid() end
+                return true
+            end
+            -- 3. Any tap inside the panel strip → swallow.  Without this a
+            --    tap falls through to _orig_onTap which hits the thumbnail
+            --    behind the panel, navigates the page, and the slider jumps.
+            local panel_h = self._zen_panel_h or 0
+            if panel_h > 0 and self.dimen
+               and ges.pos.y >= (self.dimen.y + self.dimen.h - panel_h) then
+                return true
+            end
+            -- 4. Thumbnail grid area → native handler.
             return _orig_onTap(self, arg, ges)
         end
 
-        local _orig_onPan = PageBrowserWidget.onPan
         PageBrowserWidget.onPan = function(self, arg, ges)
             if self._zen_slider and not self._zen_slider_locked then
-                -- Only handle if the pan started on (or near) the slider row
                 local sp = ges.startpos or ges.pos
-                if sp and self._zen_slider:hitTest(sp) then
+                if self._zen_slider_dragging
+                   or (sp and self._zen_slider:hitTest(sp)) then
+                    self._zen_slider_dragging = true
+                    self._zen_slider.hide_knob = true
                     self._zen_slider:applyPosition(ges.pos.x)
                     return true
                 end
             end
-            -- do NOT call _orig_onPan — it only handled mousewheel scrolling
+            return true  -- swallow all other pans
+        end
+
+        PageBrowserWidget.onPanRelease = function(self, arg, ges)
+            if self._zen_slider_dragging then
+                self._zen_slider_dragging = false
+                if self._zen_slider then
+                    self._zen_slider.hide_knob = false
+                    self._zen_slider:applyPosition(ges.pos.x)
+                end
+                UIManager:setDirty(self, function() return "partial", self.dimen end)
+                return true
+            end
+            -- Prevent close when releasing in panel area (e.g., near button group)
+            local panel_h = self._zen_panel_h or 0
+            if panel_h > 0 and self.dimen
+               and ges.pos.y >= (self.dimen.y + self.dimen.h - panel_h) then
+                return true
+            end
             return true
         end
 
@@ -559,6 +1048,32 @@ local function apply_page_browser()
         -- 6. Gesture lockdown: only horizontal swipe (page prev/next)
         -- ----------------------------------------------------------------
         PageBrowserWidget.onSwipe = function(self, _arg, ges)
+            -- A fast drag on the slider is classified as a swipe rather than
+            -- pan + pan_release.  Handle it here so the knob reappears.
+            if self._zen_slider and not self._zen_slider_locked then
+                local was_dragging = self._zen_slider_dragging
+                local on_slider = self._zen_slider.dimen
+                    and ges.pos:intersectWith(self._zen_slider.dimen)
+                if was_dragging or on_slider then
+                    self._zen_slider_dragging = false
+                    self._zen_slider.hide_knob = false
+                    if not was_dragging then
+                        -- Pure quick-swipe: ges.pos is start; compute end from distance.
+                        local dist  = ges.distance or 0
+                        local end_x = ges.pos.x
+                        if ges.direction == "east" then
+                            end_x = end_x + dist
+                        elseif ges.direction == "west" then
+                            end_x = end_x - dist
+                        end
+                        self._zen_slider:applyPosition(end_x)
+                    else
+                        -- Pan events already placed the knob; just repaint.
+                        UIManager:setDirty(self, function() return "partial", self.dimen end)
+                    end
+                    return true
+                end
+            end
             local direction = ges.direction
             if direction == "west" then
                 self:onScrollPageDown()
@@ -566,17 +1081,32 @@ local function apply_page_browser()
             elseif direction == "east" then
                 self:onScrollPageUp()
                 return true
-            elseif direction == "north" or direction == "south" then
-                -- swallow vertical swipes — no row resize, no scroll
-                return true
             end
-            return true
+            return true  -- swallow north/south and anything else
+        end
+
+        -- Suppress hold gestures in the bottom panel area so they don't
+        -- trigger the native book-map-row popup.
+        local _orig_onHold = PageBrowserWidget.onHold
+        PageBrowserWidget.onHold = function(self, arg, ges)
+            local panel_h = self._zen_panel_h or 0
+            if panel_h > 0 and self.dimen
+               and ges.pos.y >= (self.dimen.y + self.dimen.h - panel_h) then
+                return true  -- swallow
+            end
+            if _orig_onHold then return _orig_onHold(self, arg, ges) end
         end
 
         PageBrowserWidget.onPinch  = function() return true end
         PageBrowserWidget.onSpread = function() return true end
-        PageBrowserWidget.onMultiSwipe = function(self)
-            self:onClose()
+        PageBrowserWidget.onMultiSwipe = function(self, arg, ges)
+            -- Clear any in-progress slider drag so the knob reappears.
+            if self._zen_slider then
+                self._zen_slider_dragging = false
+                self._zen_slider.hide_knob = false
+                UIManager:setDirty(self, function() return "partial", self.dimen end)
+            end
+            -- Swallow all multiswipes; never close the page browser.
             return true
         end
     end
@@ -640,6 +1170,126 @@ local function apply_page_browser()
     local ok_rui, ReaderUI = pcall(require, "apps/reader/readerui")
     if ok_rui and ReaderUI and ReaderUI.instance then
         pcall(register_page_browser_zone, ReaderUI.instance)
+    end
+
+    -- -----------------------------------------------------------------------
+    -- Zen UI customisations for fulltext search dialog
+    -- -----------------------------------------------------------------------
+    local ok_rs, ReaderSearch = pcall(require, "apps/reader/modules/readersearch")
+    if ok_rs and ReaderSearch then
+        local BD          = require("ui/bidi")
+        local InputDialog = require("ui/widget/inputdialog")
+        local CheckButton = require("ui/widget/checkbutton")
+        local Screen_s    = require("device").screen
+        local _           = require("gettext")
+        local logger_rs   = require("logger")
+
+        local _orig_onShowFulltextSearchInput = ReaderSearch.onShowFulltextSearchInput
+
+        ReaderSearch.onShowFulltextSearchInput = function(self, search_string)
+            local backward_text = "◁"
+            local forward_text  = "▷"
+            if BD.mirroredUILayout() then
+                backward_text, forward_text = forward_text, backward_text
+            end
+            self.input_dialog = InputDialog:new{
+                title = _("Enter text to search for"),
+                width = math.floor(math.min(Screen_s:getWidth(), Screen_s:getHeight()) * 0.9),
+                input = search_string
+                    or self.last_search_text
+                    or (self.ui.doc_settings
+                        and self.ui.doc_settings:readSetting("fulltext_search_last_search_text")),
+                -- X in the title bar replaces the Cancel button
+                title_bar_left_icon = "close",
+                title_bar_left_icon_tap_callback = function()
+                    UIManager:close(self.input_dialog)
+                end,
+                buttons = {
+                    -- Row 1: directional arrows
+                    {
+                        {
+                            text     = backward_text,
+                            callback = function()
+                                self:searchCallback(1)
+                            end,
+                        },
+                        {
+                            text     = forward_text,
+                            callback = function()
+                                self:searchCallback(0)
+                            end,
+                        },
+                    },
+                    -- Row 2: Search (formerly "All" / find-all)
+                    {
+                        {
+                            text             = _("Search"),
+                            is_enter_default = true,
+                            callback         = function()
+                                self:searchCallback()
+                            end,
+                        },
+                    },
+                },
+            }
+            self.check_button_case = CheckButton:new{
+                text     = _("Case sensitive"),
+                checked  = not self.case_insensitive,
+                parent   = self.input_dialog,
+            }
+            self.input_dialog:addWidget(self.check_button_case)
+            -- Regex option intentionally omitted, but searchCallback reads
+            -- self.check_button_regex.checked unconditionally, so provide a
+            -- stub that always returns false (no regex).
+            self.check_button_regex = { checked = false }
+            UIManager:show(self.input_dialog)
+            self.input_dialog:onShowKeyboard()
+        end
+
+        -- Patch onShowFindAllResults: fix reader-content ghosting at the bottom
+        -- of the screen when search results are shown.
+        --
+        -- ROOT CAUSE: Menu:new{} runs while Screen:getHeight() is still reduced
+        -- by the virtual keyboard (shown for our search InputDialog). This makes
+        -- menu.dimen.h and the internal OverlapGroup dimen height equal to the
+        -- keyboard-shrunk height (~1525 vs real 1696 on a Kobo). Menu:init()
+        -- creates its FrameContainer WITHOUT an explicit height — so the FC's
+        -- paintTo uses `self.height or my_size.h = nil or 1525 = 1525`, filling
+        -- only 1525px of white background and leaving the bottom 171px untouched
+        -- (showing through the reader content in the framebuffer).
+        --
+        -- By the time our wrapper runs (after UIManager:show(result_menu) returns),
+        -- the keyboard has been dismissed and Screen:getHeight() is back to the
+        -- real value. We patch menu.dimen.h (gesture hit range) and set an
+        -- explicit menu[1].height (FrameContainer) so its background fill covers
+        -- the full screen.  Then forceRePaint() paints the full white background
+        -- synchronously before the flashui refresh fires.
+        local _orig_onShowFindAllResults = ReaderSearch.onShowFindAllResults
+        ReaderSearch.onShowFindAllResults = function(self, not_cached)
+            _orig_onShowFindAllResults(self, not_cached)
+            local menu = self.result_menu
+            if not menu or not UIManager:isWidgetShown(menu) then return end
+
+            local real_h = Screen_s:getHeight()
+
+            -- Fix outer dimen so gesture hit-testing covers the full screen.
+            if menu.dimen and menu.dimen.h < real_h then
+                logger_rs.info("ZenUI [search] fixing menu height:", menu.dimen.h, "→", real_h)
+                menu.dimen.h = real_h
+            end
+
+            -- Force an explicit height on the FrameContainer so its white
+            -- background fill (container_height = self.height or my_size.h)
+            -- extends to the full screen rather than stopping at the
+            -- keyboard-shrunk OverlapGroup height.
+            local fc = menu[1]
+            if fc then
+                fc.height = real_h
+            end
+
+            UIManager:setDirty(menu, "flashui")
+            UIManager:forceRePaint()
+        end
     end
 
     -- -----------------------------------------------------------------------

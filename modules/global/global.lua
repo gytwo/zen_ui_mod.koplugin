@@ -2,10 +2,11 @@ local M = {}
 local initialized = false
 
 local PATCH_MODULES = {
-    night_mode_schedule = "modules/global/patches/night_mode_schedule",
-    warmth_schedule     = "modules/global/patches/warmth_schedule",
-    brightness_schedule = "modules/global/patches/brightness_schedule",
-    page_browser        = "modules/global/patches/page_browser",
+    night_mode_schedule    = "modules/global/patches/night_mode_schedule",
+    warmth_schedule        = "modules/global/patches/warmth_schedule",
+    brightness_schedule    = "modules/global/patches/brightness_schedule",
+    page_browser           = "modules/global/patches/page_browser",
+    disable_night_on_exit  = "modules/global/patches/disable_night_on_exit",
 }
 
 local function run_patch(logger, plugin, feature, fn)
@@ -52,6 +53,12 @@ function M.init(logger, plugin)
     local page_browser_fn = load_patch("page_browser")
     if page_browser_fn then
         run_patch(logger, plugin, "page_browser", page_browser_fn)
+    end
+
+    -- Always apply: disable night mode on Exit/Restart from any menu.
+    local disable_night_on_exit_fn = load_patch("disable_night_on_exit")
+    if disable_night_on_exit_fn then
+        run_patch(logger, plugin, "disable_night_on_exit", disable_night_on_exit_fn)
     end
 
     initialized = true

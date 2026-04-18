@@ -22,6 +22,7 @@ local PATCH_MODULES = {
     browser_hide_underline = "modules/filebrowser/patches/browser_hide_underline",
     browser_hide_up_folder = "modules/filebrowser/patches/browser_hide_up_folder",
     browser_cover_badges = "modules/filebrowser/patches/browser_cover_badges",
+    browser_cover_mosaic_uniform = "modules/filebrowser/patches/browser_cover_mosaic_uniform",
     browser_cover_rounded_corners = "modules/filebrowser/patches/browser_cover_rounded_corners",
     browser_show_hidden = "modules/filebrowser/patches/browser_show_hidden",
 }
@@ -99,6 +100,13 @@ function M.init(logger, plugin)
     local browser_cover_badges_fn = load_patch("browser_cover_badges")
     if browser_cover_badges_fn then
         run_feature(logger, plugin, "browser_cover_badges", browser_cover_badges_fn)
+    end
+
+    -- Always apply: uniform portrait (2:3) sizing for native book covers in
+    -- mosaic mode – prevents landscape covers from rendering wider than others.
+    local browser_cover_mosaic_uniform_fn = load_patch("browser_cover_mosaic_uniform")
+    if browser_cover_mosaic_uniform_fn then
+        run_feature(logger, plugin, "browser_cover_mosaic_uniform", browser_cover_mosaic_uniform_fn)
     end
 
     -- Always apply: rounded corner masks on mosaic covers (book + folder).

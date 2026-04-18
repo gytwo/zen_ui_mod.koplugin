@@ -65,6 +65,8 @@ local function apply_browser_list_item_layout()
             local border_size = Size.border.thin
             local cover_zone_w = dimen_h  -- squared, identical to stock list mode
             local max_img = dimen_h - 2 * border_size
+            -- Standard portrait width (2:3) so every cover frame is the same size
+            local cover_w = math.floor(max_img * 2 / 3)
 
             -- Font sizing identical to listmenu.lua's internal _fontSize closure.
             local function _fontSize(nominal, max_size)
@@ -97,7 +99,7 @@ local function apply_browser_list_item_layout()
 
             if self.do_cover_image then
                 local cover_specs = {
-                    max_cover_w = max_img,
+                    max_cover_w = cover_w,
                     max_cover_h = max_img,
                 }
                 self.menu.cover_specs = cover_specs
@@ -108,37 +110,38 @@ local function apply_browser_list_item_layout()
                 then
                     cover_bb_used = true
                     local _, _, scale_factor = BookInfoManager.getCachedCoverSize(
-                        bookinfo.cover_w, bookinfo.cover_h, max_img, max_img)
+                        bookinfo.cover_w, bookinfo.cover_h, cover_w, max_img)
                     local wimage = ImageWidget:new{
                         image = bookinfo.cover_bb,
                         scale_factor = scale_factor,
                     }
                     wimage:_render()
-                    local image_size = wimage:getSize()
                     wleft = CenterContainer:new{
                         dimen = { w = cover_zone_w, h = dimen_h },
                         FrameContainer:new{
-                            width = image_size.w + 2 * border_size,
-                            height = image_size.h + 2 * border_size,
+                            width = cover_w + 2 * border_size,
+                            height = max_img + 2 * border_size,
                             margin = 0, padding = 0, bordersize = border_size,
                             dim = file_deleted,
-                            wimage,
+                            CenterContainer:new{
+                                dimen = { w = cover_w, h = max_img },
+                                wimage,
+                            },
                         },
                     }
                     self.menu._has_cover_images = true
                     self._has_cover_image = true
                 else
                     -- Placeholder (no cover or not yet fetched)
-                    local fake_w = math.floor(max_img * 0.6)
                     wleft = CenterContainer:new{
                         dimen = { w = cover_zone_w, h = dimen_h },
                         FrameContainer:new{
-                            width = fake_w + 2 * border_size,
+                            width = cover_w + 2 * border_size,
                             height = max_img + 2 * border_size,
                             margin = 0, padding = 0, bordersize = border_size,
                             dim = file_deleted,
                             CenterContainer:new{
-                                dimen = { w = fake_w, h = max_img },
+                                dimen = { w = cover_w, h = max_img },
                                 TextWidget:new{
                                     text = "⛶",
                                     face = Font:getFace("cfont", _fontSize(20)),

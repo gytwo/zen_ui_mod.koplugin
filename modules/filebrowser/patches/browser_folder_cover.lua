@@ -148,7 +148,7 @@ local function apply_browser_folder_cover()
             width = 0.97,
         },
         face = {
-            border_size = Size.border.thick,
+            border_size = Size.border.thin,
             alpha = 0.75,
             nb_items_font_size = 15,
             nb_items_badge_size = Screen:scaleBySize(22),  -- fixed circle diameter
@@ -254,51 +254,50 @@ local function apply_browser_folder_cover()
 
         function MosaicMenuItem:_setFolderCover(img)
             local top_h = 2 * (Folder.edge.thick + Folder.edge.margin)
-            local target = {
-                w = self.width - 2 * Folder.face.border_size,
-                h = self.height - 2 * Folder.face.border_size - top_h,
-            }
 
-            local size, dimen, image_widget
+            -- ── Portrait box: matches browser_cover_mosaic_uniform.lua exactly ──
+            -- Book covers: portrait_w = floor((self.height - 2*border.thin) * 2/3)
+            -- Folder frames use the same border.thin so widths are identical.
+            -- portrait_h = available space below the tab lines.
+            local border     = Folder.face.border_size  -- Size.border.thin
+            local bh         = self.height - 2 * border
+            local portrait_w = math.floor(bh * (2 / 3))
+            local portrait_h = bh - top_h               -- space below the tab
+
+            local size  = { w = portrait_w, h = portrait_h }
+            local dimen = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
+
+            -- All images are fit-to-box (width=portrait_w, height=portrait_h, no
+            -- explicit scale_factor) so KOReader auto-scales to min(w,h) ratio.
+            -- This guarantees zero overflow regardless of source aspect ratio.
+            local image_widget
             if img.no_image then
-                -- Simulate portrait book cover scaling (same math.min logic as ImageWidget path).
-                -- Use cover_specs ratio when available, otherwise fall back to 2:3 (w:h).
-                local specs = self.menu.cover_specs
-                local ratio = (specs and specs.size_ratio) and (1 / specs.size_ratio) or (2 / 3) -- w/h
-                local sf = math.min(target.w / ratio, target.h) -- scale to fit
-                -- equivalent to math.min(target.w / (ratio*100), target.h / 100)
-                local cover_w = math.floor(ratio * sf)
-                local cover_h = math.floor(sf)
-                size = { w = cover_w, h = cover_h }
-                dimen = { w = cover_w + 2 * Folder.face.border_size, h = cover_h + 2 * Folder.face.border_size }
                 image_widget = FrameContainer:new {
                     padding = 0,
-                    bordersize = Folder.face.border_size,
+                    bordersize = border,
+                    width = dimen.w, height = dimen.h,
                     background = Blitbuffer.COLOR_LIGHT_GRAY,
                     CenterContainer:new {
-                        dimen = { w = cover_w, h = cover_h },
+                        dimen = { w = portrait_w, h = portrait_h },
                         VerticalSpan:new { width = 1 },
                     },
                     overlap_align = "center",
                 }
             else
-                local img_options = { file = img.file, image = img.data }
-                if img.scale_to_fit then
-                    img_options.scale_factor = math.max(target.w / img.w, target.h / img.h)
-                    img_options.width = target.w
-                    img_options.height = target.h
-                else
-                    img_options.scale_factor = math.min(target.w / img.w, target.h / img.h)
-                end
-
-                local image = ImageWidget:new(img_options)
-                size = image:getSize()
-                dimen = { w = size.w + 2 * Folder.face.border_size, h = size.h + 2 * Folder.face.border_size }
-
                 image_widget = FrameContainer:new {
                     padding = 0,
-                    bordersize = Folder.face.border_size,
-                    image,
+                    bordersize = border,
+                    width = dimen.w, height = dimen.h,
+                    background = Blitbuffer.COLOR_LIGHT_GRAY,
+                    CenterContainer:new {
+                        dimen = { w = portrait_w, h = portrait_h },
+                        ImageWidget:new {
+                            file   = img.file,
+                            image  = img.data,
+                            width  = portrait_w,
+                            height = portrait_h,
+                        },
+                    },
                     overlap_align = "center",
                 }
             end

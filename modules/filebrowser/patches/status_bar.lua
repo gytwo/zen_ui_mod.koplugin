@@ -225,18 +225,29 @@ local function apply_status_bar()
         if cached_disk_text and (now - cached_disk_time) < 300 then
             return "\u{F0A0}", " " .. cached_disk_text, colors.disk
         end
-        local pipe = io.popen("df -h /mnt/onboard 2>/dev/null || df -h / 2>/dev/null")
-        if pipe then
-            local _ = pipe:read("*line") -- skip header
-            local line = pipe:read("*line")
-            pipe:close()
-            if line then
-                local avail = line:match("%S+%s+%S+%s+%S+%s+(%S+)")
-                if avail then
-                    cached_disk_text = avail
-                    cached_disk_time = now
-                    return "\u{F0A0}", " " .. avail, colors.disk
+        -- Use the home_dir KOReader is actually browsing, then common fallbacks.
+        local home_dir = G_reader_settings and G_reader_settings:readSetting("home_dir")
+        local search_paths = {}
+        if home_dir and home_dir ~= "" then
+            table.insert(search_paths, home_dir)
+        end
+        for _, p in ipairs({ "/mnt/us", "/mnt/onboard", "/sdcard", "/" }) do
+            table.insert(search_paths, p)
+        end
+        for _, spath in ipairs(search_paths) do
+            local pipe = io.popen("df -h " .. spath .. " 2>/dev/null")
+            if pipe then
+                for line in pipe:lines() do
+                    local avail = line:match("%S+%s+%S+%s+%S+%s+(%S+)")
+                    -- Only accept lines where the available field starts with a digit
+                    if avail and avail:match("^%d") then
+                        pipe:close()
+                        cached_disk_text = avail
+                        cached_disk_time = now
+                        return "\u{F0A0}", " " .. avail, colors.disk
+                    end
                 end
+                pipe:close()
             end
         end
         return "\u{F0A0}", " ?", colors.disk

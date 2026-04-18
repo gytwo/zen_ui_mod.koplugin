@@ -632,6 +632,9 @@ local function apply_browser_list_item_layout()
         end
     end
 
+    -- Required here so the setupLayout closure can reference it for dynamic dispatch.
+    local FileChooser = require("ui/widget/filechooser")
+
     local ok_cm, CoverMenu = pcall(require, "covermenu")
     if ok_cm and CoverMenu and not CoverMenu._zen_strip_list_borders_patched then
         CoverMenu._zen_strip_list_borders_patched = true
@@ -640,20 +643,9 @@ local function apply_browser_list_item_layout()
             orig_cm_updateItems(self, ...)
             stripListBorders(self)
         end
-
-        -- CoverBrowser (loaded before us) may have already captured the old
-        -- CoverMenu.updateItems and assigned it to FileChooser.updateItems.
-        -- Wrap the class-level FileChooser.updateItems too so that every
-        -- new file_chooser instance inherits the border strip — including
-        -- the very first updateItems() call inside FileChooser:new().
-        local FileChooser = require("ui/widget/filechooser")
-        local fc_class_fn = rawget(FileChooser, "updateItems")
-        if fc_class_fn and fc_class_fn ~= CoverMenu.updateItems then
-            FileChooser.updateItems = function(self, ...)
-                fc_class_fn(self, ...)
-                stripListBorders(self)
-            end
-        end
+        -- No class-level FileChooser.updateItems wrap: CoverBrowser replaces it on
+        -- every mode switch (CoverMenu.updateItems <-> _FileChooser_updateItems_orig),
+        -- so any captured static reference goes stale. Dynamic dispatch (below) handles it.
     end
 
     -- Hook FileManager:setupLayout so we run after coverbrowser has been
@@ -668,19 +660,21 @@ local function apply_browser_list_item_layout()
             patchListMenu()
             patched = true
         end
-        -- Ensure every file_chooser instance has its own border-strip
-        -- wrapper.  The class-level FileChooser.updateItems patch covers
-        -- the initial updateItems() call during FileChooser:new(), but
-        -- CoverBrowser may later overwrite the instance's updateItems
-        -- (e.g. via setupFileManagerDisplayMode).  Re-wrap here so the
-        -- strip survives regardless of what CoverBrowser does.
+        -- Set (or re-set) an instance wrapper that calls FileChooser.updateItems at
+        -- dispatch time rather than capturing it at wrap time.  CoverBrowser swaps
+        -- FileChooser.updateItems on every classic<->cover mode toggle, so a static
+        -- capture would stay stale and call CoverMenu.updateItems (which expects
+        -- self:_updateItemsBuildUI()) on a classic-mode instance where that method
+        -- is nil, crashing KOReader.
         local fc = self.file_chooser
-        if fc and fc.updateItems and not fc._zen_strip_list_borders then
-            fc._zen_strip_list_borders = true
-            local orig_fc_updateItems = fc.updateItems
-            function fc:updateItems(...)
-                orig_fc_updateItems(self, ...)
-                stripListBorders(self)
+        if fc and fc.updateItems then
+            if fc._zen_strip_list_borders_fn ~= fc.updateItems then
+                local function zen_fc_updateItems(s, ...)
+                    FileChooser.updateItems(s, ...)
+                    stripListBorders(s)
+                end
+                fc._zen_strip_list_borders_fn = zen_fc_updateItems
+                fc.updateItems = zen_fc_updateItems
             end
         end
     end

@@ -1,11 +1,7 @@
 local function apply_book_status()
-    -- Always redirect end-of-book to the Book Status screen
-    local ReaderStatus = require("apps/reader/modules/readerstatus")
-
-    local orig_onEndOfBook = ReaderStatus.onEndOfBook
-    ReaderStatus.onEndOfBook = function(self)
-        return self:onShowBookStatus()
-    end
+    -- Use KOReader's native "show Book Status at end of book" setting rather
+    -- than hooking onEndOfBook ourselves.
+    G_reader_settings:saveSetting("end_document_action", "book_status")
 
     -- Always use the Zen UI custom Book Status layout (home + close buttons, cleaner stats)
     local BookStatusWidget = require("ui/widget/bookstatuswidget")

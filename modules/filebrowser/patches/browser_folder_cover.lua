@@ -374,7 +374,7 @@ local function apply_browser_folder_cover()
             -- and cleanly overwrites the ancestor cover.
             if self._zen_ancestor_cover then
                 if self.entry and (self.entry.is_file or self.entry.file) then
-                    local _p = self.entry.path
+                    local _p = self.entry.path or self.entry.file
                     if _p and not BookInfoManager:getBookInfo(_p, true) then
                         return  -- bookinfo still nil; keep ancestor cover
                     end
@@ -400,8 +400,9 @@ local function apply_browser_folder_cover()
             -- This lets browser_cover_rounded_corners locate and mask the frame.
             -- KOReader's native onBookInfoUpdated fires update() on the item once
             -- extraction finishes, at which point standard rendering takes over.
-            if self.entry.is_file or self.entry.file then
-                local path = self.entry.path
+            local _resolved_path = self.entry.path or self.entry.file
+            if (self.entry.is_file or self.entry.file) and _resolved_path then
+                local path = _resolved_path
                 local bookinfo = BookInfoManager:getBookInfo(path, true)
                 if not bookinfo then
                     local ancestor_bi, ancestor_path = getBookInfoWithFallback(path)

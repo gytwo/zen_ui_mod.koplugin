@@ -72,7 +72,7 @@ local function apply_navbar()
         },
         tab_order = { "page_left", "books", "manga", "news", "continue", "history", "favorites", "collections", "search", "exit", "page_right", "menu" },
         show_labels = true,
-        books_label = "Books",
+        books_label = "Library",
         manga_action = "rakuyomi",
         manga_folder = "",
         news_action = "quickrss",

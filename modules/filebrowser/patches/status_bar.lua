@@ -514,6 +514,14 @@ local function apply_status_bar()
         return vg
     end
 
+    -- Expose createStatusRow for cross-patch use (e.g. favorites).
+    -- Stored on the plugin table so it is naturally scoped to when this feature
+    -- is active and is cleaned up if the plugin is reloaded.
+    if type(zen_plugin) == "table" then
+        if not zen_plugin._zen_shared then zen_plugin._zen_shared = {} end
+        zen_plugin._zen_shared.createStatusRow = createStatusRow
+    end
+
     -- === Replace title content and reposition buttons ===
 
     function FileManager:_updateStatusBar()
@@ -653,19 +661,36 @@ local function apply_status_bar()
 
         -- Periodic refresh for time/battery/disk.
         -- Always fires at the top of the next minute so the clock stays aligned.
+        -- Also refreshes the favorites titlebar when it is open, so the clock
+        -- updates there without needing a separate timer.
         local function autoRefresh()
             if FileManager.instance ~= fm then return end
-            -- Only update when FM is the topmost widget; prevents the titlebar
-            -- from bleeding into the screensaver/lockscreen when inactive.
             local stack = UIManager._window_stack
             local top = stack and stack[#stack]
-            if top and (top.widget == fm or top.widget == fm.show_parent) then
+            local top_widget = top and top.widget
+
+            -- Refresh filebrowser titlebar when it is the topmost widget.
+            -- Prevents painting into screensaver/lockscreen when inactive.
+            if top_widget == fm or top_widget == fm.show_parent then
                 fm:_updateStatusBar()
             end
+
+            -- Refresh favorites titlebar when it is open.
+            -- BookList is a separate overlay so fm is never "on top" then;
+            -- we update it unconditionally whenever the menu exists.
+            local fav_menu = fm.collections and fm.collections.booklist_menu
+            if fav_menu then
+                local fav_tb = fav_menu.title_bar
+                if fav_tb and fav_tb.title_group and #fav_tb.title_group >= 2 then
+                    fav_tb.title_group[2] = createStatusRow(nil, fm)
+                    fav_tb.title_group:resetLayout()
+                    UIManager:setDirty(fav_menu, "ui", fav_tb.dimen)
+                end
+            end
+
             -- Schedule next tick at the top of the following minute.
             local t = os.date("*t")
-            local secs_until_next_minute = 60 - t.sec
-            UIManager:scheduleIn(secs_until_next_minute, autoRefresh)
+            UIManager:scheduleIn(60 - t.sec, autoRefresh)
         end
         -- First tick: align to the top of the next minute.
         local t = os.date("*t")

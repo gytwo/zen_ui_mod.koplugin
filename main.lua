@@ -26,9 +26,10 @@ if _plugin_root then
         ["zen_settings"]        = "settings.svg",
         ["zen_settings_update"] = "settings_update.svg",
         ["quicksettings"]       = "quicksettings.svg",
-        ["zen_ui"]       = "zen_ui.svg",
-        ["zen_ui_light"]       = "zen_ui_light.svg",
-        ["library"]       = "library.svg",
+        ["zen_ui"]              = "zen_ui.svg",
+        ["zen_ui_light"]        = "zen_ui_light.svg",
+        ["library"]             = "library.svg",
+        ["zen_favorites"]       = "tab_favorites.svg",
     }, true)
 end
 

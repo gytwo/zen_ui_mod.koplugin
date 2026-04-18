@@ -87,12 +87,17 @@ local function apply_night_mode_schedule()
         end
     end
 
-    -- Apply night mode to a specific state without toggling if it already matches.
+    -- Apply night mode to a specific state.  Directly sets (rather than
+    -- toggling) and checks Screen.night_mode (the real display state) instead
+    -- of G_reader_settings, which can drift during suspend/resume or when the
+    -- OS changes the HW inversion flag while KOReader is sleeping.
     local function set_night_mode(enable)
-        local current = G_reader_settings:isTrue("night_mode")
-        if current == enable then return end
+        if Screen.night_mode == enable then return end
+        Screen.night_mode = enable
+        if type(Screen.setHWNightmode) == "function" then
+            pcall(Screen.setHWNightmode, Screen, enable)
+        end
         G_reader_settings:saveSetting("night_mode", enable)
-        Screen:toggleNightMode()
         UIManager:setDirty("all", "full")
     end
 

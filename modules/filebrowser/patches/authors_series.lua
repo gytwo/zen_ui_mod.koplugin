@@ -11,7 +11,8 @@ local _authors_menu = nil
 local _series_menu  = nil
 
 -- Set during apply (called at init while __ZEN_UI_PLUGIN is set)
-local _zen_shared = nil
+local _zen_shared  = nil
+local _zen_plugin  = nil  -- captured at init; __ZEN_UI_PLUGIN is cleared after init
 
 -------------------------------------------------------------------------------
 -- Utility: walk upvalue chain to find a named upvalue
@@ -70,8 +71,28 @@ local function setup_display_mode(menu, is_group_view)
         menu._do_filename_only    = display_mode == "list_image_filename"
     end
 
+    -- Provide proper getBookInfo for badge support
     if not menu.getBookInfo then
-        menu.getBookInfo = function() return {} end
+        if is_group_view then
+            menu.getBookInfo = function() return {} end
+        else
+            -- Return reading status (percent_finished, status, been_opened) from sidecar.
+            -- Called as menu.getBookInfo(filepath) — dot syntax, ONE arg only.
+            menu.getBookInfo = function(file_path)
+                if not file_path then return {} end
+                local ok_ds, DocSettings = pcall(require, "docsettings")
+                if not ok_ds then return {} end
+                if not DocSettings:hasSidecarFile(file_path) then return {} end
+                local ok2, doc = pcall(DocSettings.open, DocSettings, file_path)
+                if not ok2 or not doc then return {} end
+                local summary = doc:readSetting("summary")
+                return {
+                    been_opened      = true,
+                    percent_finished = doc:readSetting("percent_finished"),
+                    status           = summary and summary.status,
+                }
+            end
+        end
     end
     if not menu.resetBookInfoCache then
         menu.resetBookInfoCache = function() end
@@ -619,26 +640,143 @@ local function build_group_item_table(groups, data_type)
             callback = function() end,
         })
     end
+
+    -- Apply reverse sort if enabled
+    local settings_key = data_type == "authors" and "zen_authors_reverse" or "zen_series_reverse"
+    local g_settings = rawget(_G, "G_reader_settings")
+    if g_settings and g_settings:isTrue(settings_key) and #items > 0 then
+        -- Reverse the array (skip the placeholder)
+        if items[1].text ~= _("No books found") then
+            local reversed = {}
+            for i = #items, 1, -1 do
+                table.insert(reversed, items[i])
+            end
+            items = reversed
+        end
+    end
+
     return items
 end
 
 -------------------------------------------------------------------------------
--- showGroupContextMenu: info-only hold dialog for an author/series group.
--- Shows a cover gallery + name/count header; no action buttons.
+-- showDisplayModeDialog: show display mode selection dialog
+-- menu: optional Menu instance to refresh after mode change
 -------------------------------------------------------------------------------
-local function showGroupContextMenu(item)
+local function showDisplayModeDialog(menu)
+    local _ = require("gettext")
+    local ButtonDialog = require("ui/widget/buttondialog")
+    local UIManager = require("ui/uimanager")
+
+    local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+    local fm = ok_fm and FM and FM.instance
+    local ok_bim, bim = pcall(require, "bookinfomanager")
+    local cur_mode
+    if ok_bim and bim then
+        local ok3, m = pcall(function()
+            return bim:getSetting("filemanager_display_mode")
+        end)
+        if ok3 then cur_mode = m end
+    end
+
+    local function apply_mode(mode)
+        if fm and type(fm.onSetDisplayMode) == "function" then
+            pcall(fm.onSetDisplayMode, fm, mode)
+        elseif ok_bim and bim then
+            pcall(bim.saveSetting, bim, "filemanager_display_mode", mode)
+        end
+
+        -- Refresh the menu to apply new display mode
+        if menu then
+            UIManager:close(menu)
+            UIManager:nextTick(function()
+                -- Trigger a rebuild based on menu type
+                if menu._zen_group_view and menu.name == "authors" then
+                    if _authors_menu then
+                        UIManager:close(_authors_menu)
+                        _authors_menu = nil
+                    end
+                    local ok_db, db = pcall(require, "common/db_bookinfo")
+                    if ok_db then
+                        local groups = db.getGroupedByAuthor()
+                        local injectNav = _zen_shared and _zen_shared.navbar and _zen_shared.navbar.injectStandaloneNavbar
+                        showGroupView("authors", injectNav, groups)
+                    end
+                elseif menu._zen_group_view and menu.name == "series" then
+                    if _series_menu then
+                        UIManager:close(_series_menu)
+                        _series_menu = nil
+                    end
+                    local ok_db, db = pcall(require, "common/db_bookinfo")
+                    if ok_db then
+                        local groups = db.getGroupedBySeries()
+                        local injectNav = _zen_shared and _zen_shared.navbar and _zen_shared.navbar.injectStandaloneNavbar
+                        showGroupView("series", injectNav, groups)
+                    end
+                else
+                    -- Detail view: just reopen with current settings
+                    setup_display_mode(menu, false)
+                    menu:updateItems()
+                    UIManager:show(menu)
+                end
+            end)
+        end
+    end
+
+    local view_dialog
+    local function viewBtn(label, icon, mode)
+        local active = cur_mode == mode
+        return {{
+            text     = icon .. "  " .. label .. (active and "  \u{2713}" or ""),
+            align    = "left",
+            enabled  = not active,
+            callback = function()
+                UIManager:close(view_dialog)
+                apply_mode(mode)
+            end,
+        }}
+    end
+
+    view_dialog = ButtonDialog:new{
+        title       = _("Display mode"),
+        title_align = "center",
+        buttons     = {
+            viewBtn(_("Mosaic"),          "\u{F00A}", "mosaic_image"),
+            viewBtn(_("List (detailed)"), "\u{F03A}", "list_image_meta"),
+            viewBtn(_("List (basic)"),    "\u{F0CA}", "list_image_filename"),
+        },
+    }
+    UIManager:show(view_dialog)
+end
+
+-------------------------------------------------------------------------------
+-- showGroupContextMenu: context menu for folder hold or blank-space hold
+-- item: if provided, shows folder context (cover gallery, name, count, Sort)
+--       if nil, shows tab context (blank placeholder, tab name, Sort + Display)
+-- tab_id: "authors" | "series"
+-- menu: the Menu instance for callbacks
+-------------------------------------------------------------------------------
+local function showGroupContextMenu(item, tab_id, menu)
     local BD           = require("ui/bidi")
     local ButtonDialog = require("ui/widget/buttondialog")
     local Device       = require("device")
     local UIManager    = require("ui/uimanager")
     local _            = require("gettext")
 
-    local files      = item._zen_files or {}
-    local group_name = item.text or "?"
-    local book_count = #files
-    local count_str  = book_count == 1
-        and _("1 book")
-        or (tostring(book_count) .. " " .. _("books"))
+    local is_folder = item ~= nil
+    local files      = is_folder and (item._zen_files or {}) or {}
+    local group_name = is_folder and (item.text or "?") or (tab_id == "authors" and _("Authors") or _("Series"))
+    local info_str
+    if is_folder then
+        local n = #files
+        info_str = n == 1 and _("1 book") or (tostring(n) .. " " .. _("books"))
+    else
+        local n = (menu and menu.item_table) and #menu.item_table or 0
+        if tab_id == "authors" then
+            info_str = n == 1 and _("1 author") or (tostring(n) .. " " .. _("authors"))
+        else
+            info_str = n == 1 and _("1 series") or (tostring(n) .. " " .. _("series"))
+        end
+    end
 
     local Screen  = Device.screen
     local Size    = require("ui/size")
@@ -650,15 +788,62 @@ local function showGroupContextMenu(item)
     local cover_max_w = Screen:scaleBySize(90)
     local cover_max_h = Screen:scaleBySize(140)
 
-    -- Collect up to 4 covers from the group's files.
+    -- Rounded corners helper function
+    local function apply_rounded_corners(frame_widget, bsz)
+        local plug = _zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+        local enabled = plug
+            and type(plug.config) == "table"
+            and type(plug.config.features) == "table"
+            and plug.config.features.browser_cover_rounded_corners == true
+        logger.info("zen-ui authors_series: rounded_corners plug=", tostring(plug ~= nil),
+            "enabled=", tostring(enabled == true))
+        if not enabled then return end
+        local Blitbuffer = require("ffi/blitbuffer")
+        local r       = Screen:scaleBySize(6)
+        local r_inner = r - bsz
+        local orig_pt = frame_widget.paintTo
+        frame_widget.paintTo = function(self, bb, x, y)
+            orig_pt(self, bb, x, y)
+            if not (self.dimen and self.dimen.x) then return end
+            local tx, ty = self.dimen.x, self.dimen.y
+            local tw, th = self.dimen.w, self.dimen.h
+            local wh  = Blitbuffer.COLOR_WHITE
+            local blk = Blitbuffer.COLOR_BLACK
+            for j = 0, r - 1 do
+                local inner = math.sqrt(r * r - (r - j) * (r - j))
+                local cut   = math.ceil(r - inner)
+                if cut > 0 then
+                    bb:paintRect(tx,            ty + j,           cut, 1, wh)
+                    bb:paintRect(tx + tw - cut, ty + j,           cut, 1, wh)
+                    bb:paintRect(tx,            ty + th - 1 - j,  cut, 1, wh)
+                    bb:paintRect(tx + tw - cut, ty + th - 1 - j,  cut, 1, wh)
+                end
+            end
+            for j = 0, r - 1 do
+                for c = 0, r - 1 do
+                    local dx   = r - c - 0.5
+                    local dy   = r - j - 0.5
+                    local dist = math.sqrt(dx * dx + dy * dy)
+                    if dist >= r_inner and dist <= r then
+                        bb:paintRect(tx + c,          ty + j,           1, 1, blk)
+                        bb:paintRect(tx + tw - 1 - c, ty + j,           1, 1, blk)
+                        bb:paintRect(tx + c,          ty + th - 1 - j,  1, 1, blk)
+                        bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j,  1, 1, blk)
+                    end
+                end
+            end
+        end
+    end
+
+    -- Collect up to 4 covers from the group's files (folder mode only)
     local covers = {}
     local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
-    if ok_bim then
-        for _, fpath in ipairs(files) do
-            local bi = BookInfoManager:getBookInfo(fpath, true)
-            if bi and bi.has_cover and bi.cover_bb and not bi.ignore_cover then
+    if ok_bim and is_folder then
+        for i = 1, math.min(#files, 4) do
+            local fpath = files[i]
+            local ok2, bi = pcall(BookInfoManager.getBookInfo, BookInfoManager, fpath, true)
+            if ok2 and bi and bi.has_cover and bi.cover_bb and not bi.ignore_cover then
                 table.insert(covers, { data = bi.cover_bb:copy() })
-                if #covers >= 4 then break end
             end
         end
     end
@@ -725,25 +910,28 @@ local function showGroupContextMenu(item)
                     cells[1],
                     LineWidget:new{
                         background = Blitbuffer.COLOR_WHITE,
-                        dimen = Geom:new{ w = sep, h = half_h },
+                        dimen = { w = sep, h = half_h },
                     },
                     cells[2],
                 },
                 LineWidget:new{
                     background = Blitbuffer.COLOR_WHITE,
-                    dimen = Geom:new{ w = cover_max_w, h = sep },
+                    dimen = { w = cover_max_w, h = sep },
                 },
                 HorizontalGroup:new{
                     cells[3],
                     LineWidget:new{
                         background = Blitbuffer.COLOR_WHITE,
-                        dimen = Geom:new{ w = sep, h = half_h2 },
+                        dimen = { w = sep, h = half_h2 },
                     },
                     cells[4],
                 },
             } or Widget:new{ dimen = Geom:new{ w = cover_max_w, h = cover_max_h } },
         },
     }
+
+    -- Apply rounded corners to the frame
+    apply_rounded_corners(framed, border)
 
     local framed_h   = cover_max_h + 2 * border
     local text_col_w = math.max(avail_w - cover_max_w - 2 * border - gap, Screen:scaleBySize(60))
@@ -754,9 +942,10 @@ local function showGroupContextMenu(item)
         bold      = true,
         max_width = text_col_w,
     })
+    -- Show count for both folder (# books) and top-level (# authors/series)
     table.insert(vstack, VerticalSpan:new{ width = Screen:scaleBySize(2) })
     table.insert(vstack, TextWidget:new{
-        text      = count_str,
+        text      = info_str,
         face      = Font:getFace("cfont", 17),
         max_width = text_col_w,
     })
@@ -772,14 +961,276 @@ local function showGroupContextMenu(item)
     }
 
     local dlg
+    local buttons = {}
+
+    if is_folder then
+        -- Folder hold: show Sort button only
+        table.insert(buttons, {{
+            text     = "\u{F0DC}  " .. _("Sort  \u{25B8}"),
+            align    = "left",
+            callback = function()
+                UIManager:close(dlg)
+                showGroupSortDialog(tab_id, menu)
+            end,
+        }})
+    else
+        -- Blank-space hold: show Sort + Display buttons
+        table.insert(buttons, {{
+            text     = "\u{F0DC}  " .. _("Sort  \u{25B8}"),
+            align    = "left",
+            callback = function()
+                UIManager:close(dlg)
+                showGroupSortDialog(tab_id, menu)
+            end,
+        }})
+        table.insert(buttons, {{
+            text     = "\u{F06E}  " .. _("Display  \u{25B8}"),
+            align    = "left",
+            callback = function()
+                UIManager:close(dlg)
+                showDisplayModeDialog(menu)
+            end,
+        }})
+    end
+
     dlg = ButtonDialog:new{
-        buttons        = {{{
-            text     = require("gettext")("Close"),
-            callback = function() UIManager:close(dlg) end,
-        }}},
+        buttons        = buttons,
         _added_widgets = { cover_widget },
     }
     UIManager:show(dlg)
+end
+
+-------------------------------------------------------------------------------
+-- showGroupSortDialog: show ascending/descending sort dialog for group view
+-- tab_id: "authors" | "series"
+-- menu: the Menu instance to refresh after sort change
+-------------------------------------------------------------------------------
+local function showGroupSortDialog(tab_id, menu)
+    local _ = require("gettext")
+    local ButtonDialog = require("ui/widget/buttondialog")
+    local UIManager = require("ui/uimanager")
+
+    local settings_key = tab_id == "authors" and "zen_authors_reverse" or "zen_series_reverse"
+    local g_settings = rawget(_G, "G_reader_settings")
+    if not g_settings then return end
+
+    local cur_reverse = g_settings:isTrue(settings_key)
+    local title = tab_id == "authors" and _("Sort authors") or _("Sort series")
+
+    local sort_dialog
+    local sort_buttons = {
+        {{
+            text     = "\u{F15D}  " .. _("Ascending") .. (not cur_reverse and "  \u{2713}" or ""),
+            align    = "left",
+            enabled  = cur_reverse,
+            callback = function()
+                g_settings:delSetting(settings_key)
+                UIManager:close(sort_dialog)
+                if menu then
+                    -- Re-fetch and rebuild
+                    local ok, db = pcall(require, "common/db_bookinfo")
+                    if ok then
+                        local groups = tab_id == "authors"
+                            and db.getGroupedByAuthor()
+                            or db.getGroupedBySeries()
+                        menu.item_table = build_group_item_table(groups, tab_id)
+                        menu:updateItems()
+                    end
+                end
+            end,
+        }},
+        {{
+            text     = "\u{F15E}  " .. _("Descending") .. (cur_reverse and "  \u{2713}" or ""),
+            align    = "left",
+            enabled  = not cur_reverse,
+            callback = function()
+                g_settings:saveSetting(settings_key, true)
+                UIManager:close(sort_dialog)
+                if menu then
+                    -- Re-fetch and rebuild
+                    local ok, db = pcall(require, "common/db_bookinfo")
+                    if ok then
+                        local groups = tab_id == "authors"
+                            and db.getGroupedByAuthor()
+                            or db.getGroupedBySeries()
+                        menu.item_table = build_group_item_table(groups, tab_id)
+                        menu:updateItems()
+                    end
+                end
+            end,
+        }},
+    }
+
+    sort_dialog = ButtonDialog:new{
+        title       = title,
+        title_align = "center",
+        buttons     = sort_buttons,
+    }
+    UIManager:show(sort_dialog)
+end
+
+-------------------------------------------------------------------------------
+-- sortDetailFiles: sort files array by collate field and reverse flag
+-- Returns sorted array of file paths
+-------------------------------------------------------------------------------
+local function sortDetailFiles(files, collate, reverse)
+    if not files or #files == 0 then return files end
+
+    local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
+    if not ok_bim then return files end
+
+    -- Build sortable array with metadata
+    local items = {}
+    for _, fpath in ipairs(files) do
+        local bookinfo = BookInfoManager:getBookInfo(fpath, true)
+        local sort_key
+
+        if collate == "title" then
+            sort_key = (bookinfo and bookinfo.title) or fpath:match("([^/]+)$") or fpath
+        elseif collate == "series" then
+            sort_key = (bookinfo and bookinfo.series) or ""
+        elseif collate == "access" then
+            -- Recently read: use last_read timestamp (higher = more recent)
+            sort_key = (bookinfo and bookinfo.last_read) or 0
+        else
+            sort_key = fpath:match("([^/]+)$") or fpath
+        end
+
+        table.insert(items, { path = fpath, key = sort_key })
+    end
+
+    -- Sort by key
+    table.sort(items, function(a, b)
+        if collate == "access" then
+            -- For access, higher timestamp = more recent, so reverse the comparison
+            return reverse and (a.key < b.key) or (a.key > b.key)
+        else
+            -- For title/series, alphabetical
+            local a_lower = type(a.key) == "string" and a.key:lower() or tostring(a.key)
+            local b_lower = type(b.key) == "string" and b.key:lower() or tostring(b.key)
+            return reverse and (a_lower > b_lower) or (a_lower < b_lower)
+        end
+    end)
+
+    -- Extract sorted paths
+    local sorted = {}
+    for _, item in ipairs(items) do
+        table.insert(sorted, item.path)
+    end
+
+    return sorted
+end
+
+-------------------------------------------------------------------------------
+-- showDetailSortDialog: show sort options dialog for detail view
+-- group_name: the author or series name
+-- tab_id: "authors" | "series"
+-- menu: the Menu instance to refresh after sort change
+-- files: list of file paths
+-------------------------------------------------------------------------------
+local function showDetailSortDialog(group_name, tab_id, menu, files)
+    local _ = require("gettext")
+    local ButtonDialog = require("ui/widget/buttondialog")
+    local UIManager = require("ui/uimanager")
+
+    local collate_key = "zen_" .. tab_id .. "_detail_collate_" .. group_name
+    local reverse_key = "zen_" .. tab_id .. "_detail_reverse_" .. group_name
+    local g_settings = rawget(_G, "G_reader_settings")
+    if not g_settings then return end
+
+    local cur_collate = g_settings:readSetting(collate_key) or "title"
+    local cur_reverse = g_settings:isTrue(reverse_key)
+
+    local SORT_OPTIONS = {
+        { key = "title",  text = "\u{F031}  " .. _("Title") },
+        { key = "series", text = "\u{F0CB}  " .. _("Series") },
+        { key = "access", text = "\u{F073}  " .. _("Recently read") },
+    }
+
+    local function rebuildMenu(collate, reverse)
+        if not (menu and files) then return end
+
+        local sorted_files = sortDetailFiles(files, collate, reverse)
+
+        local book_items = {}
+        for _, fpath in ipairs(sorted_files) do
+            local fname = fpath:match("([^/]+)$") or fpath
+            local display = fname:gsub("%.[^%.]+$", "")
+
+            table.insert(book_items, {
+                text = display,
+                path = fpath,      -- Standard KOReader file item field
+                is_file = true,    -- Required for CoverBrowser to recognize as file
+            })
+        end
+
+        menu.item_table = book_items
+        menu:updateItems()
+    end
+
+    local sort_dialog
+    local sort_buttons = {}
+
+    -- Add collate field options
+    for _, opt in ipairs(SORT_OPTIONS) do
+        local is_active = cur_collate == opt.key
+        table.insert(sort_buttons, {{
+            text     = opt.text .. (is_active and "  \u{2713}" or ""),
+            align    = "left",
+            enabled  = not is_active,
+            callback = function()
+                g_settings:saveSetting(collate_key, opt.key)
+                UIManager:close(sort_dialog)
+                rebuildMenu(opt.key, cur_reverse)
+            end,
+        }})
+    end
+
+    -- Order submenu
+    table.insert(sort_buttons, {{
+        text     = "\u{F0DC}  " .. _("Order  ▶"),
+        align    = "left",
+        callback = function()
+            local order_dialog
+            local order_buttons = {
+                {{
+                    text     = "\u{F15D}  " .. _("Ascending") .. (not cur_reverse and "  \u{2713}" or ""),
+                    align    = "left",
+                    enabled  = cur_reverse,
+                    callback = function()
+                        g_settings:delSetting(reverse_key)
+                        UIManager:close(order_dialog)
+                        UIManager:close(sort_dialog)
+                        rebuildMenu(cur_collate, false)
+                    end,
+                }},
+                {{
+                    text     = "\u{F15E}  " .. _("Descending") .. (cur_reverse and "  \u{2713}" or ""),
+                    align    = "left",
+                    enabled  = not cur_reverse,
+                    callback = function()
+                        g_settings:saveSetting(reverse_key, true)
+                        UIManager:close(order_dialog)
+                        UIManager:close(sort_dialog)
+                        rebuildMenu(cur_collate, true)
+                    end,
+                }},
+            }
+            order_dialog = ButtonDialog:new{
+                title       = _("Sort order"),
+                title_align = "center",
+                buttons     = order_buttons,
+            }
+            UIManager:show(order_dialog)
+        end,
+    }})
+
+    sort_dialog = ButtonDialog:new{
+        title       = _("Sort books by"),
+        title_align = "center",
+        buttons     = sort_buttons,
+    }
+    UIManager:show(sort_dialog)
 end
 
 -------------------------------------------------------------------------------
@@ -797,14 +1248,27 @@ local function showDetailView(group_item, injectNavbar, tab_id)
     local group_name = group_item.text or ""
     local detail_name = tab_id == "authors" and "authors_detail" or "series_detail"
 
-    -- Standard KOReader file fields; CoverBrowser reads item.file for cover/metadata
+    -- Get sort settings for this group
+    local collate_key = "zen_" .. tab_id .. "_detail_collate_" .. group_name
+    local reverse_key = "zen_" .. tab_id .. "_detail_reverse_" .. group_name
+    local g_settings = rawget(_G, "G_reader_settings")
+    local cur_collate = g_settings and g_settings:readSetting(collate_key) or "title"
+    local cur_reverse = g_settings and g_settings:isTrue(reverse_key) or false
+
+    -- Sort files based on current settings
+    local sorted_files = sortDetailFiles(files, cur_collate, cur_reverse)
+
+    -- Build menu items from sorted files
     local book_items = {}
-    for _, fpath in ipairs(files) do
+    for _, fpath in ipairs(sorted_files) do
         local fname = fpath:match("([^/]+)$") or fpath
         local display = fname:gsub("%.[^%.]+$", "")
+
         table.insert(book_items, {
             text = display,
-            file = fpath,
+            path = fpath,      -- Standard KOReader file item field
+            filepath = fpath,  -- Required for MosaicMenuItem badge access
+            is_file = true,    -- Required for CoverBrowser to recognize as file
         })
     end
     if #book_items == 0 then
@@ -845,17 +1309,17 @@ local function showDetailView(group_item, injectNavbar, tab_id)
         title_bar_fm_style = true,  -- picked up by zen_scroll_bar patch
         item_table         = book_items,
         onMenuSelect       = function(menu_self, item)
-            if item.file then
-                ReaderUI:showReader(item.file)
+            if item.path then
+                ReaderUI:showReader(item.path)
             end
         end,
         onMenuHold         = function(menu_self, item)
-            if not item.file then return end
+            if not item.path then return end
             local FileManager = require("apps/filemanager/filemanager")
             local fm = FileManager.instance
             if fm and fm.file_chooser and fm.file_chooser.showFileDialog then
                 fm.file_chooser:showFileDialog({
-                    path    = item.file,
+                    path    = item.path,
                     is_file = true,
                     text    = item.text,
                 })
@@ -894,6 +1358,242 @@ local function showDetailView(group_item, injectNavbar, tab_id)
 
     if injectNavbar then
         injectNavbar(detail_menu, tab_id)  -- keep authors/series tab active
+    end
+
+    -- Add blank-space hold gesture handler for context menu
+    local Device3 = require("device")
+    if Device3:isTouchDevice() then
+        local GestureRange2 = require("ui/gesturerange")
+        local Geom2         = require("ui/geometry")
+        if not detail_menu.ges_events then
+            detail_menu.ges_events = {}
+        end
+        detail_menu.ges_events.ZenDetailBlankHold = {
+            GestureRange2:new{
+                ges   = "hold",
+                range = Geom2:new{
+                    x = 0, y = 0,
+                    w = Device3.screen:getWidth(),
+                    h = Device3.screen:getHeight(),
+                },
+            },
+        }
+        function detail_menu:onZenDetailBlankHold(arg, ges)
+            local BD2           = require("ui/bidi")
+            local ButtonDialog2 = require("ui/widget/buttondialog")
+            local UIManager2    = require("ui/uimanager")
+            local _2            = require("gettext")
+
+            -- Build context menu with book covers from folder
+            local Device4       = require("device")
+            local Screen2       = Device4.screen
+            local Size2         = require("ui/size")
+            local border2       = Size2.border.thin
+            local gap2          = Screen2:scaleBySize(8)
+            local dlg_w2        = math.floor(math.min(Screen2:getWidth(), Screen2:getHeight()) * 0.9)
+            local avail_w2      = dlg_w2 - 2 * (Size2.border.window + Size2.padding.button)
+                                       - 2 * (Size2.padding.default + Size2.margin.default)
+            local cover_max_w2  = Screen2:scaleBySize(90)
+            local cover_max_h2  = Screen2:scaleBySize(140)
+
+            -- Collect up to 4 covers from files in this detail view
+            local covers2 = {}
+            local ok_bim2, BookInfoManager2 = pcall(require, "bookinfomanager")
+            if ok_bim2 and files then
+                for i = 1, math.min(#files, 4) do
+                    local fpath = files[i]
+                    local ok2, bi2 = pcall(BookInfoManager2.getBookInfo, BookInfoManager2, fpath, true)
+                    if ok2 and bi2 and bi2.has_cover and bi2.cover_bb and not bi2.ignore_cover then
+                        table.insert(covers2, { data = bi2.cover_bb:copy() })
+                    end
+                end
+            end
+
+            local Blitbuffer2      = require("ffi/blitbuffer")
+            local CenterContainer2 = require("ui/widget/container/centercontainer")
+            local Font2            = require("ui/font")
+            local FrameContainer2  = require("ui/widget/container/framecontainer")
+            local Geom3            = require("ui/geometry")
+            local HorizontalGroup2 = require("ui/widget/horizontalgroup")
+            local HorizontalSpan2  = require("ui/widget/horizontalspan")
+            local ImageWidget2     = require("ui/widget/imagewidget")
+            local LeftContainer2   = require("ui/widget/container/leftcontainer")
+            local LineWidget2      = require("ui/widget/linewidget")
+            local TextWidget2      = require("ui/widget/textwidget")
+            local VerticalGroup2   = require("ui/widget/verticalgroup")
+            local VerticalSpan2    = require("ui/widget/verticalspan")
+            local Widget2          = require("ui/widget/widget")
+
+            local sep2     = 1
+            local half_w2  = math.floor((cover_max_w2 - sep2) / 2)
+            local half_w22 = cover_max_w2 - sep2 - half_w2
+            local half_h2  = math.floor((cover_max_h2 - sep2) / 2)
+            local half_h22 = cover_max_h2 - sep2 - half_h2
+            local cell_dims2 = {
+                { w = half_w2,  h = half_h2  },
+                { w = half_w22, h = half_h2  },
+                { w = half_w2,  h = half_h22 },
+                { w = half_w22, h = half_h22 },
+            }
+
+            local cells2 = {}
+            for i = 1, 4 do
+                local cw, ch = cell_dims2[i].w, cell_dims2[i].h
+                local cell
+                if covers2[i] then
+                    cell = CenterContainer2:new{
+                        dimen = Geom3:new{ w = cw, h = ch },
+                        ImageWidget2:new{
+                            image            = covers2[i].data,
+                            image_disposable = true,
+                            width            = cw,
+                            height           = ch,
+                        },
+                    }
+                else
+                    cell = CenterContainer2:new{
+                        dimen = Geom3:new{ w = cw, h = ch },
+                        VerticalSpan2:new{ width = 1 },
+                    }
+                end
+                table.insert(cells2, cell)
+            end
+
+            local framed2 = FrameContainer2:new{
+                padding    = 0,
+                bordersize = border2,
+                width      = cover_max_w2 + 2 * border2,
+                height     = cover_max_h2 + 2 * border2,
+                background = Blitbuffer2.COLOR_LIGHT_GRAY,
+                VerticalGroup2:new{
+                    align = "left",
+                    HorizontalGroup2:new{
+                        align = "top",
+                        cells2[1],
+                        LineWidget2:new{
+                            background = Blitbuffer2.COLOR_WHITE,
+                            dimen      = { w = sep2, h = half_h2 },
+                        },
+                        cells2[2],
+                    },
+                    LineWidget2:new{
+                        background = Blitbuffer2.COLOR_WHITE,
+                        dimen      = { w = cover_max_w2, h = sep2 },
+                    },
+                    HorizontalGroup2:new{
+                        align = "top",
+                        cells2[3],
+                        LineWidget2:new{
+                            background = Blitbuffer2.COLOR_WHITE,
+                            dimen      = { w = sep2, h = half_h22 },
+                        },
+                        cells2[4],
+                    },
+                },
+            }
+
+            -- Apply rounded corners
+            local function apply_rounded_corners2(frame_widget, bsz)
+                local plug = _zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+                local enabled = plug
+                    and type(plug.config) == "table"
+                    and type(plug.config.features) == "table"
+                    and plug.config.features.browser_cover_rounded_corners == true
+                logger.info("zen-ui authors_series detail: rounded_corners plug=", tostring(plug ~= nil),
+                    "enabled=", tostring(enabled == true))
+                if not enabled then return end
+                local r       = Screen2:scaleBySize(6)
+                local r_inner = r - bsz
+                local orig_pt = frame_widget.paintTo
+                frame_widget.paintTo = function(self, bb, x, y)
+                    orig_pt(self, bb, x, y)
+                    if not (self.dimen and self.dimen.x) then return end
+                    local tx, ty = self.dimen.x, self.dimen.y
+                    local tw, th = self.dimen.w, self.dimen.h
+                    local wh  = Blitbuffer2.COLOR_WHITE
+                    local blk = Blitbuffer2.COLOR_BLACK
+                    for j = 0, r - 1 do
+                        local inner = math.sqrt(r * r - (r - j) * (r - j))
+                        local cut   = math.ceil(r - inner)
+                        if cut > 0 then
+                            bb:paintRect(tx,            ty + j,           cut, 1, wh)
+                            bb:paintRect(tx + tw - cut, ty + j,           cut, 1, wh)
+                            bb:paintRect(tx,            ty + th - 1 - j,  cut, 1, wh)
+                            bb:paintRect(tx + tw - cut, ty + th - 1 - j,  cut, 1, wh)
+                        end
+                    end
+                    for j = 0, r - 1 do
+                        for c = 0, r - 1 do
+                            local dx   = r - c - 0.5
+                            local dy   = r - j - 0.5
+                            local dist = math.sqrt(dx * dx + dy * dy)
+                            if dist >= r_inner and dist <= r then
+                                bb:paintRect(tx + c,          ty + j,           1, 1, blk)
+                                bb:paintRect(tx + tw - 1 - c, ty + j,           1, 1, blk)
+                                bb:paintRect(tx + c,          ty + th - 1 - j,  1, 1, blk)
+                                bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j,  1, 1, blk)
+                            end
+                        end
+                    end
+                end
+            end
+            apply_rounded_corners2(framed2, border2)
+
+            local framed_h2   = cover_max_h2 + 2 * border2
+            local text_col_w2 = math.max(avail_w2 - cover_max_w2 - 2 * border2 - gap2, Screen2:scaleBySize(60))
+            local book_count2 = files and #files or 0
+            local count_str2  = book_count2 == 1
+                and _2("1 book")
+                or (tostring(book_count2) .. " " .. _2("books"))
+            local vstack2 = VerticalGroup2:new{ align = "left" }
+            table.insert(vstack2, TextWidget2:new{
+                text      = BD2.auto(group_name),
+                face      = Font2:getFace("cfont", 20),
+                bold      = true,
+                max_width = text_col_w2,
+            })
+            table.insert(vstack2, VerticalSpan2:new{ width = Screen2:scaleBySize(2) })
+            table.insert(vstack2, TextWidget2:new{
+                text      = count_str2,
+                face      = Font2:getFace("cfont", 17),
+                max_width = text_col_w2,
+            })
+
+            local cover_widget2 = LeftContainer2:new{
+                dimen = Geom3:new{ w = avail_w2, h = framed_h2 },
+                HorizontalGroup2:new{
+                    align = "top",
+                    framed2,
+                    HorizontalSpan2:new{ width = gap2 },
+                    vstack2,
+                },
+            }
+
+            local detail_dlg
+            detail_dlg = ButtonDialog2:new{
+                buttons = {
+                    {{
+                        text     = "\u{F0DC}  " .. _2("Sort  \u{25B8}"),
+                        align    = "left",
+                        callback = function()
+                            UIManager2:close(detail_dlg)
+                            showDetailSortDialog(group_name, tab_id, self, files)
+                        end,
+                    }},
+                    {{
+                        text     = "\u{F06E}  " .. _2("Display  \u{25B8}"),
+                        align    = "left",
+                        callback = function()
+                            UIManager2:close(detail_dlg)
+                            showDisplayModeDialog(self)
+                        end,
+                    }},
+                },
+                _added_widgets = { cover_widget2 },
+            }
+            UIManager2:show(detail_dlg)
+            return true
+        end
     end
 
     UIManager:show(detail_menu)
@@ -962,7 +1662,7 @@ local function showGroupView(tab_id, injectNavbar, groups)
         end,
         onMenuHold         = function(menu_self, item)
             if item._zen_files then
-                showGroupContextMenu(item)
+                showGroupContextMenu(item, tab_id, menu_self)
             end
         end,
         updateItems        = function(menu_self, ...) end,  -- prevent default pagination
@@ -1004,6 +1704,30 @@ local function showGroupView(tab_id, injectNavbar, groups)
         _series_menu = menu
     end
 
+    -- Add blank-space hold gesture handler for context menu
+    local Device2 = require("device")
+    if Device2:isTouchDevice() then
+        local GestureRange = require("ui/gesturerange")
+        local Geom         = require("ui/geometry")
+        if not menu.ges_events then
+            menu.ges_events = {}
+        end
+        menu.ges_events.ZenGroupBlankHold = {
+            GestureRange:new{
+                ges   = "hold",
+                range = Geom:new{
+                    x = 0, y = 0,
+                    w = Device2.screen:getWidth(),
+                    h = Device2.screen:getHeight(),
+                },
+            },
+        }
+        function menu:onZenGroupBlankHold(arg, ges)
+            showGroupContextMenu(nil, tab_id, self)
+            return true
+        end
+    end
+
     UIManager:show(menu)
     -- updateItems was stubbed during Menu:new to skip the premature init-time call.
     -- Trigger the real render now via nextTick, after the menu has been dimensioned.
@@ -1043,6 +1767,7 @@ return function()
     local zen_plugin = rawget(_G, "__ZEN_UI_PLUGIN")
     if not zen_plugin or type(zen_plugin.config) ~= "table" then return end
     if not zen_plugin._zen_shared then zen_plugin._zen_shared = {} end
-    _zen_shared = zen_plugin._zen_shared
+    _zen_shared  = zen_plugin._zen_shared
+    _zen_plugin  = zen_plugin  -- keep reference; __ZEN_UI_PLUGIN is cleared after init
     zen_plugin._zen_shared.authors_series = M
 end

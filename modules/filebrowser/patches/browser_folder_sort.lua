@@ -1,12 +1,12 @@
 local function apply_browser_folder_sort()
     --[[
         Per-folder sort overrides stored in G_reader_settings under "zen_ui_folder_sort".
-        Temporarily swaps self.collate on genItemTableFromPath for the overridden path.
+        Temporarily swaps self.collate and reverse_collate for the overridden path.
 
         Public API (used by context_menu.lua via __ZEN_FOLDER_SORT global):
-          FolderSort.get(path)           → collate_id or nil
-          FolderSort.set(path, collate)  → save override
-          FolderSort.clear(path)         → remove override
+          FolderSort.get(path)                  → { collate = "title", reverse = false } or nil
+          FolderSort.set(path, collate, reverse) → save override
+          FolderSort.clear(path)                → remove override
     ]]
 
     local FileChooser = require("ui/widget/filechooser")
@@ -30,13 +30,18 @@ local function apply_browser_folder_sort()
 
     function M.get(path)
         if not path then return nil end
-        return read_map()[path]
+        local entry = read_map()[path]
+        -- Backward compat: if entry is a string, convert to table format
+        if type(entry) == "string" then
+            return { collate = entry, reverse = false }
+        end
+        return entry
     end
 
-    function M.set(path, collate_id)
+    function M.set(path, collate_id, reverse)
         if not path or not collate_id then return end
         local m = read_map()
-        m[path] = collate_id
+        m[path] = { collate = collate_id, reverse = reverse or false }
         write_map(m)
     end
 
@@ -58,10 +63,10 @@ local function apply_browser_folder_sort()
 
     FileChooser.getCollate = function(self)
         local override = self._zen_sort_override
-        if override then
-            local collate_obj = self.collates and self.collates[override]
+        if override and type(override) == "table" then
+            local collate_obj = self.collates and self.collates[override.collate]
             if collate_obj then
-                return collate_obj, override
+                return collate_obj, override.collate
             end
         end
         return orig_getCollate(self)
@@ -90,11 +95,17 @@ local function apply_browser_folder_sort()
             return orig_genItemTableFromPath(self, path, ...)
         end
 
-        -- Set the instance flag so both getCollate() calls inside
-        -- genItemTableFromPath  and  genItemTable see the override.
+        -- Set the instance flags so getCollate() and reverse_collate checks see the override.
         self._zen_sort_override = override
+        local saved_reverse = self.reverse_collate
+        if type(override) == "table" and override.reverse ~= nil then
+            self.reverse_collate = override.reverse
+        end
+
         local ok, result_or_err = pcall(orig_genItemTableFromPath, self, path, ...)
+
         self._zen_sort_override = nil
+        self.reverse_collate = saved_reverse
 
         if ok then
             return result_or_err

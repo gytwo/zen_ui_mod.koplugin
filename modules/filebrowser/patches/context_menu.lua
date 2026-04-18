@@ -1034,6 +1034,7 @@ local function apply_context_menu()
                                     local sort_dialog
                                     local sort_buttons = {}
                                     local cur = g_sort:readSetting("collate", "strcoll")
+                                    local cur_reverse = g_sort:isTrue("reverse_collate")
                                     -- "strcoll" is KOReader's default alpha sort; map to "title"
                                     -- so the Title option shows as active by default.
                                     if cur == "strcoll" then cur = "title" end
@@ -1053,6 +1054,44 @@ local function apply_context_menu()
                                             end,
                                         }})
                                     end
+                                    -- Order submenu
+                                    table.insert(sort_buttons, {{
+                                        text     = "\u{F0DC}  " .. _("Order  ▶"),
+                                        align    = "left",
+                                        callback = function()
+                                            local order_dialog
+                                            local order_buttons = {
+                                                {{
+                                                    text     = "\u{F15D}  " .. _("Ascending") .. (not cur_reverse and "  \u{2713}" or ""),
+                                                    align    = "left",
+                                                    enabled  = cur_reverse,
+                                                    callback = function()
+                                                        g_sort:delSetting("reverse_collate")
+                                                        UIManager:close(order_dialog)
+                                                        UIManager:close(sort_dialog)
+                                                        self_fc:refreshPath()
+                                                    end,
+                                                }},
+                                                {{
+                                                    text     = "\u{F15E}  " .. _("Descending") .. (cur_reverse and "  \u{2713}" or ""),
+                                                    align    = "left",
+                                                    enabled  = not cur_reverse,
+                                                    callback = function()
+                                                        g_sort:saveSetting("reverse_collate", true)
+                                                        UIManager:close(order_dialog)
+                                                        UIManager:close(sort_dialog)
+                                                        self_fc:refreshPath()
+                                                    end,
+                                                }},
+                                            }
+                                            order_dialog = ButtonDialog:new{
+                                                title       = _("Sort order"),
+                                                title_align = "center",
+                                                buttons     = order_buttons,
+                                            }
+                                            UIManager:show(order_dialog)
+                                        end,
+                                    }})
                                     sort_dialog = ButtonDialog:new{
                                         title       = _("Sort library by"),
                                         title_align = "center",
@@ -1079,20 +1118,63 @@ local function apply_context_menu()
                                     local sort_dialog
                                     local sort_buttons = {}
                                     local current_override = fsd_api.get(real_folder)
+                                    local cur_collate = current_override and current_override.collate
+                                    local cur_reverse = current_override and current_override.reverse or false
                                     for _, opt in ipairs(SORT_OPTIONS) do
-                                        local is_active = current_override == opt.key
+                                        local is_active = cur_collate == opt.key
                                         table.insert(sort_buttons, {{
                                             text     = opt.text .. (is_active and "  \u{2713}" or ""),
                                             align    = "left",
                                             enabled  = not is_active,
                                             callback = function()
-                                                fsd_api.set(real_folder, opt.key)
+                                                fsd_api.set(real_folder, opt.key, cur_reverse)
                                                 UIManager:close(sort_dialog)
                                             end,
                                         }})
                                     end
+                                    -- Order submenu
+                                    table.insert(sort_buttons, {{
+                                        text     = "\u{F0DC}  " .. _("Order  ▶"),
+                                        align    = "left",
+                                        callback = function()
+                                            local order_dialog
+                                            local order_buttons = {
+                                                {{
+                                                    text     = "\u{F15D}  " .. _("Ascending") .. (not cur_reverse and "  \u{2713}" or ""),
+                                                    align    = "left",
+                                                    enabled  = not cur_reverse,
+                                                    callback = function()
+                                                        if cur_collate then
+                                                            fsd_api.set(real_folder, cur_collate, false)
+                                                            UIManager:close(order_dialog)
+                                                            UIManager:close(sort_dialog)
+                                                        end
+                                                    end,
+                                                }},
+                                                {{
+                                                    text     = "\u{F15E}  " .. _("Descending") .. (cur_reverse and "  \u{2713}" or ""),
+                                                    align    = "left",
+                                                    enabled  = cur_reverse,
+                                                    callback = function()
+                                                        if cur_collate then
+                                                            fsd_api.set(real_folder, cur_collate, true)
+                                                            UIManager:close(order_dialog)
+                                                            UIManager:close(sort_dialog)
+                                                        end
+                                                    end,
+                                                }},
+                                            }
+                                            order_dialog = ButtonDialog:new{
+                                                title       = _("Sort order"),
+                                                title_align = "center",
+                                                buttons     = order_buttons,
+                                            }
+                                            UIManager:show(order_dialog)
+                                        end,
+                                    }})
                                     -- "Clear" row — only shown when an override is active
                                     if current_override then
+                                        table.insert(sort_buttons, {})
                                         table.insert(sort_buttons, {{
                                             text     = "\u{F0E2}  " .. _("Clear"),
                                             align    = "left",

@@ -45,8 +45,20 @@ function M.build(plugin)
     local advanced_items    = advanced_section.build(ctx)
     local general_items     = about_section.build(ctx)
 
-    -- Updater item goes first in the About submenu (matches original ordering).
-    table.insert(general_items, 1, updater.build_update_now_item(plugin))
+    table.insert(general_items, {
+        text = _("Quit KOReader"),
+        separator = true,
+        callback = function()
+            UIManager:show(require("ui/widget/confirmbox"):new{
+                text = _("Are you sure you want to quit KOReader?"),
+                ok_text = _("Quit"),
+                ok_callback = function()
+                    UIManager:broadcastEvent(require("ui/event"):new("Exit"))
+                end,
+            })
+        end,
+    })
+    table.insert(general_items, updater.build_update_now_item(plugin))
 
     -- -------------------------------------------------------------------------
     -- Item ordering
@@ -76,11 +88,9 @@ function M.build(plugin)
     })
 
     utils.reorder_nested_items_by_text(filebrowser_items, _("Navbar"), {
-        _("Enable bottom nav bar"),
+        _("Tabs"),
         _("Show labels"),
         _("Show top border"),
-        _("Show top gap"),
-        _("Tabs"),
         _("Active tab styling"),
         _("Bold active tab"),
         _("Active tab underline"),
@@ -125,19 +135,6 @@ function M.build(plugin)
         {
             text = _("About"),
             sub_item_table = general_items,
-            separator = true,
-        },
-        {
-            text = _("Quit KOReader"),
-            callback = function()
-                UIManager:show(require("ui/widget/confirmbox"):new{
-                    text = _("Are you sure you want to quit KOReader?"),
-                    ok_text = _("Quit"),
-                    ok_callback = function()
-                        UIManager:broadcastEvent(require("ui/event"):new("Exit"))
-                    end,
-                })
-            end,
         },
     }
 

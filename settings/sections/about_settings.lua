@@ -42,6 +42,7 @@ function M.build(ctx)
             return utils.get_kindle_firmware_display() ~= "n/a"
         end,
         keep_menu_open = true,
+        separator = true
     })
 
     return items

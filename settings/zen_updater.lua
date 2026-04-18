@@ -340,7 +340,6 @@ function M.build_update_now_item(plugin)
             return _("Check for updates")
         end,
         keep_menu_open = true,
-        separator      = true,
         callback = function()
             -- Reset all in-memory state and clear the throttle timestamp so the
             -- next check_for_update() call goes straight to the network.

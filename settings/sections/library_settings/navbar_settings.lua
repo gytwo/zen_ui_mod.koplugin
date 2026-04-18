@@ -93,7 +93,6 @@ function M.build(ctx)
     return {
         text = _("Navbar"),
         sub_item_table = {
-            make_enable_feature_item("navbar", _("Enable bottom nav bar")),
             {
                 text = _("Show top border"),
                 checked_func = function() return config.navbar.show_top_border == true end,
@@ -107,14 +106,6 @@ function M.build(ctx)
                 checked_func = function() return config.navbar.show_labels == true end,
                 callback = function()
                     config.navbar.show_labels = not (config.navbar.show_labels == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Show top gap"),
-                checked_func = function() return config.navbar.show_top_gap == true end,
-                callback = function()
-                    config.navbar.show_top_gap = not (config.navbar.show_top_gap == true)
                     save_and_apply("navbar")
                 end,
             },

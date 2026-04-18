@@ -391,6 +391,7 @@ function M.build(plugin)
     local menu_items = {}
     local reader_items = {}
     local general_items = {}
+    local advanced_items = {}
 
     local navbar_tab_items = {
         { id = "books", text = _("Books") },
@@ -2145,7 +2146,7 @@ function M.build(plugin)
 
     local global_items = {}
 
-    table.insert(global_items, {
+    table.insert(advanced_items, {
         text = _("Preload book metadata"),
         checked_func = function()
             return not (type(config.browser_preload_bookinfo) == "table"
@@ -2161,7 +2162,7 @@ function M.build(plugin)
         end,
     })
 
-    table.insert(global_items, {
+    table.insert(advanced_items, {
         text = _("Partial pages refresh"),
         checked_func = function()
             return config.features.partial_page_repaint == true
@@ -2459,53 +2460,48 @@ function M.build(plugin)
 
     table.insert(general_items, updater.build_update_now_item(plugin))
 
-    table.insert(general_items, {
-        text = _("Developer"),
-        sub_item_table = {
-            {
-                text = _("Show hidden and unsupported files outside home folder"),
-                checked_func = function()
-                    return type(config.developer) == "table"
-                        and config.developer.show_hidden_outside_home == true
-                end,
-                callback = function()
-                    if type(config.developer) ~= "table" then
-                        config.developer = {}
-                    end
-                    local enabling = not (config.developer.show_hidden_outside_home == true)
-                    config.developer.show_hidden_outside_home = enabling
-                    plugin:saveConfig()
+    table.insert(advanced_items, {
+        text = _("Show hidden and unsupported files outside home folder"),
+        checked_func = function()
+            return type(config.developer) == "table"
+                and config.developer.show_hidden_outside_home == true
+        end,
+        callback = function()
+            if type(config.developer) ~= "table" then
+                config.developer = {}
+            end
+            local enabling = not (config.developer.show_hidden_outside_home == true)
+            config.developer.show_hidden_outside_home = enabling
+            plugin:saveConfig()
 
-                    -- Set initial G_reader_settings state based on current directory
-                    if enabling then
-                        -- When enabling, check current directory and set appropriately
-                        local current_dir = get_current_dir()
-                        local home_dir = get_home_dir()
-                        local is_outside_home = current_dir ~= home_dir
-                            and current_dir:sub(1, #home_dir + 1) ~= home_dir .. "/"
-                        G_reader_settings:saveSetting("show_hidden", is_outside_home)
-                        G_reader_settings:saveSetting("show_unsupported", is_outside_home)
-                    else
-                        -- When disabling, always hide hidden files and unsupported files
-                        G_reader_settings:saveSetting("show_hidden", false)
-                        G_reader_settings:saveSetting("show_unsupported", false)
-                        local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
-                        local fm = ok and FileManager and FileManager.instance
-                        if fm and fm.file_chooser then
-                            fm.file_chooser.show_hidden = false
-                            fm.file_chooser.show_unsupported = false
-                            fm.file_chooser:refreshPath()
-                        end
-                    end
+            -- Set initial G_reader_settings state based on current directory
+            if enabling then
+                -- When enabling, check current directory and set appropriately
+                local current_dir = get_current_dir()
+                local home_dir = get_home_dir()
+                local is_outside_home = current_dir ~= home_dir
+                    and current_dir:sub(1, #home_dir + 1) ~= home_dir .. "/"
+                G_reader_settings:saveSetting("show_hidden", is_outside_home)
+                G_reader_settings:saveSetting("show_unsupported", is_outside_home)
+            else
+                -- When disabling, always hide hidden files and unsupported files
+                G_reader_settings:saveSetting("show_hidden", false)
+                G_reader_settings:saveSetting("show_unsupported", false)
+                local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
+                local fm = ok and FileManager and FileManager.instance
+                if fm and fm.file_chooser then
+                    fm.file_chooser.show_hidden = false
+                    fm.file_chooser.show_unsupported = false
+                    fm.file_chooser:refreshPath()
+                end
+            end
 
-                    -- Defer ConfirmBox to avoid button dimension race condition
-                    UIManager:nextTick(function()
-                        settings_apply.prompt_restart()
-                    end)
-                end,
-                keep_menu_open = true,
-            },
-        },
+            -- Defer ConfirmBox to avoid button dimension race condition
+            UIManager:nextTick(function()
+                settings_apply.prompt_restart()
+            end)
+        end,
+        keep_menu_open = true,
     })
 
     table.insert(general_items, {
@@ -2592,12 +2588,6 @@ function M.build(plugin)
 
     local root_items = {
         {
-            text = _("Zen UI"),
-            keep_menu_open = true,
-            separator = true,
-            callback = function() end,
-        },
-        {
             text = _("Zen Mode"),
             checked_func = function()
                 return config.features["zen_mode"] == true
@@ -2622,6 +2612,10 @@ function M.build(plugin)
         {
             text = _("Global"),
             sub_item_table = global_items,
+        },
+        {
+            text = _("Advanced"),
+            sub_item_table = advanced_items,
         },
         {
             text = _("About"),

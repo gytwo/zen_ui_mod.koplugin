@@ -698,6 +698,12 @@ msgstr "Afișează etichete"
 msgid "Show progress % on mosaic covers"
 msgstr "Afișează % progres pe copertele mozaicului"
 
+msgid "Show page count on covers and in list"
+msgstr "Afișează numărul de pagini pe coperte și în listă"
+
+msgid "Show series number on covers"
+msgstr "Afișează numărul din serie pe coperte"
+
 msgid "Rounded corners on mosaic covers"
 msgstr "Colțuri rotunjite pe copertele mozaicului"
 

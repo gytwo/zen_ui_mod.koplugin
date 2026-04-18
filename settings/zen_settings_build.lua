@@ -1541,6 +1541,23 @@ function M.build(plugin)
     })
 
     table.insert(filebrowser_items, {
+        text = _("Show series number on covers"),
+        checked_func = function()
+            return type(config.browser_series_badge) == "table"
+                and config.browser_series_badge.show_series_badge == true
+        end,
+        callback = function()
+            if type(config.browser_series_badge) ~= "table" then
+                config.browser_series_badge = {}
+            end
+            config.browser_series_badge.show_series_badge =
+                not (config.browser_series_badge.show_series_badge == true)
+            plugin:saveConfig()
+            UIManager:setDirty(nil, "full")
+        end,
+    })
+
+    table.insert(filebrowser_items, {
         text = _("Rounded corners on mosaic covers"),
         checked_func = function()
             return type(config.features) == "table"

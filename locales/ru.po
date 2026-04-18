@@ -698,6 +698,12 @@ msgstr "Показать метки"
 msgid "Show progress % on mosaic covers"
 msgstr "Показать % прогресса на обложках мозаики"
 
+msgid "Show page count on covers and in list"
+msgstr "Показывать количество страниц на обложках и в списке"
+
+msgid "Show series number on covers"
+msgstr "Показывать номер серии на обложках"
+
 msgid "Rounded corners on mosaic covers"
 msgstr "Закруглённые углы на обложках мозаики"
 

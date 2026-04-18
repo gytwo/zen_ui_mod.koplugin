@@ -698,6 +698,12 @@ msgstr "Labels weergeven"
 msgid "Show progress % on mosaic covers"
 msgstr "Voortgang % op mozaïekomslagen weergeven"
 
+msgid "Show page count on covers and in list"
+msgstr "Paginatelling weergeven op omslagen en in lijst"
+
+msgid "Show series number on covers"
+msgstr "Serienummer weergeven op omslagen"
+
 msgid "Rounded corners on mosaic covers"
 msgstr "Afgeronde hoeken op mozaïekomslagen"
 

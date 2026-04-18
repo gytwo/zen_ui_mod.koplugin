@@ -698,6 +698,12 @@ msgstr "Mostra etichette"
 msgid "Show progress % on mosaic covers"
 msgstr "Mostra % avanzamento sulle copertine mosaico"
 
+msgid "Show page count on covers and in list"
+msgstr "Mostra il numero di pagine sulle copertine e nella lista"
+
+msgid "Show series number on covers"
+msgstr "Mostra il numero di serie sulle copertine"
+
 msgid "Rounded corners on mosaic covers"
 msgstr "Angoli arrotondati sulle copertine mosaico"
 

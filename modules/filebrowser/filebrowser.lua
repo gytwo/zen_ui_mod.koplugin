@@ -29,6 +29,7 @@ local PATCH_MODULES = {
     browser_show_hidden = "modules/filebrowser/patches/browser_show_hidden",
     browser_preload_bookinfo = "modules/filebrowser/patches/browser_preload_bookinfo",
     browser_page_count = "modules/filebrowser/patches/browser_page_count",
+    browser_series_badge = "modules/filebrowser/patches/browser_series_badge",
 }
 
 local function is_feature_enabled(plugin, key)
@@ -154,6 +155,14 @@ function M.init(logger, plugin)
     local browser_page_count_fn = load_patch("browser_page_count")
     if browser_page_count_fn then
         run_feature(logger, plugin, "browser_page_count", browser_page_count_fn)
+    end
+
+    -- Always apply: series-index badge on mosaic covers (bottom-right pill).
+    -- Shows "#N" for the book's position in its series.  Requires CoverBrowser;
+    -- silently inert without it.  Controlled by show_series_badge config flag.
+    local browser_series_badge_fn = load_patch("browser_series_badge")
+    if browser_series_badge_fn then
+        run_feature(logger, plugin, "browser_series_badge", browser_series_badge_fn)
     end
 
     -- Always apply: pill-shaped horizontal scroll bar replacing the default

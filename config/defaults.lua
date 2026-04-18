@@ -112,6 +112,9 @@ local defaults = {
     browser_page_count = {
         show_page_count = false,
     },
+    browser_series_badge = {
+        show_series_badge = false,
+    },
     browser_preload_bookinfo = {
         preload_bookinfo = true,
     },

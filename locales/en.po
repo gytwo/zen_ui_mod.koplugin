@@ -698,6 +698,12 @@ msgstr "Show labels"
 msgid "Show progress % on mosaic covers"
 msgstr "Show progress % on mosaic covers"
 
+msgid "Show page count on covers and in list"
+msgstr "Show page count on covers and in list"
+
+msgid "Show series number on covers"
+msgstr "Show series number on covers"
+
 msgid "Rounded corners on mosaic covers"
 msgstr "Rounded corners on mosaic covers"
 

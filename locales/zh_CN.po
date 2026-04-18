@@ -415,6 +415,93 @@ msgstr "下一页"
 msgid "Night"
 msgstr "夜间"
 
+msgid "Night mode schedule"
+msgstr "夜间模式定时"
+
+msgid "Enable night mode schedule"
+msgstr "启用夜间模式定时"
+
+msgid "Night mode on: "
+msgstr "夜间模式开启: "
+
+msgid "Night mode off: "
+msgstr "夜间模式关闭: "
+
+msgid "Night mode on time"
+msgstr "夜间模式开启时间"
+
+msgid "Night mode off time"
+msgstr "夜间模式关闭时间"
+
+msgid "Hour"
+msgstr "时"
+
+msgid "Minute"
+msgstr "分"
+
+msgid "Global"
+msgstr "全局"
+
+msgid "Warmth schedule"
+msgstr "色温定时"
+
+msgid "Enable warmth schedule"
+msgstr "启用色温定时"
+
+msgid "Day warmth time: "
+msgstr "白天色温时间: "
+
+msgid "Day warmth: "
+msgstr "白天色温: "
+
+msgid "Night warmth time: "
+msgstr "夜间色温时间: "
+
+msgid "Night warmth: "
+msgstr "夜间色温: "
+
+msgid "Day warmth time"
+msgstr "白天色温时间"
+
+msgid "Night warmth time"
+msgstr "夜间色温时间"
+
+msgid "Day warmth"
+msgstr "白天色温"
+
+msgid "Night warmth"
+msgstr "夜间色温"
+
+msgid "Brightness schedule"
+msgstr "亮度定时"
+
+msgid "Enable brightness schedule"
+msgstr "启用亮度定时"
+
+msgid "Day brightness time: "
+msgstr "白天亮度时间: "
+
+msgid "Day brightness: "
+msgstr "白天亮度: "
+
+msgid "Night brightness time: "
+msgstr "夜间亮度时间: "
+
+msgid "Night brightness: "
+msgstr "夜间亮度: "
+
+msgid "Day brightness time"
+msgstr "白天亮度时间"
+
+msgid "Night brightness time"
+msgstr "夜间亮度时间"
+
+msgid "Day brightness"
+msgstr "白天亮度"
+
+msgid "Night brightness"
+msgstr "夜间亮度"
+
 msgid "Night mode"
 msgstr "夜间模式"
 

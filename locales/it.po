@@ -417,6 +417,93 @@ msgstr "Pagina successiva"
 msgid "Night"
 msgstr "Notte"
 
+msgid "Night mode schedule"
+msgstr "Pianificazione modalità notte"
+
+msgid "Enable night mode schedule"
+msgstr "Attiva pianificazione modalità notte"
+
+msgid "Night mode on: "
+msgstr "Modalità notte accesa: "
+
+msgid "Night mode off: "
+msgstr "Modalità notte spenta: "
+
+msgid "Night mode on time"
+msgstr "Orario attivazione modalità notte"
+
+msgid "Night mode off time"
+msgstr "Orario disattivazione modalità notte"
+
+msgid "Hour"
+msgstr "Ora"
+
+msgid "Minute"
+msgstr "Minuto"
+
+msgid "Global"
+msgstr "Globale"
+
+msgid "Warmth schedule"
+msgstr "Pianificazione tonalità calda"
+
+msgid "Enable warmth schedule"
+msgstr "Attiva pianificazione tonalità calda"
+
+msgid "Day warmth time: "
+msgstr "Orario tonalità calda diurna: "
+
+msgid "Day warmth: "
+msgstr "Tonalità calda diurna: "
+
+msgid "Night warmth time: "
+msgstr "Orario tonalità calda notturna: "
+
+msgid "Night warmth: "
+msgstr "Tonalità calda notturna: "
+
+msgid "Day warmth time"
+msgstr "Orario tonalità calda diurna"
+
+msgid "Night warmth time"
+msgstr "Orario tonalità calda notturna"
+
+msgid "Day warmth"
+msgstr "Tonalità calda diurna"
+
+msgid "Night warmth"
+msgstr "Tonalità calda notturna"
+
+msgid "Brightness schedule"
+msgstr "Pianificazione luminosità"
+
+msgid "Enable brightness schedule"
+msgstr "Attiva pianificazione luminosità"
+
+msgid "Day brightness time: "
+msgstr "Orario luminosità diurna: "
+
+msgid "Day brightness: "
+msgstr "Luminosità diurna: "
+
+msgid "Night brightness time: "
+msgstr "Orario luminosità notturna: "
+
+msgid "Night brightness: "
+msgstr "Luminosità notturna: "
+
+msgid "Day brightness time"
+msgstr "Orario luminosità diurna"
+
+msgid "Night brightness time"
+msgstr "Orario luminosità notturna"
+
+msgid "Day brightness"
+msgstr "Luminosità diurna"
+
+msgid "Night brightness"
+msgstr "Luminosità notturna"
+
 msgid "Night mode"
 msgstr "Modalità notte"
 

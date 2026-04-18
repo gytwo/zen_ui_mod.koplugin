@@ -420,6 +420,93 @@ msgstr "Noche"
 msgid "Night mode"
 msgstr "Modo nocturno"
 
+msgid "Night mode schedule"
+msgstr "Programación de modo nocturno"
+
+msgid "Enable night mode schedule"
+msgstr "Activar programación de modo nocturno"
+
+msgid "Night mode on: "
+msgstr "Modo nocturno encendido: "
+
+msgid "Night mode off: "
+msgstr "Modo nocturno apagado: "
+
+msgid "Night mode on time"
+msgstr "Hora de activación del modo nocturno"
+
+msgid "Night mode off time"
+msgstr "Hora de desactivación del modo nocturno"
+
+msgid "Hour"
+msgstr "Hora"
+
+msgid "Minute"
+msgstr "Minuto"
+
+msgid "Global"
+msgstr "Global"
+
+msgid "Warmth schedule"
+msgstr "Programación de calidez"
+
+msgid "Enable warmth schedule"
+msgstr "Activar programación de calidez"
+
+msgid "Day warmth time: "
+msgstr "Hora de calidez diurna: "
+
+msgid "Day warmth: "
+msgstr "Calidez diurna: "
+
+msgid "Night warmth time: "
+msgstr "Hora de calidez nocturna: "
+
+msgid "Night warmth: "
+msgstr "Calidez nocturna: "
+
+msgid "Day warmth time"
+msgstr "Hora de calidez diurna"
+
+msgid "Night warmth time"
+msgstr "Hora de calidez nocturna"
+
+msgid "Day warmth"
+msgstr "Calidez diurna"
+
+msgid "Night warmth"
+msgstr "Calidez nocturna"
+
+msgid "Brightness schedule"
+msgstr "Programación de brillo"
+
+msgid "Enable brightness schedule"
+msgstr "Activar programación de brillo"
+
+msgid "Day brightness time: "
+msgstr "Hora de brillo diurno: "
+
+msgid "Day brightness: "
+msgstr "Brillo diurno: "
+
+msgid "Night brightness time: "
+msgstr "Hora de brillo nocturno: "
+
+msgid "Night brightness: "
+msgstr "Brillo nocturno: "
+
+msgid "Day brightness time"
+msgstr "Hora de brillo diurno"
+
+msgid "Night brightness time"
+msgstr "Hora de brillo nocturno"
+
+msgid "Day brightness"
+msgstr "Brillo diurno"
+
+msgid "Night brightness"
+msgstr "Brillo nocturno"
+
 msgid "No download URL found. Check your network connection and try again."
 msgstr "No se encontró URL de descarga. Comprueba tu conexión de red e inténtalo de nuevo."
 

@@ -417,6 +417,93 @@ msgstr "Следующая страница"
 msgid "Night"
 msgstr "Ночь"
 
+msgid "Night mode schedule"
+msgstr "Расписание ночного режима"
+
+msgid "Enable night mode schedule"
+msgstr "Включить расписание ночного режима"
+
+msgid "Night mode on: "
+msgstr "Ночной режим вкл.: "
+
+msgid "Night mode off: "
+msgstr "Ночной режим выкл.: "
+
+msgid "Night mode on time"
+msgstr "Время включения ночного режима"
+
+msgid "Night mode off time"
+msgstr "Время выключения ночного режима"
+
+msgid "Hour"
+msgstr "Час"
+
+msgid "Minute"
+msgstr "Минута"
+
+msgid "Global"
+msgstr "Глобальные"
+
+msgid "Warmth schedule"
+msgstr "Расписание тёплого света"
+
+msgid "Enable warmth schedule"
+msgstr "Включить расписание тёплого света"
+
+msgid "Day warmth time: "
+msgstr "Время тёплого света (день): "
+
+msgid "Day warmth: "
+msgstr "Тёплый свет (день): "
+
+msgid "Night warmth time: "
+msgstr "Время тёплого света (ночь): "
+
+msgid "Night warmth: "
+msgstr "Тёплый свет (ночь): "
+
+msgid "Day warmth time"
+msgstr "Время тёплого света (день)"
+
+msgid "Night warmth time"
+msgstr "Время тёплого света (ночь)"
+
+msgid "Day warmth"
+msgstr "Тёплый свет (день)"
+
+msgid "Night warmth"
+msgstr "Тёплый свет (ночь)"
+
+msgid "Brightness schedule"
+msgstr "Расписание яркости"
+
+msgid "Enable brightness schedule"
+msgstr "Включить расписание яркости"
+
+msgid "Day brightness time: "
+msgstr "Время яркости (день): "
+
+msgid "Day brightness: "
+msgstr "Яркость (день): "
+
+msgid "Night brightness time: "
+msgstr "Время яркости (ночь): "
+
+msgid "Night brightness: "
+msgstr "Яркость (ночь): "
+
+msgid "Day brightness time"
+msgstr "Время яркости (день)"
+
+msgid "Night brightness time"
+msgstr "Время яркости (ночь)"
+
+msgid "Day brightness"
+msgstr "Яркость (день)"
+
+msgid "Night brightness"
+msgstr "Яркость (ночь)"
+
 msgid "Night mode"
 msgstr "Ночной режим"
 

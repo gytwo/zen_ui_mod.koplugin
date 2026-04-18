@@ -1733,6 +1733,413 @@ function M.build(plugin)
         end,
     })
 
+    -- -------------------------------------------------------------------------
+    -- Global scheduler helpers
+    -- -------------------------------------------------------------------------
+
+    local function fmt_time(h, m)
+        return string.format("%02d:%02d", h, m)
+    end
+
+    local function show_time_picker(title, h, m, callback)
+        UIManager:show(require("ui/widget/doublespinwidget"):new{
+            title_text      = title,
+            left_text       = _("Hour"),
+            left_value      = h,
+            left_min        = 0,
+            left_max        = 23,
+            left_step       = 1,
+            left_hold_step  = 3,
+            left_precision  = "%02d",
+            right_text      = _("Minute"),
+            right_value     = m,
+            right_min       = 0,
+            right_max       = 59,
+            right_step      = 1,
+            right_hold_step = 15,
+            right_precision = "%02d",
+            callback        = callback,
+        })
+    end
+
+    local function show_value_picker(title, value, callback)
+        UIManager:show(require("ui/widget/spinwidget"):new{
+            title_text      = title,
+            value           = value,
+            value_min       = 0,
+            value_max       = 24,
+            value_step      = 1,
+            value_hold_step = 4,
+            callback        = function(spin) callback(spin.value) end,
+        })
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Night mode schedule
+    -- -------------------------------------------------------------------------
+
+    local function get_night_schedule_config()
+        if type(config.night_mode_schedule) ~= "table" then
+            config.night_mode_schedule = {}
+        end
+        local cfg = config.night_mode_schedule
+        return {
+            night_on_h  = tonumber(cfg.night_on_h)  or 22,
+            night_on_m  = tonumber(cfg.night_on_m)  or 0,
+            night_off_h = tonumber(cfg.night_off_h) or 7,
+            night_off_m = tonumber(cfg.night_off_m) or 0,
+        }
+    end
+
+    local function trigger_night_schedule_reschedule()
+        local sched = rawget(_G, "__ZEN_UI_NIGHT_SCHEDULE")
+        if sched and type(sched.reschedule) == "function" then
+            sched.reschedule()
+        end
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Warmth schedule
+    -- -------------------------------------------------------------------------
+
+    local function get_warmth_schedule_config()
+        if type(config.warmth_schedule) ~= "table" then
+            config.warmth_schedule = {}
+        end
+        local cfg = config.warmth_schedule
+        return {
+            day_h       = tonumber(cfg.day_h)       or 7,
+            day_m       = tonumber(cfg.day_m)       or 0,
+            day_value   = tonumber(cfg.day_value)   or 30,
+            night_h     = tonumber(cfg.night_h)     or 20,
+            night_m     = tonumber(cfg.night_m)     or 0,
+            night_value = tonumber(cfg.night_value) or 80,
+        }
+    end
+
+    local function trigger_warmth_schedule_reschedule()
+        local sched = rawget(_G, "__ZEN_UI_WARMTH_SCHEDULE")
+        if sched and type(sched.reschedule) == "function" then
+            sched.reschedule()
+        end
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Brightness schedule
+    -- -------------------------------------------------------------------------
+
+    local function get_brightness_schedule_config()
+        if type(config.brightness_schedule) ~= "table" then
+            config.brightness_schedule = {}
+        end
+        local cfg = config.brightness_schedule
+        return {
+            day_h       = tonumber(cfg.day_h)       or 7,
+            day_m       = tonumber(cfg.day_m)       or 0,
+            day_value   = tonumber(cfg.day_value)   or 80,
+            night_h     = tonumber(cfg.night_h)     or 20,
+            night_m     = tonumber(cfg.night_m)     or 0,
+            night_value = tonumber(cfg.night_value) or 20,
+        }
+    end
+
+    local function trigger_brightness_schedule_reschedule()
+        local sched = rawget(_G, "__ZEN_UI_BRIGHTNESS_SCHEDULE")
+        if sched and type(sched.reschedule) == "function" then
+            sched.reschedule()
+        end
+    end
+
+    -- -------------------------------------------------------------------------
+    -- Global items table
+    -- -------------------------------------------------------------------------
+
+    local global_items = {}
+
+    table.insert(global_items, {
+        text = _("Night mode schedule"),
+        sub_item_table = {
+            {
+                text = _("Enable night mode schedule"),
+                checked_func = function()
+                    return config.features.night_mode_schedule == true
+                end,
+                callback = function()
+                    config.features.night_mode_schedule = not (config.features.night_mode_schedule == true)
+                    plugin:saveConfig()
+                    trigger_night_schedule_reschedule()
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_night_schedule_config()
+                    return _("Night mode on: ") .. fmt_time(cfg.night_on_h, cfg.night_on_m)
+                end,
+                enabled_func = function()
+                    return config.features.night_mode_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_night_schedule_config()
+                    show_time_picker(_("Night mode on time"), cfg.night_on_h, cfg.night_on_m,
+                        function(h, m)
+                            if type(config.night_mode_schedule) ~= "table" then
+                                config.night_mode_schedule = {}
+                            end
+                            config.night_mode_schedule.night_on_h = h
+                            config.night_mode_schedule.night_on_m = m
+                            plugin:saveConfig()
+                            trigger_night_schedule_reschedule()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_night_schedule_config()
+                    return _("Night mode off: ") .. fmt_time(cfg.night_off_h, cfg.night_off_m)
+                end,
+                enabled_func = function()
+                    return config.features.night_mode_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_night_schedule_config()
+                    show_time_picker(_("Night mode off time"), cfg.night_off_h, cfg.night_off_m,
+                        function(h, m)
+                            if type(config.night_mode_schedule) ~= "table" then
+                                config.night_mode_schedule = {}
+                            end
+                            config.night_mode_schedule.night_off_h = h
+                            config.night_mode_schedule.night_off_m = m
+                            plugin:saveConfig()
+                            trigger_night_schedule_reschedule()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+        },
+    })
+
+    table.insert(global_items, {
+        text = _("Brightness schedule"),
+        sub_item_table = {
+            {
+                text = _("Enable brightness schedule"),
+                checked_func = function()
+                    return config.features.brightness_schedule == true
+                end,
+                callback = function()
+                    config.features.brightness_schedule = not (config.features.brightness_schedule == true)
+                    plugin:saveConfig()
+                    trigger_brightness_schedule_reschedule()
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_brightness_schedule_config()
+                    return _("Day brightness time: ") .. fmt_time(cfg.day_h, cfg.day_m)
+                end,
+                enabled_func = function()
+                    return config.features.brightness_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_brightness_schedule_config()
+                    show_time_picker(_("Day brightness time"), cfg.day_h, cfg.day_m,
+                        function(h, m)
+                            if type(config.brightness_schedule) ~= "table" then
+                                config.brightness_schedule = {}
+                            end
+                            config.brightness_schedule.day_h = h
+                            config.brightness_schedule.day_m = m
+                            plugin:saveConfig()
+                            trigger_brightness_schedule_reschedule()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_brightness_schedule_config()
+                    return _("Day brightness: ") .. cfg.day_value
+                end,
+                enabled_func = function()
+                    return config.features.brightness_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_brightness_schedule_config()
+                    show_value_picker(_("Day brightness"), cfg.day_value,
+                        function(v)
+                            if type(config.brightness_schedule) ~= "table" then
+                                config.brightness_schedule = {}
+                            end
+                            config.brightness_schedule.day_value = v
+                            plugin:saveConfig()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_brightness_schedule_config()
+                    return _("Night brightness time: ") .. fmt_time(cfg.night_h, cfg.night_m)
+                end,
+                enabled_func = function()
+                    return config.features.brightness_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_brightness_schedule_config()
+                    show_time_picker(_("Night brightness time"), cfg.night_h, cfg.night_m,
+                        function(h, m)
+                            if type(config.brightness_schedule) ~= "table" then
+                                config.brightness_schedule = {}
+                            end
+                            config.brightness_schedule.night_h = h
+                            config.brightness_schedule.night_m = m
+                            plugin:saveConfig()
+                            trigger_brightness_schedule_reschedule()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_brightness_schedule_config()
+                    return _("Night brightness: ") .. cfg.night_value
+                end,
+                enabled_func = function()
+                    return config.features.brightness_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_brightness_schedule_config()
+                    show_value_picker(_("Night brightness"), cfg.night_value,
+                        function(v)
+                            if type(config.brightness_schedule) ~= "table" then
+                                config.brightness_schedule = {}
+                            end
+                            config.brightness_schedule.night_value = v
+                            plugin:saveConfig()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+        },
+    })
+
+    table.insert(global_items, {
+        text = _("Warmth schedule"),
+        enabled_func = function() return Device:hasNaturalLight() end,
+        sub_item_table = {
+            {
+                text = _("Enable warmth schedule"),
+                checked_func = function()
+                    return config.features.warmth_schedule == true
+                end,
+                callback = function()
+                    config.features.warmth_schedule = not (config.features.warmth_schedule == true)
+                    plugin:saveConfig()
+                    trigger_warmth_schedule_reschedule()
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_warmth_schedule_config()
+                    return _("Day warmth time: ") .. fmt_time(cfg.day_h, cfg.day_m)
+                end,
+                enabled_func = function()
+                    return config.features.warmth_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_warmth_schedule_config()
+                    show_time_picker(_("Day warmth time"), cfg.day_h, cfg.day_m,
+                        function(h, m)
+                            if type(config.warmth_schedule) ~= "table" then
+                                config.warmth_schedule = {}
+                            end
+                            config.warmth_schedule.day_h = h
+                            config.warmth_schedule.day_m = m
+                            plugin:saveConfig()
+                            trigger_warmth_schedule_reschedule()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_warmth_schedule_config()
+                    return _("Day warmth: ") .. cfg.day_value
+                end,
+                enabled_func = function()
+                    return config.features.warmth_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_warmth_schedule_config()
+                    show_value_picker(_("Day warmth"), cfg.day_value,
+                        function(v)
+                            if type(config.warmth_schedule) ~= "table" then
+                                config.warmth_schedule = {}
+                            end
+                            config.warmth_schedule.day_value = v
+                            plugin:saveConfig()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_warmth_schedule_config()
+                    return _("Night warmth time: ") .. fmt_time(cfg.night_h, cfg.night_m)
+                end,
+                enabled_func = function()
+                    return config.features.warmth_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_warmth_schedule_config()
+                    show_time_picker(_("Night warmth time"), cfg.night_h, cfg.night_m,
+                        function(h, m)
+                            if type(config.warmth_schedule) ~= "table" then
+                                config.warmth_schedule = {}
+                            end
+                            config.warmth_schedule.night_h = h
+                            config.warmth_schedule.night_m = m
+                            plugin:saveConfig()
+                            trigger_warmth_schedule_reschedule()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+            {
+                text_func = function()
+                    local cfg = get_warmth_schedule_config()
+                    return _("Night warmth: ") .. cfg.night_value
+                end,
+                enabled_func = function()
+                    return config.features.warmth_schedule == true
+                end,
+                keep_menu_open = true,
+                callback = function(touchmenu_instance)
+                    local cfg = get_warmth_schedule_config()
+                    show_value_picker(_("Night warmth"), cfg.night_value,
+                        function(v)
+                            if type(config.warmth_schedule) ~= "table" then
+                                config.warmth_schedule = {}
+                            end
+                            config.warmth_schedule.night_value = v
+                            plugin:saveConfig()
+                            if touchmenu_instance then touchmenu_instance:updateItems() end
+                        end)
+                end,
+            },
+        },
+    })
+
     table.insert(general_items, updater.build_update_now_item(plugin))
 
     table.insert(general_items, {
@@ -1903,6 +2310,10 @@ function M.build(plugin)
         {
             text = _("Reader"),
             sub_item_table = reader_items,
+        },
+        {
+            text = _("Global"),
+            sub_item_table = global_items,
         },
         {
             text = _("About"),

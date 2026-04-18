@@ -420,6 +420,93 @@ msgstr "Night"
 msgid "Night mode"
 msgstr "Night mode"
 
+msgid "Night mode schedule"
+msgstr "Night mode schedule"
+
+msgid "Enable night mode schedule"
+msgstr "Enable night mode schedule"
+
+msgid "Night mode on: "
+msgstr "Night mode on: "
+
+msgid "Night mode off: "
+msgstr "Night mode off: "
+
+msgid "Night mode on time"
+msgstr "Night mode on time"
+
+msgid "Night mode off time"
+msgstr "Night mode off time"
+
+msgid "Hour"
+msgstr "Hour"
+
+msgid "Minute"
+msgstr "Minute"
+
+msgid "Global"
+msgstr "Global"
+
+msgid "Warmth schedule"
+msgstr "Warmth schedule"
+
+msgid "Enable warmth schedule"
+msgstr "Enable warmth schedule"
+
+msgid "Day warmth time: "
+msgstr "Day warmth time: "
+
+msgid "Day warmth: "
+msgstr "Day warmth: "
+
+msgid "Night warmth time: "
+msgstr "Night warmth time: "
+
+msgid "Night warmth: "
+msgstr "Night warmth: "
+
+msgid "Day warmth time"
+msgstr "Day warmth time"
+
+msgid "Night warmth time"
+msgstr "Night warmth time"
+
+msgid "Day warmth"
+msgstr "Day warmth"
+
+msgid "Night warmth"
+msgstr "Night warmth"
+
+msgid "Brightness schedule"
+msgstr "Brightness schedule"
+
+msgid "Enable brightness schedule"
+msgstr "Enable brightness schedule"
+
+msgid "Day brightness time: "
+msgstr "Day brightness time: "
+
+msgid "Day brightness: "
+msgstr "Day brightness: "
+
+msgid "Night brightness time: "
+msgstr "Night brightness time: "
+
+msgid "Night brightness: "
+msgstr "Night brightness: "
+
+msgid "Day brightness time"
+msgstr "Day brightness time"
+
+msgid "Night brightness time"
+msgstr "Night brightness time"
+
+msgid "Day brightness"
+msgstr "Day brightness"
+
+msgid "Night brightness"
+msgstr "Night brightness"
+
 msgid "No download URL found. Check your network connection and try again."
 msgstr "No download URL found. Check your network connection and try again."
 

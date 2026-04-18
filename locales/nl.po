@@ -417,6 +417,93 @@ msgstr "Volgende pagina"
 msgid "Night"
 msgstr "Nacht"
 
+msgid "Night mode schedule"
+msgstr "Nachtmodus planning"
+
+msgid "Enable night mode schedule"
+msgstr "Nachtmodus planning inschakelen"
+
+msgid "Night mode on: "
+msgstr "Nachtmodus aan: "
+
+msgid "Night mode off: "
+msgstr "Nachtmodus uit: "
+
+msgid "Night mode on time"
+msgstr "Inschakeltijd nachtmodus"
+
+msgid "Night mode off time"
+msgstr "Uitschakeltijd nachtmodus"
+
+msgid "Hour"
+msgstr "Uur"
+
+msgid "Minute"
+msgstr "Minuut"
+
+msgid "Global"
+msgstr "Globaal"
+
+msgid "Warmth schedule"
+msgstr "Warmteplanning"
+
+msgid "Enable warmth schedule"
+msgstr "Warmteplanning inschakelen"
+
+msgid "Day warmth time: "
+msgstr "Dagwarmte tijd: "
+
+msgid "Day warmth: "
+msgstr "Dagwarmte: "
+
+msgid "Night warmth time: "
+msgstr "Nachtwarmte tijd: "
+
+msgid "Night warmth: "
+msgstr "Nachtwarmte: "
+
+msgid "Day warmth time"
+msgstr "Dagwarmte tijd"
+
+msgid "Night warmth time"
+msgstr "Nachtwarmte tijd"
+
+msgid "Day warmth"
+msgstr "Dagwarmte"
+
+msgid "Night warmth"
+msgstr "Nachtwarmte"
+
+msgid "Brightness schedule"
+msgstr "Helderheidsplanning"
+
+msgid "Enable brightness schedule"
+msgstr "Helderheidsplanning inschakelen"
+
+msgid "Day brightness time: "
+msgstr "Daghelderheidstijd: "
+
+msgid "Day brightness: "
+msgstr "Dagheldheid: "
+
+msgid "Night brightness time: "
+msgstr "Nachthelderheidstijd: "
+
+msgid "Night brightness: "
+msgstr "Nachtheldheid: "
+
+msgid "Day brightness time"
+msgstr "Daghelderheidstijd"
+
+msgid "Night brightness time"
+msgstr "Nachthelderheidstijd"
+
+msgid "Day brightness"
+msgstr "Dagheldheid"
+
+msgid "Night brightness"
+msgstr "Nachtheldheid"
+
 msgid "Night mode"
 msgstr "Nachtmodus"
 

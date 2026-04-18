@@ -417,6 +417,93 @@ msgstr "Pagina următoare"
 msgid "Night"
 msgstr "Noapte"
 
+msgid "Night mode schedule"
+msgstr "Planificare mod noapte"
+
+msgid "Enable night mode schedule"
+msgstr "Activare planificare mod noapte"
+
+msgid "Night mode on: "
+msgstr "Mod noapte pornit: "
+
+msgid "Night mode off: "
+msgstr "Mod noapte oprit: "
+
+msgid "Night mode on time"
+msgstr "Oră pornire mod noapte"
+
+msgid "Night mode off time"
+msgstr "Oră oprire mod noapte"
+
+msgid "Hour"
+msgstr "Oră"
+
+msgid "Minute"
+msgstr "Minut"
+
+msgid "Global"
+msgstr "Global"
+
+msgid "Warmth schedule"
+msgstr "Planificare căldură"
+
+msgid "Enable warmth schedule"
+msgstr "Activare planificare căldură"
+
+msgid "Day warmth time: "
+msgstr "Oră căldură zi: "
+
+msgid "Day warmth: "
+msgstr "Căldură zi: "
+
+msgid "Night warmth time: "
+msgstr "Oră căldură noapte: "
+
+msgid "Night warmth: "
+msgstr "Căldură noapte: "
+
+msgid "Day warmth time"
+msgstr "Oră căldură zi"
+
+msgid "Night warmth time"
+msgstr "Oră căldură noapte"
+
+msgid "Day warmth"
+msgstr "Căldură zi"
+
+msgid "Night warmth"
+msgstr "Căldură noapte"
+
+msgid "Brightness schedule"
+msgstr "Planificare luminozitate"
+
+msgid "Enable brightness schedule"
+msgstr "Activare planificare luminozitate"
+
+msgid "Day brightness time: "
+msgstr "Oră luminozitate zi: "
+
+msgid "Day brightness: "
+msgstr "Luminozitate zi: "
+
+msgid "Night brightness time: "
+msgstr "Oră luminozitate noapte: "
+
+msgid "Night brightness: "
+msgstr "Luminozitate noapte: "
+
+msgid "Day brightness time"
+msgstr "Oră luminozitate zi"
+
+msgid "Night brightness time"
+msgstr "Oră luminozitate noapte"
+
+msgid "Day brightness"
+msgstr "Luminozitate zi"
+
+msgid "Night brightness"
+msgstr "Luminozitate noapte"
+
 msgid "Night mode"
 msgstr "Mod noapte"
 

@@ -32,6 +32,9 @@ local defaults = {
         browser_cover_rounded_corners = false,
         reader_clock = true,
         reader_bottom_menu = false,
+        night_mode_schedule = false,
+        warmth_schedule     = false,
+        brightness_schedule = false,
     },
     navbar = {
         show_tabs = {
@@ -123,6 +126,28 @@ local defaults = {
     },
     reader_footer = {
         verbose_chapter_time = false,
+    },
+    night_mode_schedule = {
+        night_on_h  = 22,
+        night_on_m  = 0,
+        night_off_h = 7,
+        night_off_m = 0,
+    },
+    warmth_schedule = {
+        day_h       = 7,
+        day_m       = 0,
+        day_value   = 6,
+        night_h     = 20,
+        night_m     = 0,
+        night_value = 20,
+    },
+    brightness_schedule = {
+        day_h       = 7,
+        day_m       = 0,
+        day_value   = 20,
+        night_h     = 20,
+        night_m     = 0,
+        night_value = 5,
     },
 }
 

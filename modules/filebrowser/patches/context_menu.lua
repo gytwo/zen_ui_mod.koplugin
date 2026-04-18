@@ -429,17 +429,36 @@ local function apply_context_menu()
                     -- folder
                     local name = (file:match("([^/]+)/?$") or file):gsub("/$", "")
                     local folder_name_str = BD.directory(name)
-                    local count = item.mandatory and tostring(item.mandatory):match("^%s*(%d+)")
-                    local folder_count_str
-                    if count then
-                        local n = tonumber(count) or 0
-                        folder_count_str = n == 1 and _("1 book") or (n .. " " .. _("books"))
+                    -- Recursively collect all book files (ignores folders/hidden, all subdirs).
+                    local lfs    = require("libs/libkoreader-lfs")
+                    local DocReg = require("document/documentregistry")
+                    local all_book_files = {}
+                    local function collect_books(dir, depth)
+                        if depth > 5 then return end
+                        local ok_d, it, obj = pcall(lfs.dir, dir)
+                        if not ok_d then return end
+                        for fname in it, obj do
+                            if fname ~= "." and fname ~= ".." and not fname:match("^%.") then
+                                local fpath = dir .. "/" .. fname
+                                local mode  = lfs.attributes(fpath, "mode")
+                                if mode == "file" and DocReg:hasProvider(fpath) then
+                                    table.insert(all_book_files, fpath)
+                                elseif mode == "directory" then
+                                    collect_books(fpath, depth + 1)
+                                end
+                            end
+                        end
                     end
+                    collect_books(file, 0)
+                    table.sort(all_book_files)
+                    local n_books = #all_book_files
+                    local folder_count_str = n_books > 0
+                        and (n_books == 1 and _("1 book") or (tostring(n_books) .. " " .. _("books")))
+                        or nil
                     -- Plain-text fallback for text-only header (no cover)
                     dialog_title = folder_count_str
                         and (folder_name_str .. "\n" .. folder_count_str)
                         or folder_name_str
-                    local lfs = require("libs/libkoreader-lfs")
                     -- 1. Prefer cover.jpg / cover.jpeg / cover.png inside the folder.
                     local cover_candidates = { "cover.jpg", "cover.jpeg", "cover.png",
                                                "Cover.jpg", "Cover.jpeg", "Cover.png" }
@@ -469,24 +488,12 @@ local function apply_context_menu()
                     if not dialog_cover_widget then
                         local ok, BookInfoManager = pcall(require, "bookinfomanager")
                         if ok then
-                            local DocRegistry = require("document/documentregistry")
-                            local dir_files   = {}
-                            local ok_dir, iter, dir_obj = pcall(lfs.dir, file)
-                            if ok_dir then
-                                for fname in iter, dir_obj do
-                                    if fname ~= "." and fname ~= ".." and not fname:match("^%.") then
-                                        local fpath = file .. "/" .. fname
-                                        if lfs.attributes(fpath, "mode") == "file"
-                                            and DocRegistry:hasProvider(fpath) then
-                                            table.insert(dir_files, fpath)
-                                        end
-                                    end
-                                end
-                                if #dir_files > 0 then
-                                    table.sort(dir_files)
+                            -- Use the recursive book list collected above.
+                            if #all_book_files > 0 then
+                                if true then -- scope keeps covers local
                                     -- Collect up to 4 covers.
                                     local covers = {}
-                                    for _, fpath in ipairs(dir_files) do
+                                    for _, fpath in ipairs(all_book_files) do
                                         local bi = BookInfoManager:getBookInfo(fpath, true)
                                         if bi and bi.has_cover and bi.cover_bb
                                                 and not bi.ignore_cover then

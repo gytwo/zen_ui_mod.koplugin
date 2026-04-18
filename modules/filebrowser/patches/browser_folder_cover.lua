@@ -849,27 +849,60 @@ local function apply_browser_folder_cover()
             text = BD.directory(capitalize(text))
             local available_height = dimen.h - 2 * badge_h
             local dir_font_size = Folder.face.dir_max_font_size
+            local min_font_size = 14  -- shrink to this before allowing wrap/overflow
+            local x_pad = Screen:scaleBySize(4)  -- horizontal breathing room
+            local text_w = dimen.w - 2 * x_pad
             local directory
 
-            while true do
-                if directory then directory:free(true) end
-                directory = TextBoxWidget:new {
-                    text = text,
-                    face = Font:getFace("cfont", dir_font_size),
-                    width = dimen.w,
-                    alignment = "center",
-                    bold = true,
+            -- Phase 1: shrink font until the text fits on a single line within
+            -- text_w (cover width minus horizontal padding).  Using a single-line
+            -- TextWidget probe avoids the awkward two-words-per-line wrapping that
+            -- happens at large font sizes on narrow covers.
+            local probe
+            local single_line_fits = false
+            while dir_font_size >= min_font_size do
+                if probe then probe:free() end
+                probe = TextWidget:new {
+                    text    = text,
+                    face    = Font:getFace("cfont", dir_font_size),
+                    bold    = true,
+                    padding = 0,
                 }
-                if directory:getSize().h <= available_height then break end
-                dir_font_size = dir_font_size - 1
-                if dir_font_size < 10 then -- don't go too low
-                    directory:free()
-                    directory.height = available_height
-                    directory.height_adjust = true
-                    directory.height_overflow_show_ellipsis = true
-                    directory:init()
+                local ps = probe:getSize()
+                if ps.w <= text_w and ps.h <= available_height then
+                    single_line_fits = true
                     break
                 end
+                dir_font_size = dir_font_size - 1
+            end
+
+            -- Always render at dimen.w so the background FrameContainer spans the
+            -- full cover width.  x_pad is only used in the probe above to ensure
+            -- the chosen font has comfortable breathing room; the natural centering
+            -- of the text inside the full-width widget provides the visual padding.
+            if single_line_fits then
+                probe:free()
+                directory = TextBoxWidget:new {
+                    text      = text,
+                    face      = Font:getFace("cfont", dir_font_size),
+                    width     = dimen.w,
+                    alignment = "center",
+                    bold      = true,
+                }
+            else
+                -- Could not fit on one line even at min_font_size; allow wrap +
+                -- ellipsis so very long names are still legible.
+                if probe then probe:free() end
+                directory = TextBoxWidget:new {
+                    text      = text,
+                    face      = Font:getFace("cfont", min_font_size),
+                    width     = dimen.w,
+                    alignment = "center",
+                    bold      = true,
+                    height    = available_height,
+                    height_adjust = true,
+                    height_overflow_show_ellipsis = true,
+                }
             end
 
             return directory, nbitems

@@ -4,6 +4,7 @@ local defaults = {
         files_per_page_defaulted = false,
         screensaver_backup_created = false,
         footer_backup_created = false,
+        quickstart_shown_for_version = false,
     },
     localization = {
         default_locale = "en",

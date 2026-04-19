@@ -142,6 +142,44 @@ function ZenUI:init()
 
     self:_initModules()
 
+    -- -----------------------------------------------------------------------
+    -- Quickstart / onboarding screen
+    -- -----------------------------------------------------------------------
+    do
+        local function get_plugin_version()
+            local ok, meta = pcall(require, "_meta")
+            return (ok and type(meta) == "table" and type(meta.version) == "string")
+                and meta.version or "0.0.0"
+        end
+
+        local current_ver = get_plugin_version()
+        local shown_ver   = self.config._meta.quickstart_shown_for_version
+
+        local pages_to_show
+        local ok_pages, pages_mod = pcall(require, "common/quickstart_pages")
+        if ok_pages then
+            if shown_ver == false then
+                pages_to_show = pages_mod.INSTALL_PAGES
+            elseif type(shown_ver) == "string" and shown_ver ~= current_ver then
+                pages_to_show = pages_mod.UPDATE_PAGES[current_ver]
+            end
+        end
+
+        if pages_to_show and #pages_to_show > 0 then
+            -- Persist before showing so a force-quit doesn't replay the screen.
+            self.config._meta.quickstart_shown_for_version = current_ver
+            self:saveConfig()
+
+            require("ui/uimanager"):scheduleIn(0.5, function()
+                local ok_qs, QuickstartScreen = pcall(require, "common/quickstart_screen")
+                if not ok_qs then return end
+                require("ui/uimanager"):show(QuickstartScreen:new{
+                    pages = pages_to_show,
+                })
+            end)
+        end
+    end
+
     -- Inject Zen UI tab after QuickSettings and a Home tab at the far right.
     -- Patches setUpdateItemTable once per class so it persists across menu rebuilds.
     local function find_quicksettings_pos(tab_table)

@@ -219,7 +219,6 @@ local function apply_status_bar()
     end
 
     local function getWifiInfo()
-        if not config.show.wifi then return nil end
         if NetworkMgr:isWifiOn() then
             return "\u{ECA8}", nil, colors.wifi_on
         else
@@ -228,7 +227,6 @@ local function apply_status_bar()
     end
 
     local function getRamInfo()
-        if not config.show.ram then return nil end
         local statm = io.open("/proc/self/statm", "r")
         if statm then
             local _, rss = statm:read("*number", "*number")
@@ -241,7 +239,6 @@ local function apply_status_bar()
     end
 
     local function getDiskInfo()
-        if not config.show.disk then return nil end
         local now = os.time()
         if cached_disk_text and (now - cached_disk_time) < 300 then
             return "\u{F0A0}", " " .. cached_disk_text, colors.disk
@@ -275,7 +272,6 @@ local function apply_status_bar()
     end
 
     local function getFrontlightInfo()
-        if not config.show.frontlight then return nil end
         local powerd = Device:getPowerDevice()
         if powerd:isFrontlightOn() then
             return "☼", string.format(" %d", powerd:frontlightIntensity()), colors.frontlight
@@ -285,7 +281,6 @@ local function apply_status_bar()
     end
 
     local function getBatteryInfo()
-        if not config.show.battery then return nil end
         if Device:hasBattery() then
             local powerd = Device:getPowerDevice()
             local batt_lvl = powerd:getCapacity()

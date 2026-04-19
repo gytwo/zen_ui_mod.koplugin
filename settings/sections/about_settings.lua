@@ -3,6 +3,7 @@
 -- Receives ctx: { plugin }
 
 local _ = require("gettext")
+local UIManager = require("ui/uimanager")
 local utils = require("settings/zen_settings_utils")
 
 local M = {}
@@ -43,6 +44,20 @@ function M.build(ctx)
         end,
         keep_menu_open = true,
         separator = true
+    })
+
+    table.insert(items, {
+        text = _("Show quickstart"),
+        separator = true,
+        callback = function()
+            local ok_qs, QuickstartScreen = pcall(require, "common/quickstart_screen")
+            if not ok_qs then return end
+            local ok_pg, pages_mod = pcall(require, "common/quickstart_pages")
+            if not ok_pg then return end
+            UIManager:show(QuickstartScreen:new{
+                pages = pages_mod.INSTALL_PAGES,
+            })
+        end,
     })
 
     return items

@@ -5,6 +5,7 @@
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
 local utils = require("settings/zen_settings_utils")
+local dict_installer = require("settings/dict_installer")
 
 local M = {}
 
@@ -125,6 +126,26 @@ function M.build(ctx)
                 end,
             })
         end,
+    })
+
+    table.insert(items, {
+        text = _("Install dictionary"),
+        sub_item_table = {
+            {
+                text      = _("Short Oxford English (26 MB)"),
+                callback  = function()
+                    dict_installer.install(_("Short Oxford English"), dict_installer.SHORT_OXFORD,
+                        _("This may take a few minutes. Please wait."))
+                end,
+            },
+            {
+                text      = _("Regular Oxford English (203 MB)"),
+                callback  = function()
+                    dict_installer.install(_("Regular Oxford English"), dict_installer.REGULAR_OXFORD,
+                        _("This is a large file and may take a few minutes. Please wait."))
+                end,
+            },
+        },
     })
 
     table.insert(items, {

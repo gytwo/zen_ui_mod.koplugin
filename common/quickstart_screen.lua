@@ -643,6 +643,9 @@ function QuickstartScreen:onClose()
     -- Block filebrowser taps for 1.5s so the close-gesture doesn't open a file.
     _G.__ZEN_QUICKSTART_JUST_CLOSED = true
     UIManager:scheduleIn(1.5, function() _G.__ZEN_QUICKSTART_JUST_CLOSED = nil end)
+    -- Evict quickstart modules so Lua GC can free all closures and page data.
+    package.loaded["common/quickstart_screen"] = nil
+    package.loaded["common/quickstart_pages"]  = nil
     if self.on_close then
         self.on_close()
     end

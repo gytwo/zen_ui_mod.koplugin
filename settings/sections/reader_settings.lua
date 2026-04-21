@@ -171,16 +171,28 @@ function M.build(ctx)
             if not (ui and ui.view and ui.view.footer) then
                 return {}
             end
+            local function resolve_preset_font(preset)
+                if not (preset.footer and preset.footer.text_font_face) then return preset end
+                local FontChooser = require("ui/widget/fontchooser")
+                local face = preset.footer.text_font_face
+                if FontChooser.isFontRegistered(face) then return preset end
+                -- bare filename: search fontinfo for a matching full path
+                local FontList = require("fontlist")
+                FontList:getFontList()
+                local suffix = "/" .. face
+                for path in pairs(FontList.fontinfo) do
+                    if path:sub(-#suffix) == suffix then
+                        local util = require("util")
+                        local copy = util.tableDeepCopy(preset)
+                        copy.footer.text_font_face = path
+                        return copy
+                    end
+                end
+                return preset
+            end
+
             local function apply_footer_preset(preset)
-                local saved_face = ui.view.footer.settings.text_font_face
-                local saved_size = ui.view.footer.settings.text_font_size
-                local saved_bold = ui.view.footer.settings.text_font_bold
-                ui.view.footer:loadPreset(preset)
-                ui.view.footer.settings.text_font_face = saved_face
-                ui.view.footer.settings.text_font_size = saved_size
-                ui.view.footer.settings.text_font_bold = saved_bold
-                ui.view.footer:updateFooterFont()
-                ui.view.footer:refreshFooter(true, true)
+                ui.view.footer:loadPreset(resolve_preset_font(preset))
                 config.features["reader_clock"] = true
                 save_and_apply("reader_clock")
                 if ui.rolling then

@@ -24,7 +24,6 @@ local function apply_reader_clock()
     local T = require("ffi/util").template
     local ReaderView = require("apps/reader/modules/readerview")
     local _ReaderView_paintTo_orig = ReaderView.paintTo
-    local header_settings = G_reader_settings:readSetting("footer")
     local zen_plugin = rawget(_G, "__ZEN_UI_PLUGIN")
 
     local function is_enabled()
@@ -49,6 +48,7 @@ local function apply_reader_clock()
         -- don't change anything above this line
         local screen_width = Screen:getWidth() -- always fresh
         local zen_clock_config = zen_plugin and zen_plugin.config and zen_plugin.config.reader_clock
+        local header_settings = G_reader_settings:readSetting("footer")
 
 
 

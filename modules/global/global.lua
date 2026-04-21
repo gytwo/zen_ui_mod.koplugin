@@ -25,8 +25,13 @@ local function load_patch(feature)
     local module_name = PATCH_MODULES[feature]
     if not module_name then return nil end
     local ok, patch_fn = pcall(require, module_name)
-    if not ok or type(patch_fn) ~= "function" then return nil end
-    return patch_fn
+    if not ok then return nil end
+    -- Patch modules may return a plain function or a table with an `apply` key
+    if type(patch_fn) == "table" and type(patch_fn.apply) == "function" then
+        return patch_fn.apply
+    end
+    if type(patch_fn) == "function" then return patch_fn end
+    return nil
 end
 
 function M.init(logger, plugin)

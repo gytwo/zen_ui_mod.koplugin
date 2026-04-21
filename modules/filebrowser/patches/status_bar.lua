@@ -136,9 +136,21 @@ local function apply_status_bar()
 
     -- === Layout constants ===
 
+    local function isUIMagnified()
+        local ft = zen_plugin.config and zen_plugin.config.features
+        local lc = zen_plugin.config and zen_plugin.config.lockdown
+        return type(ft) == "table" and ft.lockdown_mode == true
+            and type(lc) == "table" and lc.magnify_ui == true
+    end
+
     local function getBarFont()
+        local base = Font.sizemap and Font.sizemap["xx_smallinfofont"] or 18
+        local size = isUIMagnified() and math.floor(base * 1.25 + 0.5) or nil
         if config.bold_text then
-            return Font:getFace("NotoSans-Bold.ttf", Font.sizemap["xx_smallinfofont"])
+            return Font:getFace("NotoSans-Bold.ttf", size or base)
+        end
+        if size then
+            return Font:getFace("xx_smallinfofont", size)
         end
         return Font:getFace("xx_smallinfofont")
     end
@@ -400,7 +412,7 @@ local function apply_status_bar()
         if show_back then
             local Button = require("ui/widget/button")
             local ffiUtil = require("ffi/util")
-            local icon_size = Screen:scaleBySize(28)
+            local icon_size = Screen:scaleBySize(isUIMagnified() and 35 or 28)  -- 28 * 1.25 = 35
             back_widget = Button:new{
                 icon = "chevron.left",
                 icon_width = icon_size,
@@ -604,7 +616,7 @@ local function apply_status_bar()
     local function createStatusRowCustomBack(back_callback, title)
         local CenterContainer = require("ui/widget/container/centercontainer")
         local Button = require("ui/widget/button")
-        local icon_size = Screen:scaleBySize(28)
+        local icon_size = Screen:scaleBySize(isUIMagnified() and 35 or 28)
         local back_widget = Button:new{
             icon        = "chevron.left",
             icon_width  = icon_size,

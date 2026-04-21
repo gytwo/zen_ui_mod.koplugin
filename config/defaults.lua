@@ -195,6 +195,7 @@ local defaults = {
         disable_hold_search       = false,
         require_hold_in_qs        = false,
         disable_settings_panel    = false,
+        magnify_ui                = false,
     },
 }
 

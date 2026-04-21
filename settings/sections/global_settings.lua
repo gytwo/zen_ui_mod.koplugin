@@ -597,6 +597,17 @@ function M.build(ctx)
         text = _("Lockdown mode"),
         sub_item_table = {
             {
+                text = _("Magnify UI"),
+                checked_func = function()
+                    return config.lockdown and config.lockdown.magnify_ui == true
+                end,
+                callback = function()
+                    if type(config.lockdown) ~= "table" then config.lockdown = {} end
+                    config.lockdown.magnify_ui = not config.lockdown.magnify_ui
+                    plugin:saveConfig()
+                end,
+            },
+            {
                 text = _("Library"),
                 sub_item_table = {
                     {

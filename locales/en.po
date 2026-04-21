@@ -965,6 +965,9 @@ msgstr "Lockdown mode"
 msgid "Enable lockdown mode"
 msgstr "Enable lockdown mode"
 
+msgid "Magnify UI"
+msgstr "Magnify UI"
+
 msgid "Disable context menu"
 msgstr "Disable context menu"
 

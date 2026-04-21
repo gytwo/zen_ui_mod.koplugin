@@ -688,6 +688,20 @@ local function apply_navbar()
             return nil
         end
 
+        -- Recompute layout constants so magnify_ui takes effect on each build.
+        local lc = zen_plugin.config and zen_plugin.config.lockdown
+        local ft = zen_plugin.config and zen_plugin.config.features
+        if type(ft) == "table" and ft.lockdown_mode == true
+                and type(lc) == "table" and lc.magnify_ui == true then
+            navbar_icon_size       = Screen:scaleBySize(43)   -- 34 * 1.25
+            navbar_v_padding       = Screen:scaleBySize(5)    -- 4  * 1.25
+            navbar_font_size_steps = {25, 23, 20, 18}         -- {20,18,16,14} * 1.25
+        else
+            navbar_icon_size       = Screen:scaleBySize(34)
+            navbar_v_padding       = Screen:scaleBySize(4)
+            navbar_font_size_steps = {20, 18, 16, 14}
+        end
+
         -- Update books tab label from config
         tabs_by_id["books"].label = getBooksLabel()
 

@@ -371,6 +371,10 @@ local function apply_quick_settings()
                 local enabling = not features.lockdown_mode
                 features.lockdown_mode = enabling
                 if enabling then features.zen_mode = true end
+                local ok_lm, lockdown_mod = pcall(require, "modules/global/patches/lockdown_mode")
+                if ok_lm and type(lockdown_mod) == "table" then
+                    lockdown_mod.apply_magnify_layout(zen_plugin, enabling)
+                end
                 if zen_plugin.saveConfig then zen_plugin:saveConfig() end
                 if touch_menu and touch_menu.updateItems then
                     touch_menu:updateItems(1)

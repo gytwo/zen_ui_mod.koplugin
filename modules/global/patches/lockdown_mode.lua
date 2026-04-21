@@ -44,4 +44,32 @@ local function apply_lockdown_mode()
     end
 end
 
-return apply_lockdown_mode
+-- ---------------------------------------------------------------------------
+-- Mosaic / list layout save-restore for magnify_ui
+-- Called by the lockdown QS button when toggling lockdown mode.
+-- ---------------------------------------------------------------------------
+
+local function apply_magnify_layout(zen_plugin, enabling)
+    local lc = zen_plugin.config and zen_plugin.config.lockdown
+    if type(lc) ~= "table" or not lc.magnify_ui then return end
+    local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
+    if not ok_bim or not BookInfoManager then return end
+    if enabling then
+        lc._pre_nb_cols_portrait = BookInfoManager:getSetting("nb_cols_portrait") or 3
+        lc._pre_nb_rows_portrait = BookInfoManager:getSetting("nb_rows_portrait") or 3
+        lc._pre_files_per_page   = BookInfoManager:getSetting("files_per_page")
+        BookInfoManager:saveSetting("nb_cols_portrait", 2)
+        BookInfoManager:saveSetting("nb_rows_portrait", 2)
+        BookInfoManager:saveSetting("files_per_page",   3)
+    elseif lc._pre_nb_cols_portrait ~= nil then
+        BookInfoManager:saveSetting("nb_cols_portrait", lc._pre_nb_cols_portrait)
+        BookInfoManager:saveSetting("nb_rows_portrait", lc._pre_nb_rows_portrait)
+        -- false clears the DB entry so ListMenu recomputes the default
+        BookInfoManager:saveSetting("files_per_page",   lc._pre_files_per_page or false)
+        lc._pre_nb_cols_portrait = nil
+        lc._pre_nb_rows_portrait = nil
+        lc._pre_files_per_page   = nil
+    end
+end
+
+return { apply = apply_lockdown_mode, apply_magnify_layout = apply_magnify_layout }

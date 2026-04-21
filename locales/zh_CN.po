@@ -904,6 +904,9 @@ msgstr ""
 msgid "Enable lockdown mode"
 msgstr ""
 
+msgid "Magnify UI"
+msgstr "放大界面"
+
 msgid "Disable context menu"
 msgstr ""
 

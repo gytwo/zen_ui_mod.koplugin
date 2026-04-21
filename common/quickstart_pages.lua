@@ -18,6 +18,331 @@ local function img(rel)
     return _plugin_root .. "/images/quickstart/" .. rel
 end
 
+-- Load up to `n` book covers. ReadHistory first, then home-dir scan to fill.
+-- Returns array of { bb, w, h, progress, status } -- caller owns the blitbuffer copies.
+local function loadQuickstartCovers(n)
+    local ok, BIM = pcall(require, "bookinfomanager")
+    if not ok or type(BIM) ~= "table" or type(BIM.getBookInfo) ~= "function" then
+        return {}
+    end
+    local lfs    = require("libs/libkoreader-lfs")
+    local ok_ds, DocSettings = pcall(require, "docsettings")
+    local covers = {}
+    local seen   = {}
+
+    local function try_add(path)
+        if #covers >= n or not path or seen[path] then return end
+        seen[path] = true
+        if lfs.attributes(path, "mode") ~= "file" then return end
+        local info = BIM:getBookInfo(path, true)
+        if info and info.has_cover and info.cover_bb
+                and info.cover_fetched and not info.ignore_cover then
+            local progress, status = nil, nil
+            if ok_ds then
+                pcall(function()
+                    local ds = DocSettings:open(path)
+                    progress = ds:readSetting("percent_finished")
+                    local summary = ds:readSetting("summary")
+                    status = summary and summary.status
+                end)
+            end
+            table.insert(covers, { bb = info.cover_bb:copy(), w = info.cover_w, h = info.cover_h, progress = progress, status = status, title = info.title, authors = info.authors, pages = info.pages })
+        end
+    end
+
+    local rh_ok, ReadHistory = pcall(require, "readhistory")
+    if rh_ok and ReadHistory and ReadHistory.hist then
+        for _, entry in ipairs(ReadHistory.hist) do
+            if #covers >= n then break end
+            try_add(entry.file)
+        end
+    end
+
+    if #covers < n then
+        local home = G_reader_settings and G_reader_settings:readSetting("home_dir")
+        if home and lfs.attributes(home, "mode") == "directory" then
+            local file_list = {}
+            for fname in lfs.dir(home) do
+                if fname ~= "." and fname ~= ".." then
+                    local fpath = home .. "/" .. fname
+                    if lfs.attributes(fpath, "mode") == "file" then
+                        table.insert(file_list, fpath)
+                    end
+                end
+            end
+            table.sort(file_list)
+            for _, path in ipairs(file_list) do
+                if #covers >= n then break end
+                try_add(path)
+            end
+        end
+    end
+
+    return covers
+end
+
+-- Downward-pointing pentagon badge shape (matches browser_cover_badges).
+local function paintPentagon(bb, bx, by, bw, bh, color)
+    local rect_h = math.floor(bh * 30 / 42)
+    local tip_h  = bh - rect_h
+    bb:paintRect(bx, by, bw, rect_h, color)
+    for row = 0, tip_h - 1 do
+        local frac = (row + 1) / tip_h
+        local rw   = math.max(2, math.floor(bw * (1 - frac)))
+        local rx   = bx + math.floor((bw - rw) / 2)
+        bb:paintRect(rx, by + rect_h + row, rw, 1, color)
+    end
+end
+
+-- Checkmark drawn as two diagonal line segments.
+local function paintCheck(bb, bx, by, bw, bh, color)
+    local tk = math.max(2, math.floor(math.min(bw, bh) / 8))
+    local function drawLine(x0, y0, x1, y1)
+        local steps = math.max(math.abs(x1 - x0), math.abs(y1 - y0))
+        if steps == 0 then steps = 1 end
+        for i = 0, steps do
+            local t = i / steps
+            bb:paintRect(math.floor(x0 + t*(x1-x0)), math.floor(y0 + t*(y1-y0)), tk, tk, color)
+        end
+    end
+    drawLine(bx+math.floor(bw*0.08), by+math.floor(bh*0.62), bx+math.floor(bw*0.30), by+math.floor(bh*0.82))
+    drawLine(bx+math.floor(bw*0.30), by+math.floor(bh*0.82), bx+math.floor(bw*0.82), by+math.floor(bh*0.18))
+end
+
+-- Paint a progress/status badge (pentagon, matches browser_cover_badges) at the top-right
+-- of a cover cell in a canvas. NOT pre-inverted -- night mode inverts it once naturally.
+local function paintCoverBadge(canvas, Blitbuffer, Font, TextWidget, Screen,
+                               cell_x, cell_y, cell_w, progress, status)
+    local do_check = (status == "complete") or (progress and progress >= 1.0)
+    local do_pause = not do_check and (status == "abandoned")
+    local do_pct   = not do_check and not do_pause and (progress and progress > 0)
+    if not (do_check or do_pause or do_pct) then return end
+    local badge_size = math.max(Screen:scaleBySize(16), math.floor(cell_w * 0.14))
+    local bw = math.floor(badge_size * 1.2)
+    local bh = math.floor(badge_size * 1.1)
+    local bdg_x = cell_x + cell_w - bw - math.floor(bw * 0.25)
+    local bdg_y = cell_y + 2
+    paintPentagon(canvas, bdg_x - 2, bdg_y - 2, bw + 4, bh + 4, Blitbuffer.COLOR_BLACK)
+    paintPentagon(canvas, bdg_x, bdg_y, bw, bh, Blitbuffer.COLOR_LIGHT_GRAY)
+    local rect_h = math.floor(bh * 30 / 42)
+    local pad_x  = math.floor(bw * 0.12)
+    local pad_y  = math.floor(rect_h * 0.15)
+    local icon_w = bw - 2 * pad_x
+    local icon_h = rect_h - 2 * pad_y
+    if do_check then
+        local sq   = math.min(icon_w, icon_h)
+        paintCheck(canvas,
+            bdg_x + pad_x + math.floor((icon_w - sq) / 2),
+            bdg_y + pad_y + math.floor((icon_h - sq) / 2),
+            sq, sq, Blitbuffer.COLOR_BLACK)
+    elseif Font and TextWidget then
+        local font_sz = do_pause
+            and math.max(7, math.floor(badge_size * 0.40))
+            or  math.max(7, math.floor(badge_size * 0.24))
+        local tw = TextWidget:new{
+            text    = do_pause and "\u{F0150}" or (math.floor(100 * progress) .. "%"),
+            face    = Font:getFace("cfont", font_sz),
+            bold    = not do_pause,
+            fgcolor = Blitbuffer.COLOR_BLACK,
+            padding = 0,
+        }
+        local tw_sz = tw:getSize()
+        tw:paintTo(canvas,
+            bdg_x + math.floor((bw     - tw_sz.w) / 2),
+            bdg_y + math.floor((rect_h - tw_sz.h) / 2))
+        tw:free()
+    end
+end
+
+-- Render the zen-mode quicksettings button (circle border + quick_zen icon) centered
+-- on a white canvas. Returns a Blitbuffer (caller owns) or nil on error.
+local function buildZenButtonBB(avail_w)
+    local ok_bb,  Blitbuffer = pcall(require, "ffi/blitbuffer")
+    local ok_iw,  IconWidget = pcall(require, "ui/widget/iconwidget")
+    local ok_dev, Device     = pcall(require, "device")
+    if not (ok_bb and ok_iw and ok_dev) then return nil end
+    local ok_u, utils = pcall(require, "common/utils")
+    local Screen   = Device.screen
+    local BTN_SZ   = Screen:scaleBySize(160)
+    local BORDER   = Screen:scaleBySize(3)
+    local ICO_SZ   = math.floor(BTN_SZ * 0.52)
+    local canvas_h = BTN_SZ + Screen:scaleBySize(40)
+    local canvas   = Blitbuffer.new(avail_w, canvas_h, Blitbuffer.TYPE_BB8)
+    canvas:fill(Blitbuffer.COLOR_WHITE)
+    local r  = math.floor(BTN_SZ / 2)
+    local cx = math.floor(avail_w / 2)
+    local cy = math.floor(canvas_h / 2)
+    -- Circle border
+    for dy = -r, r do
+        local hw = math.floor(math.sqrt(r*r - dy*dy) + 0.5)
+        if hw > 0 then canvas:paintRect(cx - hw, cy + dy, hw*2, 1, Blitbuffer.COLOR_BLACK) end
+    end
+    -- White interior
+    local ir = r - BORDER
+    for dy = -ir, ir do
+        local hw = math.floor(math.sqrt(ir*ir - dy*dy) + 0.5)
+        if hw > 0 then canvas:paintRect(cx - hw, cy + dy, hw*2, 1, Blitbuffer.COLOR_WHITE) end
+    end
+    local icon_path = ok_u and utils.resolveIcon(_plugin_root .. "/icons/", "quick_zen")
+    pcall(function()
+        local ico = IconWidget:new{
+            file   = icon_path or nil,
+            icon   = icon_path and nil or "quick_zen",
+            width  = ICO_SZ,
+            height = ICO_SZ,
+        }
+        local isz = ico:getSize()
+        ico:paintTo(canvas, cx - math.floor(isz.w / 2), cy - math.floor(isz.h / 2))
+        ico:free()
+    end)
+    return canvas
+end
+
+-- Compose a 1x3 horizontal strip of portrait covers.
+-- Returns a Blitbuffer (caller owns) or nil on error.
+local function buildMosaicBB(covers, avail_w)
+    local ok_bb,  Blitbuffer  = pcall(require, "ffi/blitbuffer")
+    local ok_iw,  ImageWidget = pcall(require, "ui/widget/imagewidget")
+    local ok_dev, Device      = pcall(require, "device")
+    if not (ok_bb and ok_iw and ok_dev) then return nil end
+    local ok_font, Font       = pcall(require, "ui/font")
+    local ok_tw,  TextWidget  = pcall(require, "ui/widget/textwidget")
+    local Screen = Device.screen
+    local night  = Screen.night_mode
+    local PAD    = Screen:scaleBySize(8)
+    local GAP    = Screen:scaleBySize(6)
+    local cell_w = math.floor((avail_w - 2 * PAD - 2 * GAP) / 3)
+    local cell_h = math.floor(cell_w * 3 / 2)
+    local canvas = Blitbuffer.new(avail_w, cell_h + 2 * PAD, Blitbuffer.TYPE_BB8)
+    canvas:fill(Blitbuffer.COLOR_WHITE)
+    for i = 0, 2 do
+        local cx = PAD + i * (cell_w + GAP)
+        canvas:paintRect(cx, PAD, cell_w, cell_h, Blitbuffer.COLOR_GRAY_4)
+        local c = covers[i + 1]
+        if c then
+            pcall(function()
+                local iw = ImageWidget:new{
+                    image                 = c.bb,
+                    width                 = cell_w,
+                    height                = cell_h,
+                    scale_factor          = 0,
+                    image_disposable      = false,
+                    original_in_nightmode = false,
+                }
+                local isz = iw:getSize()
+                iw:paintTo(canvas,
+                    cx  + math.floor((cell_w - isz.w) / 2),
+                    PAD + math.floor((cell_h - isz.h) / 2))
+                iw:free()
+            end)
+            -- Pre-invert the cover cell; display's night-mode inversion restores original colors.
+            if night then canvas:invertRect(cx, PAD, cell_w, cell_h) end
+            -- Badge painted after inversion: display inverts it once, matching browser_cover_badges behavior.
+            pcall(paintCoverBadge, canvas, Blitbuffer,
+                ok_font and Font or nil, ok_tw and TextWidget or nil,
+                Screen, cx, PAD, cell_w, c.progress, c.status)
+        end
+    end
+    return canvas
+end
+
+-- Compose 2 list rows: cover thumbnail left + actual book details right.
+-- Returns a Blitbuffer (caller owns) or nil on error.
+local function buildListBB(covers, avail_w)
+    local ok_bb,  Blitbuffer  = pcall(require, "ffi/blitbuffer")
+    local ok_iw,  ImageWidget = pcall(require, "ui/widget/imagewidget")
+    local ok_dev, Device      = pcall(require, "device")
+    if not (ok_bb and ok_iw and ok_dev) then return nil end
+    local ok_font, Font       = pcall(require, "ui/font")
+    local ok_tw,  TextWidget  = pcall(require, "ui/widget/textwidget")
+    local Screen    = Device.screen
+    local night     = Screen.night_mode
+    local PAD       = Screen:scaleBySize(8)
+    local GAP       = Screen:scaleBySize(8)
+    local INNER_GAP = Screen:scaleBySize(10)
+    local thumb_w   = math.floor(avail_w * 0.28)
+    local thumb_h   = math.floor(thumb_w * 3 / 2)
+    local total_h   = 2 * thumb_h + GAP + 2 * PAD
+    local canvas    = Blitbuffer.new(avail_w, total_h, Blitbuffer.TYPE_BB8)
+    canvas:fill(Blitbuffer.COLOR_WHITE)
+    local text_x = PAD + thumb_w + INNER_GAP
+    local text_w = avail_w - text_x - PAD
+    for i = 0, 1 do
+        local ry = PAD + i * (thumb_h + GAP)
+        canvas:paintRect(PAD, ry, thumb_w, thumb_h, Blitbuffer.COLOR_GRAY_4)
+        local c = covers[i + 1]
+        if c then
+            pcall(function()
+                local iw = ImageWidget:new{
+                    image                 = c.bb,
+                    width                 = thumb_w,
+                    height                = thumb_h,
+                    scale_factor          = 0,
+                    image_disposable      = false,
+                    original_in_nightmode = false,
+                }
+                local isz = iw:getSize()
+                iw:paintTo(canvas,
+                    PAD + math.floor((thumb_w - isz.w) / 2),
+                    ry  + math.floor((thumb_h - isz.h) / 2))
+                iw:free()
+            end)
+            if night then canvas:invertRect(PAD, ry, thumb_w, thumb_h) end
+        end
+        if ok_font and ok_tw then
+            local ty = ry + Screen:scaleBySize(8)
+            -- Title
+            local title_str = (c and c.title and c.title ~= "") and c.title or "Unknown Title"
+            local t_tw = TextWidget:new{
+                text    = title_str,
+                face    = Font:getFace("cfont", 17),
+                bold    = true,
+                width   = text_w,
+                padding = 0,
+            }
+            t_tw:paintTo(canvas, text_x, ty)
+            ty = ty + t_tw:getSize().h + Screen:scaleBySize(4)
+            t_tw:free()
+            -- Author
+            local auth_str = (c and c.authors and c.authors ~= "") and c.authors or ""
+            if auth_str ~= "" then
+                local a_tw = TextWidget:new{
+                    text    = auth_str,
+                    face    = Font:getFace("cfont", 15),
+                    width   = text_w,
+                    padding = 0,
+                }
+                a_tw:paintTo(canvas, text_x, ty)
+                ty = ty + a_tw:getSize().h + Screen:scaleBySize(4)
+                a_tw:free()
+            end
+            -- Pages
+            if c and c.pages and c.pages > 0 then
+                local m_tw = TextWidget:new{
+                    text    = c.pages .. " pages",
+                    face    = Font:getFace("cfont", 14),
+                    fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+                    width   = text_w,
+                    padding = 0,
+                }
+                m_tw:paintTo(canvas, text_x, ty)
+                m_tw:free()
+            end
+        else
+            -- Fallback: gray placeholder bars
+            canvas:paintRect(text_x, ry + math.floor(thumb_h * 0.25),
+                math.floor(text_w * 0.55), Screen:scaleBySize(10), Blitbuffer.COLOR_LIGHT_GRAY)
+            canvas:paintRect(text_x, ry + math.floor(thumb_h * 0.25) + Screen:scaleBySize(18),
+                math.floor(text_w * 0.35), Screen:scaleBySize(8), Blitbuffer.COLOR_LIGHT_GRAY)
+        end
+        if i < 1 then
+            canvas:paintRect(PAD, ry + thumb_h + math.floor(GAP / 2),
+                avail_w - 2 * PAD, 1, Blitbuffer.COLOR_LIGHT_GRAY)
+        end
+    end
+    return canvas
+end
+
 -- ---------------------------------------------------------------------------
 -- ctx = { plugin = <ZenUI plugin>, config = <config table> }
 -- ---------------------------------------------------------------------------
@@ -151,7 +476,7 @@ function M.build_install_pages(ctx)
     -- Page table
     -- -----------------------------------------------------------------------
 
-    return {
+    local pages = {
         -- 1. Welcome (static)
         {
             title       = "Welcome to Zen UI",
@@ -163,14 +488,14 @@ function M.build_install_pages(ctx)
         {
             title       = "File Browser",
             image       = img("onboarding/library_covers.png"),
-            description = "Cover images as folder thumbnails, clean mosaic and list views,\nhidden clutter, and a streamlined context menu.",
+            description = "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu.",
         },
            -- 5. Context Menu (static)
 
         {
             title       = "Context Menu",
             image       = img("onboarding/context_menu.png"),
-            description = "Tap and hold any book or folder in your library to reveal details and options specific to that item.\nEdit items, manage collections, view book information and more.",
+            description = "Tap and hold any book or folder in your library to reveal details.",
         },
 
         -- 3. Authors & Series (static)
@@ -183,7 +508,6 @@ function M.build_install_pages(ctx)
         -- 4. Library View (INTERACTIVE — radio)
         {
             title       = "Library View",
-            description = "How would you like to browse your library?",
             choice_type = "radio",
             choices     = {
                 { id = "mosaic", text = "Mosaic — large cover thumbnails",     image = img("onboarding/library_covers.png"), checked = true  },
@@ -200,7 +524,7 @@ function M.build_install_pages(ctx)
         {
             title       = "Navigation Bar",
             image       = img("onboarding/navbar.png"),
-            description = "A clean, tab-based bar at the bottom of your library.\nConfigurable tabs: Books, Favorites, History, Collections, and more.",
+            description = "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own",
         },
 
         -- 7. Navbar Tabs (INTERACTIVE — checkbox)
@@ -236,21 +560,21 @@ function M.build_install_pages(ctx)
         {
             title       = "Quick Settings",
             image       = img("onboarding/quicksettings.png"),
-            description = "Swipe down to reach brightness, warmth, Wi-Fi, night mode, zen mode and more.\nFully configurable — reorder or hide any button.",
+            description = "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more.",
         },
 
         -- 9. Zen Mode (static)
         {
             title       = "Zen Mode",
             image       = img("onboarding/zen_mode.png"),
-            description = "Turn on Zen mode to strip KOReader down to its bare essentials.\nRemoves visual clutter for a focused, distraction-free reading experience. Toggle it off to access anything that was removed.",
+            description = "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings.",
         },
 
         -- 10. Status Bars (static)
         {
-            title       = "Status Bars",
+            title       = "Status Bar",
             image       = img("onboarding/status_bar.png"),
-            description = "Minimal status bar in the library view.\nShow only what you need: time, battery, disk space, etc.",
+            description = "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc.",
         },
 
         -- 11. Sleep Screen (INTERACTIVE — radio)
@@ -304,7 +628,7 @@ function M.build_install_pages(ctx)
         {
             title       = "Reader",
             image       = img("onboarding/reader.png"),
-            description = "An unobtrusive clock overlay, disabled accidental bottom menu,\nand clean footer presets for the reading view.",
+            description = "An unobtrusive reader view with customizable top clock bar and bottom progress bar.",
         },
 
         -- 15. Reader Progress (INTERACTIVE — radio)
@@ -336,7 +660,7 @@ function M.build_install_pages(ctx)
         {
             title       = "Page Browser",
             image       = img("onboarding/page_browser.png"),
-            description = "Swipe up from the bottom of the reader to open the Page Browser.\nSkip through pages or chapters, browse the table of contents, manage bookmarks, adjust fonts, and search your book.",
+            description = "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more.",
         },
 
         -- 16. Settings & Updates (static)
@@ -354,6 +678,40 @@ function M.build_install_pages(ctx)
             description = "The best interface is the one you forget is there.\nNow go get lost in a good book.",
         },
     }
+
+    -- Inject real cover art and rendered icons into preview pages.
+    local ok_inject, err_inject = pcall(function()
+        local covers  = loadQuickstartCovers(3)
+        local Device  = require("device")
+        local avail_w = Device.screen:getWidth() - Device.screen:scaleBySize(80)
+        local mosaic_bb  = #covers > 0 and buildMosaicBB(covers, avail_w) or nil
+        local list_bb    = #covers > 0 and buildListBB(covers, avail_w) or nil
+        local browser_bb = #covers > 0 and buildMosaicBB(covers, avail_w) or nil
+        local zen_bb     = buildZenButtonBB(avail_w)
+        for _, c in ipairs(covers) do c.bb:free() end
+        for _, page in ipairs(pages) do
+            if page.title == "File Browser" and browser_bb then
+                page.image_bb, page.image = browser_bb, nil
+            elseif page.title == "Zen Mode" and zen_bb then
+                page.image_bb, page.image = zen_bb, nil
+            end
+            if page.choices then
+                for _, choice in ipairs(page.choices) do
+                    if choice.id == "mosaic" and mosaic_bb then
+                        choice.image_bb, choice.image = mosaic_bb, nil
+                    elseif choice.id == "list" and list_bb then
+                        choice.image_bb, choice.image = list_bb, nil
+                    end
+                end
+            end
+        end
+    end)
+    if not ok_inject then
+        local logger = require("logger")
+        logger.warn("ZenUI quickstart: cover injection failed:", err_inject)
+    end
+
+    return pages
 end
 
 -- ---------------------------------------------------------------------------

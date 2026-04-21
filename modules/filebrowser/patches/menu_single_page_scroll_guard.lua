@@ -29,6 +29,17 @@ local function apply_menu_single_page_scroll_guard()
         if (self.page_num or 1) <= 1 then return true end
         return orig_prev(self)
     end
+
+    -- Guard FileChooser item taps for 1s after quickstart closes.
+    local ok_fc, FileChooser = pcall(require, "ui/widget/filechooser")
+    if ok_fc and not FileChooser._zen_tap_cooldown_patched then
+        FileChooser._zen_tap_cooldown_patched = true
+        local orig_select = FileChooser.onMenuSelect
+        FileChooser.onMenuSelect = function(fc_self, item)
+            if _G.__ZEN_QUICKSTART_JUST_CLOSED then return true end
+            return orig_select and orig_select(fc_self, item)
+        end
+    end
 end
 
 return apply_menu_single_page_scroll_guard

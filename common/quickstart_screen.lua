@@ -175,20 +175,24 @@ function QuickstartScreen:_paintChoicesFullBand(bb, x, y, page)
     local band_top = y + L.img_y + L.pad
     local band_bot = y + L.dot_y - L.pad
 
-    -- Description as prompt at top of band
-    local prompt_w  = L.sw - L.pad * 4
-    local prompt_tb = TextBoxWidget:new{
-        text      = page.description or "",
-        face      = Font:getFace("cfont", 20),
-        width     = prompt_w,
-        alignment = "center",
-    }
-    local psz = prompt_tb:getSize()
-    prompt_tb:paintTo(bb, x + math.floor((L.sw - prompt_w) / 2), band_top)
-    prompt_tb:free()
+    local choices_top
+    if page.description and page.description ~= "" then
+        -- Description as prompt at top of band
+        local prompt_w  = L.sw - L.pad * 2
+        local prompt_tb = TextBoxWidget:new{
+            text      = page.description,
+            face      = Font:getFace("cfont", 20),
+            width     = prompt_w,
+            alignment = "center",
+        }
+        local psz = prompt_tb:getSize()
+        prompt_tb:paintTo(bb, x + math.floor((L.sw - prompt_w) / 2), band_top)
+        prompt_tb:free()
+        choices_top = band_top + psz.h + Screen:scaleBySize(12)
+    else
+        choices_top = band_top
+    end
 
-    -- Choices below prompt
-    local choices_top  = band_top + psz.h + Screen:scaleBySize(12)
     local choices_avail = band_bot - choices_top
     local row_h = n > 0 and math.max(20, math.floor(choices_avail / n)) or 20
 
@@ -223,8 +227,8 @@ function QuickstartScreen:_paintChoiceRows(bb, x, choices_top, row_h, page, sel)
 
         -- Reserve image space at the bottom of the row; text+indicator go above
         local img_reserve_h = 0
-        if choice.image and ImageWidget then
-            img_reserve_h = math.min(math.floor(row_h * 0.72), Screen:scaleBySize(240))
+        if (choice.image or choice.image_bb) and ImageWidget then
+            img_reserve_h = math.min(math.floor(row_h * 0.72), Screen:scaleBySize(400))
         end
         local text_h = row_h - img_reserve_h
         local mid_y  = row_y + math.floor(text_h / 2)
@@ -249,15 +253,27 @@ function QuickstartScreen:_paintChoiceRows(bb, x, choices_top, row_h, page, sel)
         tw:free()
 
         -- Image below the indicator+text
-        if choice.image and ImageWidget then
+        if (choice.image or choice.image_bb) and ImageWidget then
             pcall(function()
-                local iw = ImageWidget:new{
-                    file         = choice.image,
-                    width        = img_avail_w,
-                    height       = img_reserve_h,
-                    scale_factor = 0,
-                    alpha        = true,
-                }
+                local iw
+                if choice.image_bb then
+                    iw = ImageWidget:new{
+                        image                 = choice.image_bb,
+                        width                 = img_avail_w,
+                        height                = img_reserve_h,
+                        scale_factor          = 0,
+                        image_disposable      = false,
+                        original_in_nightmode = false,
+                    }
+                else
+                    iw = ImageWidget:new{
+                        file         = choice.image,
+                        width        = img_avail_w,
+                        height       = img_reserve_h,
+                        scale_factor = 0,
+                        alpha        = true,
+                    }
+                end
                 local isz = iw:getSize()
                 iw:paintTo(bb, x + math.floor((L.sw - isz.w) / 2), row_y + text_h)
                 iw:free()
@@ -273,7 +289,7 @@ function QuickstartScreen:paintTo(bb, x, y)
 
     local page = self.pages[self._page_idx] or {}
     local has_icon  = page.icon  and IconWidget  ~= nil
-    local has_image = page.image and ImageWidget ~= nil
+    local has_image = (page.image or page.image_bb) and ImageWidget ~= nil
     local has_visual = has_icon or has_image
 
     -- -------------------------------------------------------------------------
@@ -321,13 +337,25 @@ function QuickstartScreen:paintTo(bb, x, y)
             pcall(function()
                 local max_w = L.sw - L.pad * 2
                 local max_h = L.img_h - Screen:scaleBySize(8)
-                local iw = ImageWidget:new{
-                    file         = page.image,
-                    width        = max_w,
-                    height       = max_h,
-                    scale_factor = 0,
-                    alpha        = true,
-                }
+                local iw
+                if page.image_bb then
+                    iw = ImageWidget:new{
+                        image                 = page.image_bb,
+                        width                 = max_w,
+                        height                = max_h,
+                        scale_factor          = 0,
+                        image_disposable      = false,
+                        original_in_nightmode = false,
+                    }
+                else
+                    iw = ImageWidget:new{
+                        file         = page.image,
+                        width        = max_w,
+                        height       = max_h,
+                        scale_factor = 0,
+                        alpha        = true,
+                    }
+                end
                 local isz = iw:getSize()
                 iw:paintTo(bb,
                     x + math.floor((L.sw - isz.w) / 2),
@@ -337,7 +365,7 @@ function QuickstartScreen:paintTo(bb, x, y)
         end
 
         -- Description text
-        local desc_w  = L.sw - L.pad * 4
+        local desc_w  = L.sw - L.pad * 2
         local desc_tb = TextBoxWidget:new{
             text      = page.description or "",
             face      = Font:getFace("cfont", 20),
@@ -529,9 +557,12 @@ function QuickstartScreen:_onTap(ges)
 
     -- Navigation row
     if p.y >= L.nav_y then
+        local page = self.pages[self._page_idx] or {}
         if p.x < math.floor(L.sw / 2) then
             self:_prevPage()
-        else
+        elseif not page.finale then
+            -- On finale pages the nav-row right side is blank; only the
+            -- rendered Get Started button should fire the close callback.
             self:_nextPage()
         end
         return true
@@ -584,6 +615,22 @@ function QuickstartScreen:_onTap(ges)
     return true
 end
 
+function QuickstartScreen:onCloseWidget()
+    -- Free any dynamically composed cover blitbuffers.
+    for _, page in ipairs(self.pages or {}) do
+        if page.image_bb then
+            page.image_bb:free()
+            page.image_bb = nil
+        end
+        for _, choice in ipairs(page.choices or {}) do
+            if choice.image_bb then
+                choice.image_bb:free()
+                choice.image_bb = nil
+            end
+        end
+    end
+end
+
 function QuickstartScreen:onShow()
     UIManager:setDirty(self, function()
         return "partial", self.dimen
@@ -593,6 +640,9 @@ end
 function QuickstartScreen:onClose()
     UIManager:setDirty(nil, "full")
     UIManager:close(self)
+    -- Block filebrowser taps for 1.5s so the close-gesture doesn't open a file.
+    _G.__ZEN_QUICKSTART_JUST_CLOSED = true
+    UIManager:scheduleIn(1.5, function() _G.__ZEN_QUICKSTART_JUST_CLOSED = nil end)
     if self.on_close then
         self.on_close()
     end

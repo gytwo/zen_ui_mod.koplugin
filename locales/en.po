@@ -956,6 +956,33 @@ msgstr "Z-Library"
 msgid "Zen"
 msgstr "Zen"
 
+msgid "Lockdown"
+msgstr "Lockdown"
+
+msgid "Lockdown mode"
+msgstr "Lockdown mode"
+
+msgid "Enable lockdown mode"
+msgstr "Enable lockdown mode"
+
+msgid "Disable context menu"
+msgstr "Disable context menu"
+
+msgid "Require hold to toggle buttons"
+msgstr "Require hold to toggle buttons"
+
+msgid "Disable settings panel"
+msgstr "Disable settings panel"
+
+msgid "Disable bottom menu swipe"
+msgstr "Disable bottom menu swipe"
+
+msgid "Disable multi-word selection"
+msgstr "Disable multi-word selection"
+
+msgid "Disable word search on hold"
+msgstr "Disable word search on hold"
+
 msgid "Zen Mode"
 msgstr "Zen Mode"
 

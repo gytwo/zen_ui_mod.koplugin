@@ -36,7 +36,12 @@ local function apply_page_browser()
         local features = _plugin_ref
             and _plugin_ref.config
             and _plugin_ref.config.features
-        return type(features) == "table" and features.page_browser == true
+        if type(features) ~= "table" or features.page_browser ~= true then return false end
+        if features.lockdown_mode == true then
+            local lc = _plugin_ref.config.lockdown
+            if type(lc) == "table" and lc.disable_bottom_menu_swipe then return false end
+        end
+        return true
     end
 
     -- -----------------------------------------------------------------------
@@ -1768,8 +1773,13 @@ local function apply_page_browser()
         local features = _plugin_ref
             and _plugin_ref.config
             and _plugin_ref.config.features
-        return type(features) == "table"
-            and (features.page_browser == true or features.reader_bottom_menu == true)
+        if type(features) ~= "table" then return false end
+        if not (features.page_browser == true or features.reader_bottom_menu == true) then return false end
+        if features.lockdown_mode == true then
+            local lc = _plugin_ref.config.lockdown
+            if type(lc) == "table" and lc.disable_bottom_menu_swipe then return false end
+        end
+        return true
     end
 
     local ok_rc, ReaderConfig = pcall(require, "apps/reader/modules/readerconfig")

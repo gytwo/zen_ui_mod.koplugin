@@ -225,15 +225,22 @@ function ZenUI:init()
             if type(m_self.tab_item_table) ~= "table" or not _zen_plugin_ref then return end
             -- Insert Zen UI tab right after quicksettings.
             local zen_items = zen_settings.build(_zen_plugin_ref).sub_item_table
-            -- Use the badge icon when an update is available.
-            if zen_updater.has_update() then
-                zen_items.icon = "zen_settings_update"
-            else
-                zen_items.icon = "zen_settings"
+            -- Hide the zen tab if lockdown hides the settings panel.
+            local _lc = _zen_plugin_ref.config and _zen_plugin_ref.config.lockdown
+            local _ft = _zen_plugin_ref.config and _zen_plugin_ref.config.features
+            local _panel_hidden = type(_lc) == "table" and _lc.disable_settings_panel == true
+                and type(_ft) == "table" and _ft.lockdown_mode == true
+            if not _panel_hidden then
+                -- TODO: // remove this -> Use the badge icon when an update is available.
+                if zen_updater.has_update() then
+                    zen_items.icon = "zen_settings_update"
+                else
+                    zen_items.icon = "zen_settings"
+                end
+                local qs_pos = find_quicksettings_pos(m_self.tab_item_table)
+                local insert_pos = qs_pos and (qs_pos + 1) or 1
+                table.insert(m_self.tab_item_table, insert_pos, zen_items)
             end
-            local qs_pos = find_quicksettings_pos(m_self.tab_item_table)
-            local insert_pos = qs_pos and (qs_pos + 1) or 1
-            table.insert(m_self.tab_item_table, insert_pos, zen_items)
             -- Append Home tab at the far right (stretched position).
             local home_tab = { icon = "library", remember = false }
             home_tab.callback = function()

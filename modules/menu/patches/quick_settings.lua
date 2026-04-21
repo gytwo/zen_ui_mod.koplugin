@@ -53,12 +53,13 @@ local function apply_quick_settings()
     -- ============================================================
 
     local config_default = {
-        button_order = { "wifi", "night", "rotate", "zen", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
         show_buttons = {
             wifi = true,
             night = true,
             rotate = true,
             zen = true,
+            lockdown = false,
             usb = false,
             search = false,
             quickrss = false,
@@ -357,6 +358,26 @@ local function apply_quick_settings()
                 })
             end,
         },
+        lockdown = {
+            icon = "quick_lockdown",
+            label = _("Lockdown"),
+            active_func = function()
+                local features = zen_plugin.config and zen_plugin.config.features
+                return type(features) == "table" and features.lockdown_mode == true
+            end,
+            callback = function(touch_menu)
+                local features = zen_plugin.config and zen_plugin.config.features
+                if type(features) ~= "table" then return end
+                local enabling = not features.lockdown_mode
+                features.lockdown_mode = enabling
+                if enabling then features.zen_mode = true end
+                if zen_plugin.saveConfig then zen_plugin:saveConfig() end
+                if touch_menu and touch_menu.updateItems then
+                    touch_menu:updateItems(1)
+                end
+                require("settings/zen_settings_apply").prompt_restart()
+            end,
+        },
         filebrowser = {
             icon = "quick_filebrowser",
             label = _("FileBrowser"),
@@ -579,6 +600,13 @@ local function apply_quick_settings()
     -- Gesture handler for panel taps/pans
     -- ============================================================
 
+    local function is_qs_hold_required()
+        local features = zen_plugin.config and zen_plugin.config.features
+        if not (type(features) == "table" and features.lockdown_mode == true) then return false end
+        local lc = zen_plugin.config.lockdown
+        return type(lc) == "table" and lc.require_hold_in_qs == true
+    end
+
     local function handlePanelGesture(touch_menu, ges, is_hold)
         local refs = touch_menu._qs_refs
         if not refs then return false end
@@ -603,11 +631,20 @@ local function apply_quick_settings()
         -- Check buttons
         for _, btn_ref in ipairs(refs.buttons) do
             if btn_ref.widget.dimen and ges.pos:intersectWith(btn_ref.widget.dimen) then
+                if is_qs_hold_required() then
+                    -- Hold fires the callback; tap is swallowed.
+                    if is_hold then
+                        btn_ref.callback(touch_menu)
+                        return true
+                    else
+                        return true -- swallow tap
+                    end
+                end
                 if is_hold and btn_ref.hold_callback then
                     btn_ref.hold_callback()
                     return true
                 elseif not is_hold then
-                    btn_ref.callback()
+                    btn_ref.callback(touch_menu)
                     return true
                 end
                 -- hold with no hold_callback: don't consume, let it fall through

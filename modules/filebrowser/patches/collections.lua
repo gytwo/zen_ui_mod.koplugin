@@ -751,6 +751,12 @@ local function apply_collections()
     end
 
     local function show_coll_blank_menu(fm_coll)
+        local ft = zen_plugin and zen_plugin.config and zen_plugin.config.features
+        local lc = zen_plugin and zen_plugin.config and zen_plugin.config.lockdown
+        if type(ft) == "table" and ft.lockdown_mode == true
+                and type(lc) == "table" and lc.disable_context_menu == true then
+            return
+        end
         local ButtonDialog = require("ui/widget/buttondialog")
         local UIManager_bm = require("ui/uimanager")
         local _            = require("gettext")
@@ -914,6 +920,18 @@ local function apply_collections()
         if not menu then return end
 
         local UIManager_mod = require("ui/uimanager")
+
+        -- Guard book-item hold inside a named collection
+        local orig_onMenuHold = menu.onMenuHold
+        menu.onMenuHold = function(self_menu, item, pos)
+            local ft = zen_plugin and zen_plugin.config and zen_plugin.config.features
+            local lc = zen_plugin and zen_plugin.config and zen_plugin.config.lockdown
+            if type(ft) == "table" and ft.lockdown_mode == true
+                    and type(lc) == "table" and lc.disable_context_menu == true then
+                return true
+            end
+            if orig_onMenuHold then return orig_onMenuHold(self_menu, item, pos) end
+        end
 
         menu._do_center_partial_rows = false
         menu:updateItems(1, true)

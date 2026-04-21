@@ -47,6 +47,7 @@ local defaults = {
         highlight_lookup     = true,
         dict_quick_lookup    = true,
         custom_icons_enabled = false,
+        lockdown_mode        = false,
     },
     navbar = {
         show_tabs = {
@@ -81,12 +82,13 @@ local defaults = {
         show_top_border = true,
     },
     quick_settings = {
-        button_order = { "wifi", "night", "rotate", "zen", "settings", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "settings", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
         show_buttons = {
             wifi = true,
             night = true,
             rotate = true,
             zen = true,
+            lockdown = false,
             settings = true,
             usb = false,
             search = false,
@@ -185,6 +187,14 @@ local defaults = {
     },
     stats_page = {
         rows = { "today", "this_month", "this_year", "all_time", "library" },
+    },
+    lockdown = {
+        disable_context_menu      = false,
+        disable_bottom_menu_swipe = false,
+        disable_word_selection    = false,
+        disable_hold_search       = false,
+        require_hold_in_qs        = false,
+        disable_settings_panel    = false,
     },
 }
 

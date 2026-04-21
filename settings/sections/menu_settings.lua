@@ -22,6 +22,7 @@ function M.build(ctx)
         { key = "wifi",        text = _("Wi-Fi")          },
         { key = "night",       text = _("Night mode")     },
         { key = "zen",         text = _("Zen mode")       },
+        { key = "lockdown",    text = _("Lockdown")        },
         { key = "rotate",      text = _("Rotate")         },
         { key = "usb",         text = _("USB")            },
         { key = "search",      text = _("File search")    },

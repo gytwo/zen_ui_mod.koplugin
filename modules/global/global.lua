@@ -7,6 +7,7 @@ local PATCH_MODULES = {
     brightness_schedule    = "modules/global/patches/brightness_schedule",
     disable_night_on_exit  = "modules/global/patches/disable_night_on_exit",
     menu_top_swipe         = "modules/global/patches/menu_top_swipe",
+    lockdown_mode          = "modules/global/patches/lockdown_mode",
 }
 
 local function run_patch(logger, plugin, feature, fn)
@@ -54,6 +55,12 @@ function M.init(logger, plugin)
     local menu_top_swipe_fn = load_patch("menu_top_swipe")
     if menu_top_swipe_fn then
         run_patch(logger, plugin, "menu_top_swipe", menu_top_swipe_fn)
+    end
+
+    -- Lockdown mode runs last so it wraps any reader-layer patches (e.g. margin_hold_guard).
+    local lockdown_mode_fn = load_patch("lockdown_mode")
+    if lockdown_mode_fn then
+        run_patch(logger, plugin, "lockdown_mode", lockdown_mode_fn)
     end
 
     -- Hook Device._afterResume / _beforeSuspend directly so schedules always

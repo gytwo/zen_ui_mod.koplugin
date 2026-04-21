@@ -592,6 +592,94 @@ function M.build(ctx)
         end,
     })
 
+    -- Lockdown mode
+    table.insert(items, {
+        text = _("Lockdown mode"),
+        sub_item_table = {
+            {
+                text = _("Library"),
+                sub_item_table = {
+                    {
+                        text = _("Disable context menu"),
+                        checked_func = function()
+                            return config.lockdown and config.lockdown.disable_context_menu == true
+                        end,
+                        callback = function()
+                            if type(config.lockdown) ~= "table" then config.lockdown = {} end
+                            config.lockdown.disable_context_menu = not config.lockdown.disable_context_menu
+                            plugin:saveConfig()
+                        end,
+                    },
+                },
+            },
+            {
+                text = _("Quick Settings"),
+                sub_item_table = {
+                    {
+                        text = _("Require hold to toggle buttons"),
+                        checked_func = function()
+                            return config.lockdown and config.lockdown.require_hold_in_qs == true
+                        end,
+                        callback = function()
+                            if type(config.lockdown) ~= "table" then config.lockdown = {} end
+                            config.lockdown.require_hold_in_qs = not config.lockdown.require_hold_in_qs
+                            plugin:saveConfig()
+                        end,
+                    },
+                    {
+                        text = _("Disable settings panel"),
+                        checked_func = function()
+                            return config.lockdown and config.lockdown.disable_settings_panel == true
+                        end,
+                        callback = function()
+                            if type(config.lockdown) ~= "table" then config.lockdown = {} end
+                            config.lockdown.disable_settings_panel = not config.lockdown.disable_settings_panel
+                            plugin:saveConfig()
+                        end,
+                    },
+                },
+            },
+            {
+                text = _("Reader"),
+                sub_item_table = {
+                    {
+                        text = _("Disable bottom menu swipe"),
+                        checked_func = function()
+                            return config.lockdown and config.lockdown.disable_bottom_menu_swipe == true
+                        end,
+                        callback = function()
+                            if type(config.lockdown) ~= "table" then config.lockdown = {} end
+                            config.lockdown.disable_bottom_menu_swipe = not config.lockdown.disable_bottom_menu_swipe
+                            plugin:saveConfig()
+                        end,
+                    },
+                    {
+                        text = _("Disable multi-word selection"),
+                        checked_func = function()
+                            return config.lockdown and config.lockdown.disable_word_selection == true
+                        end,
+                        callback = function()
+                            if type(config.lockdown) ~= "table" then config.lockdown = {} end
+                            config.lockdown.disable_word_selection = not config.lockdown.disable_word_selection
+                            plugin:saveConfig()
+                        end,
+                    },
+                    {
+                        text = _("Disable word search on hold"),
+                        checked_func = function()
+                            return config.lockdown and config.lockdown.disable_hold_search == true
+                        end,
+                        callback = function()
+                            if type(config.lockdown) ~= "table" then config.lockdown = {} end
+                            config.lockdown.disable_hold_search = not config.lockdown.disable_hold_search
+                            plugin:saveConfig()
+                        end,
+                    },
+                },
+            },
+        },
+    })
+
     return items
 end
 

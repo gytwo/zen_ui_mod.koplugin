@@ -1,12 +1,10 @@
 -- settings/sections/library_settings.lua
 -- Library (filebrowser) settings items for Zen UI.
--- Delegates Navbar and Status bar to dedicated sub-modules.
 -- Receives ctx: { plugin, config, save_and_apply, apply_feature }
 
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
 
-local navbar_section     = require("settings/sections/library_settings/navbar_settings")
 local status_bar_section = require("settings/sections/library_settings/status_bar_settings")
 local settings_apply     = require("settings/zen_settings_apply")
 
@@ -19,7 +17,6 @@ function M.build(ctx)
 
     local items = {}
 
-    table.insert(items, navbar_section.build(ctx))
     table.insert(items, status_bar_section.build(ctx))
 
     -- -------------------------------------------------------------------------

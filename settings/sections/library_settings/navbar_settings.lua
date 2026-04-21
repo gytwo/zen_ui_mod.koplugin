@@ -111,194 +111,8 @@ function M.build(ctx)
         text = _("Navbar"),
         sub_item_table = {
             {
-                text = _("Show top border"),
-                checked_func = function() return config.navbar.show_top_border == true end,
-                callback = function()
-                    config.navbar.show_top_border = not (config.navbar.show_top_border == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Show labels"),
-                checked_func = function() return config.navbar.show_labels == true end,
-                callback = function()
-                    config.navbar.show_labels = not (config.navbar.show_labels == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Active tab styling"),
-                checked_func = function() return config.navbar.active_tab_styling == true end,
-                callback = function()
-                    config.navbar.active_tab_styling = not (config.navbar.active_tab_styling == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Bold active tab"),
-                checked_func = function() return config.navbar.active_tab_bold == true end,
-                enabled_func = function() return config.navbar.active_tab_styling == true end,
-                callback = function()
-                    config.navbar.active_tab_bold = not (config.navbar.active_tab_bold == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Active tab underline"),
-                checked_func = function() return config.navbar.active_tab_underline == true end,
-                enabled_func = function() return config.navbar.active_tab_styling == true end,
-                callback = function()
-                    config.navbar.active_tab_underline = not (config.navbar.active_tab_underline == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Underline above icon"),
-                checked_func = function() return config.navbar.underline_above == true end,
-                enabled_func = function()
-                    return config.navbar.active_tab_styling == true
-                        and config.navbar.active_tab_underline == true
-                end,
-                callback = function()
-                    config.navbar.underline_above = not (config.navbar.underline_above == true)
-                    save_and_apply("navbar")
-                end,
-            },
-            {
-                text = _("Colored active tab"),
-                checked_func = function() return config.navbar.colored == true end,
-                enabled_func = function() return config.navbar.active_tab_styling == true end,
-                callback = function()
-                    config.navbar.colored = not (config.navbar.colored == true)
-                    save_and_apply_navbar()
-                end,
-            },
-            {
-                text_func = function()
-                    local c = ensure_navbar_color()
-                    return _("Active tab color: ") .. string.format("%d,%d,%d", c[1], c[2], c[3])
-                end,
-                enabled_func = function()
-                    return config.navbar.active_tab_styling == true and config.navbar.colored == true
-                end,
-                sub_item_table = {
-                    {
-                        text = _("Blue"),
-                        checked_func = function()
-                            local c = ensure_navbar_color()
-                            return c[1] == 0x33 and c[2] == 0x99 and c[3] == 0xFF
-                        end,
-                        callback = function()
-                            set_navbar_color(0x33, 0x99, 0xFF)
-                            save_and_apply_navbar()
-                        end,
-                    },
-                    {
-                        text = _("Green"),
-                        checked_func = function()
-                            local c = ensure_navbar_color()
-                            return c[1] == 0x33 and c[2] == 0xAA and c[3] == 0x55
-                        end,
-                        callback = function()
-                            set_navbar_color(0x33, 0xAA, 0x55)
-                            save_and_apply_navbar()
-                        end,
-                    },
-                    {
-                        text = _("Amber"),
-                        checked_func = function()
-                            local c = ensure_navbar_color()
-                            return c[1] == 0xFF and c[2] == 0xAA and c[3] == 0x00
-                        end,
-                        callback = function()
-                            set_navbar_color(0xFF, 0xAA, 0x00)
-                            save_and_apply_navbar()
-                        end,
-                    },
-                    {
-                        text = _("Red"),
-                        checked_func = function()
-                            local c = ensure_navbar_color()
-                            return c[1] == 0xDD and c[2] == 0x33 and c[3] == 0x33
-                        end,
-                        callback = function()
-                            set_navbar_color(0xDD, 0x33, 0x33)
-                            save_and_apply_navbar()
-                        end,
-                    },
-                    {
-                        text_func = function()
-                            local c = ensure_navbar_color()
-                            return _("Custom RGB") .. " (" .. string.format("%d,%d,%d", c[1], c[2], c[3]) .. ")"
-                        end,
-                        keep_menu_open = true,
-                        callback = function(touchmenu_instance)
-                            local InputDialog = require("ui/widget/inputdialog")
-                            local c = ensure_navbar_color()
-                            local dlg
-                            dlg = InputDialog:new{
-                                title = _("Active tab RGB"),
-                                input = string.format("%d,%d,%d", c[1], c[2], c[3]),
-                                hint = _("Format: R,G,B (0-255)"),
-                                buttons = {{
-                                    {
-                                        text = _("Cancel"),
-                                        id = "close",
-                                        callback = function() UIManager:close(dlg) end,
-                                    },
-                                    {
-                                        text = _("Set"),
-                                        is_enter_default = true,
-                                        callback = function()
-                                            local text = dlg:getInputText() or ""
-                                            local r, g, b = text:match("^%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*$")
-                                            if r and g and b then
-                                                set_navbar_color(tonumber(r), tonumber(g), tonumber(b))
-                                                UIManager:close(dlg)
-                                                save_and_apply_navbar()
-                                                if touchmenu_instance then
-                                                    touchmenu_instance:updateItems()
-                                                end
-                                            end
-                                        end,
-                                    },
-                                }},
-                            }
-                            UIManager:show(dlg)
-                            dlg:onShowKeyboard()
-                        end,
-                    },
-                },
-            },
-            {
                 text = _("Tabs"),
                 sub_item_table = {
-                    {
-                        text = _("Arrange tabs"),
-                        keep_menu_open = true,
-                        callback = function()
-                            local SortWidget = require("ui/widget/sortwidget")
-                            local sort_items = {}
-                            for _, tab in ipairs(navbar_tab_items) do
-                                local is_visible = tab.id == "books" or config.navbar.show_tabs[tab.id] == true
-                                table.insert(sort_items, {
-                                    text = tab.text,
-                                    orig_item = tab.id,
-                                    dim = not is_visible,
-                                })
-                            end
-                            UIManager:show(SortWidget:new{
-                                title = _("Arrange navbar tabs"),
-                                item_table = sort_items,
-                                callback = function()
-                                    for i, item in ipairs(sort_items) do
-                                        config.navbar.tab_order[i] = item.orig_item
-                                    end
-                                    save_and_apply_navbar()
-                                end,
-                            })
-                        end,
-                    },
                     {
                         text_func = function()
                             local label = config.navbar.books_label
@@ -543,13 +357,204 @@ function M.build(ctx)
                         text = _("Visibility"),
                         sub_item_table = navbar_tab_toggle_items,
                     },
+                    {
+                        text = _("Arrange tabs"),
+                        keep_menu_open = true,
+                        callback = function()
+                            local SortWidget = require("ui/widget/sortwidget")
+                            local sort_items = {}
+                            for _, tab in ipairs(navbar_tab_items) do
+                                local is_visible = tab.id == "books" or config.navbar.show_tabs[tab.id] == true
+                                table.insert(sort_items, {
+                                    text = tab.text,
+                                    orig_item = tab.id,
+                                    dim = not is_visible,
+                                })
+                            end
+                            UIManager:show(SortWidget:new{
+                                title = _("Arrange navbar tabs"),
+                                item_table = sort_items,
+                                callback = function()
+                                    for i, item in ipairs(sort_items) do
+                                        config.navbar.tab_order[i] = item.orig_item
+                                    end
+                                    save_and_apply_navbar()
+                                end,
+                            })
+                        end,
+                    },
                 },
             },
             {
-                text = _("Refresh navbar"),
-                keep_menu_open = true,
+                text = _("Styling"),
+                sub_item_table = {
+                    {
+                        text = _("Show top border"),
+                        checked_func = function() return config.navbar.show_top_border == true end,
+                        callback = function()
+                            config.navbar.show_top_border = not (config.navbar.show_top_border == true)
+                            save_and_apply("navbar")
+                        end,
+                    },
+                    {
+                        text = _("Active tab styling"),
+                        checked_func = function() return config.navbar.active_tab_styling == true end,
+                        callback = function()
+                            config.navbar.active_tab_styling = not (config.navbar.active_tab_styling == true)
+                            save_and_apply("navbar")
+                        end,
+                    },
+                    {
+                        text = _("Bold active tab"),
+                        checked_func = function() return config.navbar.active_tab_bold == true end,
+                        enabled_func = function() return config.navbar.active_tab_styling == true end,
+                        callback = function()
+                            config.navbar.active_tab_bold = not (config.navbar.active_tab_bold == true)
+                            save_and_apply("navbar")
+                        end,
+                    },
+                    {
+                        text = _("Active tab underline"),
+                        checked_func = function() return config.navbar.active_tab_underline == true end,
+                        enabled_func = function() return config.navbar.active_tab_styling == true end,
+                        callback = function()
+                            config.navbar.active_tab_underline = not (config.navbar.active_tab_underline == true)
+                            save_and_apply("navbar")
+                        end,
+                    },
+                    {
+                        text = _("Underline above icon"),
+                        checked_func = function() return config.navbar.underline_above == true end,
+                        enabled_func = function()
+                            return config.navbar.active_tab_styling == true
+                                and config.navbar.active_tab_underline == true
+                        end,
+                        callback = function()
+                            config.navbar.underline_above = not (config.navbar.underline_above == true)
+                            save_and_apply("navbar")
+                        end,
+                    },
+                    {
+                        text = _("Colored active tab"),
+                        checked_func = function() return config.navbar.colored == true end,
+                        enabled_func = function() return config.navbar.active_tab_styling == true end,
+                        callback = function()
+                            config.navbar.colored = not (config.navbar.colored == true)
+                            save_and_apply_navbar()
+                        end,
+                    },
+                    {
+                        text_func = function()
+                            local c = ensure_navbar_color()
+                            return _("Active tab color: ") .. string.format("%d,%d,%d", c[1], c[2], c[3])
+                        end,
+                        enabled_func = function()
+                            return config.navbar.active_tab_styling == true and config.navbar.colored == true
+                        end,
+                        sub_item_table = {
+                            {
+                                text = _("Blue"),
+                                checked_func = function()
+                                    local c = ensure_navbar_color()
+                                    return c[1] == 0x33 and c[2] == 0x99 and c[3] == 0xFF
+                                end,
+                                callback = function()
+                                    set_navbar_color(0x33, 0x99, 0xFF)
+                                    save_and_apply_navbar()
+                                end,
+                            },
+                            {
+                                text = _("Green"),
+                                checked_func = function()
+                                    local c = ensure_navbar_color()
+                                    return c[1] == 0x33 and c[2] == 0xAA and c[3] == 0x55
+                                end,
+                                callback = function()
+                                    set_navbar_color(0x33, 0xAA, 0x55)
+                                    save_and_apply_navbar()
+                                end,
+                            },
+                            {
+                                text = _("Amber"),
+                                checked_func = function()
+                                    local c = ensure_navbar_color()
+                                    return c[1] == 0xFF and c[2] == 0xAA and c[3] == 0x00
+                                end,
+                                callback = function()
+                                    set_navbar_color(0xFF, 0xAA, 0x00)
+                                    save_and_apply_navbar()
+                                end,
+                            },
+                            {
+                                text = _("Red"),
+                                checked_func = function()
+                                    local c = ensure_navbar_color()
+                                    return c[1] == 0xDD and c[2] == 0x33 and c[3] == 0x33
+                                end,
+                                callback = function()
+                                    set_navbar_color(0xDD, 0x33, 0x33)
+                                    save_and_apply_navbar()
+                                end,
+                            },
+                            {
+                                text_func = function()
+                                    local c = ensure_navbar_color()
+                                    return _("Custom RGB") .. " (" .. string.format("%d,%d,%d", c[1], c[2], c[3]) .. ")"
+                                end,
+                                keep_menu_open = true,
+                                callback = function(touchmenu_instance)
+                                    local InputDialog = require("ui/widget/inputdialog")
+                                    local c = ensure_navbar_color()
+                                    local dlg
+                                    dlg = InputDialog:new{
+                                        title = _("Active tab RGB"),
+                                        input = string.format("%d,%d,%d", c[1], c[2], c[3]),
+                                        hint = _("Format: R,G,B (0-255)"),
+                                        buttons = {{
+                                            {
+                                                text = _("Cancel"),
+                                                id = "close",
+                                                callback = function() UIManager:close(dlg) end,
+                                            },
+                                            {
+                                                text = _("Set"),
+                                                is_enter_default = true,
+                                                callback = function()
+                                                    local text = dlg:getInputText() or ""
+                                                    local r, g, b = text:match("^%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*$")
+                                                    if r and g and b then
+                                                        set_navbar_color(tonumber(r), tonumber(g), tonumber(b))
+                                                        UIManager:close(dlg)
+                                                        save_and_apply_navbar()
+                                                        if touchmenu_instance then
+                                                            touchmenu_instance:updateItems()
+                                                        end
+                                                    end
+                                                end,
+                                            },
+                                        }},
+                                    }
+                                    UIManager:show(dlg)
+                                    dlg:onShowKeyboard()
+                                end,
+                            },
+                        },
+                    },
+                    {
+                        text = _("Refresh navbar"),
+                        keep_menu_open = true,
+                        callback = function()
+                            apply_feature("navbar")
+                        end,
+                    },
+                },
+            },
+            {
+                text = _("Show labels"),
+                checked_func = function() return config.navbar.show_labels == true end,
                 callback = function()
-                    apply_feature("navbar")
+                    config.navbar.show_labels = not (config.navbar.show_labels == true)
+                    save_and_apply("navbar")
                 end,
             },
         },

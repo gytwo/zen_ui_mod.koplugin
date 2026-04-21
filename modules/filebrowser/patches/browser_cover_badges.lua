@@ -97,6 +97,7 @@ local function apply_browser_cover_badges()
         local orig_paintTo = MosaicMenuItem.paintTo
         if not orig_paintTo then return end
 
+
         -- Build upvalue name→index map once at patch time for fast runtime reads.
         local uv_idx = {}
         for i = 1, 256 do
@@ -187,7 +188,13 @@ local function apply_browser_cover_badges()
             -- 4. Dog-ear marks suppressed
 
             -- 5. KOReader's bottom progress bar (show_progress_in_mosaic)
-            if self.show_progress_bar then
+            -- Gated on our own config so it defaults off and is immune to
+            -- BookInfoManager DB timing issues. Users can re-enable via settings.
+            local show_native = _plugin
+                and _plugin.config
+                and type(_plugin.config.browser_cover_badges) == "table"
+                and _plugin.config.browser_cover_badges.show_native_progress_bar == true
+            if self.show_progress_bar and show_native then
                 local progress_widget = uv("progress_widget")
                 if progress_widget then
                     local margin  = math.floor((corner_mark_size - progress_widget.height) / 2)

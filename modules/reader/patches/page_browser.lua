@@ -31,6 +31,7 @@ local function apply_page_browser()
     -- run_patch). After apply_page_browser() returns the global is cleared,
     -- so reading it inside gesture handlers would always return nil.
     local _plugin_ref = rawget(_G, "__ZEN_UI_PLUGIN")
+    ZenTocWidget.set_plugin(_plugin_ref)
     local function is_enabled()
         local features = _plugin_ref
             and _plugin_ref.config

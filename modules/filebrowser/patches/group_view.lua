@@ -32,7 +32,11 @@ end
 -- Returns "mosaic", "list", or "classic"
 -------------------------------------------------------------------------------
 local function setup_display_mode(menu, is_group_view, tab_id)
-    local BookInfoManager = require("bookinfomanager")
+    local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
+    if not ok_bim then
+        menu.display_mode_type = "classic"
+        return "classic"
+    end
     local display_mode
     if tab_id then
         local g_settings = rawget(_G, "G_reader_settings")
@@ -45,10 +49,16 @@ local function setup_display_mode(menu, is_group_view, tab_id)
         menu._zen_group_view = true
     end
 
-    if not display_mode then return "classic" end
+    if not display_mode then
+        menu.display_mode_type = "classic"
+        return "classic"
+    end
 
     local ok_cm, CoverMenu = pcall(require, "covermenu")
-    if not ok_cm then return false end
+    if not ok_cm then
+        menu.display_mode_type = "classic"
+        return "classic"
+    end
 
     local display_mode_type = display_mode:gsub("_.*", "")  -- "mosaic" or "list"
 
@@ -533,6 +543,33 @@ local function patch_list_item()
         }
         self.bookinfo_found = true
         self.init_done = true
+    end
+end
+
+-------------------------------------------------------------------------------
+-- install_gesture_passthrough: delegate swipe/multiswipe to FileManager so
+-- user-configured KOReader dispatcher gestures fire from within group views.
+-- Always returns true to prevent Menu's default swipe-to-close / pagination.
+-------------------------------------------------------------------------------
+local function install_gesture_passthrough(menu)
+    local function forward(ges)
+        local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+        if ok_fm and FM and FM.instance then
+            FM.instance:onGesture(ges)
+        end
+    end
+
+    -- Override onGesture: let Menu handle its own gestures first (item taps via
+    -- children, swipe pagination, top-swipe menu). For anything Menu doesn't
+    -- consume, forward to FileManager's gesture dispatcher so user-configured
+    -- Dispatcher gestures (corner taps, etc.) still fire.
+    local _orig_onGesture = menu.onGesture
+    function menu:onGesture(ges)
+        local consumed = _orig_onGesture and _orig_onGesture(self, ges)
+        if not consumed then
+            forward(ges)
+        end
+        return true
     end
 end
 
@@ -1068,6 +1105,8 @@ local function showDetailView(group_item, injectNavbar, tab_id)
         detail_menu.updateItems = Menu_class.updateItems
     end
 
+    install_gesture_passthrough(detail_menu)
+
     detail_menu.close_callback = function()
         UIManager:close(detail_menu)
     end
@@ -1220,6 +1259,8 @@ showGroupView = function(tab_id, injectNavbar, groups)
         local Menu_class = require("ui/widget/menu")
         menu.updateItems = Menu_class.updateItems
     end
+
+    install_gesture_passthrough(menu)
 
     menu.close_callback = function()
         UIManager:close(menu)
@@ -1421,6 +1462,8 @@ function M.showTBRView(injectNavbar)
         local Menu_class = require("ui/widget/menu")
         menu.updateItems = Menu_class.updateItems
     end
+
+    install_gesture_passthrough(menu)
 
     menu.close_callback = function()
         UIManager:close(menu)

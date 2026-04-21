@@ -111,8 +111,8 @@ local function apply_browser_hide_underline()
         local orig_menu_updateItems = Menu.updateItems
         function Menu:updateItems(...)
             orig_menu_updateItems(self, ...)
-            -- Classic file browser: leave underlines visible as row separators.
-            if self.name == "filemanager" then return end
+            -- Classic mode menus (file browser or group view): leave underlines visible.
+            if self.name == "filemanager" or self.display_mode_type == "classic" then return end
             if self.layout then
                 for _, row in ipairs(self.layout) do
                     for _, item in ipairs(row) do

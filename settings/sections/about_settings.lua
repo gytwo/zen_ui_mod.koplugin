@@ -33,18 +33,16 @@ function M.build(ctx)
         keep_menu_open = true,
     })
 
-    table.insert(items, {
-        text_func = function()
-            local fw = utils.get_kindle_firmware_display()
-            if fw == "n/a" then return nil end
-            return _("Firmware: ") .. fw
-        end,
-        enabled_func = function()
-            return utils.get_kindle_firmware_display() ~= "n/a"
-        end,
-        keep_menu_open = true,
-        separator = true
-    })
+    local fw = utils.get_kindle_firmware_display()
+    if fw ~= "n/a" then
+        table.insert(items, {
+            text_func = function()
+                return _("Firmware: ") .. utils.get_kindle_firmware_display()
+            end,
+            keep_menu_open = true,
+            separator = true
+        })
+    end
 
     table.insert(items, {
         text = _("Show quickstart"),
@@ -55,7 +53,21 @@ function M.build(ctx)
             local ok_pg, pages_mod = pcall(require, "common/quickstart_pages")
             if not ok_pg then return end
             UIManager:show(QuickstartScreen:new{
-                pages = pages_mod.INSTALL_PAGES,
+                pages    = pages_mod.build_install_pages({
+                    plugin = plugin,
+                    config = ctx.config,
+                }),
+                on_close = function()
+                    UIManager:nextTick(function()
+                        local reinject = _G.__ZEN_UI_REINJECT_FM_NAVBAR
+                        if type(reinject) == "function" then reinject() end
+                        local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
+                        local fm = ok and FileManager and FileManager.instance
+                        if fm and type(fm._updateStatusBar) == "function" then
+                            fm:_updateStatusBar()
+                        end
+                    end)
+                end,
             })
         end,
     })

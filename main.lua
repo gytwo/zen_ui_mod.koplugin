@@ -159,7 +159,10 @@ function ZenUI:init()
         local ok_pages, pages_mod = pcall(require, "common/quickstart_pages")
         if ok_pages then
             if shown_ver == false then
-                pages_to_show = pages_mod.INSTALL_PAGES
+                pages_to_show = pages_mod.build_install_pages({
+                    plugin = self,
+                    config = self.config,
+                })
             elseif type(shown_ver) == "string" and shown_ver ~= current_ver then
                 pages_to_show = pages_mod.UPDATE_PAGES[current_ver]
             end
@@ -174,7 +177,22 @@ function ZenUI:init()
                 local ok_qs, QuickstartScreen = pcall(require, "common/quickstart_screen")
                 if not ok_qs then return end
                 require("ui/uimanager"):show(QuickstartScreen:new{
-                    pages = pages_to_show,
+                    pages    = pages_to_show,
+                    on_close = function()
+                        -- scheduleIn(0) lets UIManager finish the close-frame before
+                        -- we force a full repaint and navbar reinject.
+                        require("ui/uimanager"):scheduleIn(0, function()
+                            local reinject = _G.__ZEN_UI_REINJECT_FM_NAVBAR
+                            if type(reinject) == "function" then
+                                reinject()
+                            else
+                                -- fallback when navbar feature is disabled
+                                local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
+                                local fm = ok and FileManager and FileManager.instance
+                                if fm and type(fm.onHome) == "function" then fm:onHome() end
+                            end
+                        end)
+                    end,
                 })
             end)
         end

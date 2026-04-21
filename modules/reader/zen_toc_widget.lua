@@ -65,6 +65,23 @@ local function normalize_title(s)
 end
 
 -- ---------------------------------------------------------------------------
+-- Captured once by page_browser.lua while __ZEN_UI_PLUGIN is still set.
+local _plugin_ref = nil
+
+-- Read scroll-bar style from config (live, no restart needed).
+-- ---------------------------------------------------------------------------
+local function get_style()
+    local p = _plugin_ref or rawget(_G, "__ZEN_UI_PLUGIN")
+    if p
+        and type(p.config) == "table"
+        and type(p.config.zen_scroll_bar) == "table"
+    then
+        return p.config.zen_scroll_bar.style or "dots"
+    end
+    return "dots"
+end
+
+-- ---------------------------------------------------------------------------
 -- ZenTocWidget
 -- ---------------------------------------------------------------------------
 local ZenTocWidget = InputContainer:extend{
@@ -123,14 +140,17 @@ function ZenTocWidget:init()
     local ROW_H       = Screen:scaleBySize(48)
     local BAR_H       = Screen:scaleBySize(5)
     local BAR_PAD_V   = Screen:scaleBySize(7)
+    local DOT_DIAM    = Screen:scaleBySize(10)
+    local DOT_GAP     = Screen:scaleBySize(12)
 
     -- Fit rows into full screen height (minus title bar and optional scrollbar).
     local max_list_h_full = sh - TITLE_H - SEP_H
     local per_page_full   = math.max(1, math.floor(max_list_h_full / ROW_H))
 
     -- Only add a scrollbar when entries overflow one screenful.
+    -- Height must accommodate the larger of bar and dots so live style toggle works.
     local needs_bar   = #entries > per_page_full
-    local SCROLLBAR_H = needs_bar and (BAR_H + BAR_PAD_V * 2) or 0
+    local SCROLLBAR_H = needs_bar and (math.max(BAR_H, DOT_DIAM) + BAR_PAD_V * 2) or 0
 
     local max_list_h = max_list_h_full - SCROLLBAR_H
     local per_page   = math.max(1, math.floor(max_list_h / ROW_H))
@@ -156,6 +176,7 @@ function ZenTocWidget:init()
         row_h   = ROW_H,   per_page = per_page,
         list_h  = list_h,  list_y   = LIST_Y,
         bar_h   = BAR_H,   bar_pad_v = BAR_PAD_V,
+        dot_diam = DOT_DIAM, dot_gap = DOT_GAP,
         scrollbar_h = SCROLLBAR_H,
         close_x = CLOSE_X, close_y = CLOSE_Y,
         close_w = CLOSE_W, close_h = TITLE_H,
@@ -328,19 +349,41 @@ function ZenTocWidget:paintTo(bb, x, y)
     -- Only rendered when there is more than one page of entries.
     -- -----------------------------------------------------------------------
     if self._nb_pages > 1 then
-        local bar_y   = my + L.modal_h - L.scrollbar_h
-        local bar_w   = math.floor(L.modal_w * 0.78)
-        local bar_x   = mx + math.floor((L.modal_w - bar_w) / 2)
-        local by      = bar_y + L.bar_pad_v
+        local scrollbar_top = my + L.modal_h - L.scrollbar_h
+        local bar_w = math.floor(L.modal_w * 0.78)
+        local bar_x = mx + math.floor((L.modal_w - bar_w) / 2)
 
-        paintPill(bb, bar_x, by, bar_w, L.bar_h, Blitbuffer.COLOR_LIGHT_GRAY)
+        if get_style() == "dots" then
+            local diam = L.dot_diam
+            local gap  = L.dot_gap
+            local step = diam + gap
+            local nb   = self._nb_pages
 
-        local thumb_w = math.max(L.bar_h * 2, math.floor(bar_w / self._nb_pages))
-        thumb_w       = math.min(thumb_w, bar_w)
-        local travel  = bar_w - thumb_w
-        local pct     = (self._toc_page - 1) / (self._nb_pages - 1)
-        local thumb_x = bar_x + math.floor(pct * travel)
-        paintPill(bb, thumb_x, by, thumb_w, L.bar_h, Blitbuffer.COLOR_BLACK)
+            if step * nb - gap > bar_w then
+                step = math.max(2, math.floor(bar_w / nb))
+                diam = math.max(1, step - 1)
+            end
+
+            local total_w = step * (nb - 1) + diam
+            local start_x = bar_x + math.floor((bar_w - total_w) / 2)
+            local dot_y   = scrollbar_top + math.floor((L.scrollbar_h - diam) / 2)
+
+            for i = 1, nb do
+                local dot_x = start_x + (i - 1) * step
+                local color = (i == self._toc_page) and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_DARK_GRAY
+                paintPill(bb, dot_x, dot_y, diam, diam, color)
+            end
+        else
+            local by = scrollbar_top + math.floor((L.scrollbar_h - L.bar_h) / 2)
+            paintPill(bb, bar_x, by, bar_w, L.bar_h, Blitbuffer.COLOR_LIGHT_GRAY)
+
+            local thumb_w = math.max(L.bar_h * 2, math.floor(bar_w / self._nb_pages))
+            thumb_w       = math.min(thumb_w, bar_w)
+            local travel  = bar_w - thumb_w
+            local pct     = (self._toc_page - 1) / (self._nb_pages - 1)
+            local thumb_x = bar_x + math.floor(pct * travel)
+            paintPill(bb, thumb_x, by, thumb_w, L.bar_h, Blitbuffer.COLOR_BLACK)
+        end
     end
 end
 
@@ -361,13 +404,6 @@ function ZenTocWidget:_onTap(ges)
     local p = ges.pos
     local L = self._L
 
-    -- Tap outside the modal → close
-    if p.x < L.modal_x or p.x >= L.modal_x + L.modal_w
-    or p.y < L.modal_y or p.y >= L.modal_y + L.modal_h then
-        self:onClose()
-        return true
-    end
-
     -- Tap on close button hit zone (top-left of title bar)
     if p.x >= L.close_x and p.x < L.close_x + L.close_w
     and p.y >= L.close_y and p.y < L.close_y + L.close_h then
@@ -386,6 +422,7 @@ function ZenTocWidget:_onTap(ges)
             if self.on_goto then
                 self.on_goto(page)
             end
+            return true
         end
     end
 
@@ -393,7 +430,6 @@ function ZenTocWidget:_onTap(ges)
 end
 
 function ZenTocWidget:_onSwipe(ges)
-    local p = ges.startpos or ges.pos
     local L = self._L
 
     -- Top 14% south swipe → open reader menu
@@ -408,7 +444,7 @@ function ZenTocWidget:_onSwipe(ges)
         end
     end
 
-    -- Swipe anywhere inside or outside — swallow so page browser doesn't turn pages.
+    -- East/west: internal TOC page navigation.
     if ges.direction == "west" and self._toc_page < self._nb_pages then
         self._toc_page = self._toc_page + 1
         UIManager:setDirty(self, function()
@@ -416,6 +452,7 @@ function ZenTocWidget:_onSwipe(ges)
                 x = L.modal_x, y = L.modal_y, w = L.modal_w, h = L.modal_h,
             }
         end)
+        return true
     elseif ges.direction == "east" and self._toc_page > 1 then
         self._toc_page = self._toc_page - 1
         UIManager:setDirty(self, function()
@@ -423,8 +460,10 @@ function ZenTocWidget:_onSwipe(ges)
                 x = L.modal_x, y = L.modal_y, w = L.modal_w, h = L.modal_h,
             }
         end)
+        return true
     end
 
+    -- Swallow all other swipes to prevent the underlying page browser from turning pages.
     return true
 end
 
@@ -436,6 +475,10 @@ function ZenTocWidget:onShow()
     UIManager:setDirty(self, function()
         return "partial", self.dimen
     end)
+end
+
+function ZenTocWidget.set_plugin(plugin)
+    _plugin_ref = plugin
 end
 
 return ZenTocWidget

@@ -70,17 +70,33 @@ function M.build(ctx)
         { id = "menu",        text = _("Menu")          },
     }
 
+    local navbar_max_tabs = 7
+
+    local function countEnabledTabs()
+        local count = 1 -- books is always shown
+        for id, v in pairs(config.navbar.show_tabs) do
+            if id ~= "books" and v == true then
+                count = count + 1
+            end
+        end
+        return count
+    end
+
     local navbar_tab_toggle_items = {}
-    for _, tab in ipairs(navbar_tab_items) do
+    for i, tab in ipairs(navbar_tab_items) do
         if tab.id ~= "books" then
+            local tab_id = tab.id
             table.insert(navbar_tab_toggle_items, {
                 text = tab.text,
                 checked_func = function()
-                    return config.navbar.show_tabs[tab.id] == true
+                    return config.navbar.show_tabs[tab_id] == true
+                end,
+                enabled_func = function()
+                    return config.navbar.show_tabs[tab_id] == true
+                        or countEnabledTabs() < navbar_max_tabs
                 end,
                 callback = function()
-                    local current = config.navbar.show_tabs[tab.id] == true
-                    config.navbar.show_tabs[tab.id] = not current
+                    config.navbar.show_tabs[tab_id] = not (config.navbar.show_tabs[tab_id] == true)
                     save_and_apply_navbar()
                 end,
             })

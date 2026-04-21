@@ -42,7 +42,7 @@ local defaults = {
         night_mode_schedule = false,
         warmth_schedule     = false,
         brightness_schedule = false,
-        page_browser        = false,
+        page_browser        = true,
         highlight_lookup     = true,
         dict_quick_lookup    = true,
         custom_icons_enabled = false,
@@ -56,15 +56,15 @@ local defaults = {
             history = false,
             favorites = true,
             collections = false,
-            authors = false,
-            series = false,
+            authors = true,
+            series = true,
             stats = false,
             exit = false,
             page_left = false,
             page_right = false,
             menu = false,
         },
-        tab_order = { "page_left", "books", "manga", "news", "continue", "authors", "series", "history", "favorites", "collections", "stats", "exit", "page_right", "menu" },
+        tab_order = { "page_left", "books", "manga", "news", "authors", "series", "continue", "favorites", "history", "collections", "stats", "exit", "page_right", "menu" },
         show_labels = true,
         books_label = "Library",
         manga_action = "rakuyomi",
@@ -74,10 +74,10 @@ local defaults = {
         colored = false,
         active_tab_color = { 0x33, 0x99, 0xFF },
         active_tab_styling = true,
-        active_tab_bold = true,
+        active_tab_bold = false,
         active_tab_underline = true,
         underline_above = false,
-        show_top_border = false,
+        show_top_border = true,
     },
     quick_settings = {
         button_order = { "wifi", "night", "rotate", "zen", "settings", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
@@ -103,7 +103,6 @@ local defaults = {
         },
         show_frontlight = true,
         show_warmth = true,
-        open_on_start = true,
     },
     status_bar = {
         custom_text = " ",
@@ -126,6 +125,7 @@ local defaults = {
     },
     browser_cover_badges = {
         show_mosaic_progress = true,
+        show_native_progress_bar = false,
     },
     browser_page_count = {
         show_page_count = false,
@@ -137,7 +137,7 @@ local defaults = {
         preload_bookinfo = false,
     },
     zen_scroll_bar = {
-        style = "bar",   -- "bar" | "dots"
+        style = "dots",   -- "bar" | "dots"
     },
     context_menu = {
         allow_delete = false,

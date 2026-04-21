@@ -511,7 +511,26 @@ local function apply_navbar()
 
     -- === Build a single tab (visual only) ===
 
-    local function createTabWidget(tab, label_max_w, is_active)
+    local navbar_font_size_steps = {20, 18, 16, 14}
+
+    -- Returns the largest size from navbar_font_size_steps where every label fits within max_w.
+    -- Uses the bold face as the worst-case width so all tabs stay at the same size.
+    local function getSharedFontSize(labels, max_w)
+        for _, size in ipairs(navbar_font_size_steps) do
+            local bold_face = Font:getFace("smallinfofontbold", size)
+            local all_fit = true
+            for _, text in ipairs(labels) do
+                local probe = TextWidget:new{ text = text, face = bold_face }
+                local fits = probe:getSize().w <= max_w
+                probe:free()
+                if not fits then all_fit = false; break end
+            end
+            if all_fit then return size end
+        end
+        return navbar_font_size_steps[#navbar_font_size_steps]
+    end
+
+    local function createTabWidget(tab, label_max_w, is_active, font_size)
         local styled = is_active and config.active_tab_styling
         local use_color = styled and config.colored and Screen:isColorScreen()
         local active_color
@@ -543,18 +562,20 @@ local function apply_navbar()
             }
         end
 
+        local size = font_size or navbar_font_size_steps[1]
+        local label_face = Font:getFace(use_bold and "smallinfofontbold" or "smallinfofont", size)
         local label
         if active_color then
             label = ColorTextWidget:new{
                 text = tab.label,
-                face = use_bold and navbar_font_bold or navbar_font,
+                face = label_face,
                 max_width = label_max_w,
                 fgcolor = active_color,
             }
         else
             label = TextWidget:new{
                 text = tab.label,
-                face = use_bold and navbar_font_bold or navbar_font,
+                face = label_face,
                 max_width = label_max_w,
             }
         end
@@ -639,11 +660,14 @@ local function apply_navbar()
     local HorizontalSpan = require("ui/widget/horizontalspan")
     local navbar_h_padding = Screen:scaleBySize(10)
 
+    local navbar_max_tabs = 7
+
     local function getVisibleTabs()
         local visible = {}
         for _, id in ipairs(config.tab_order) do
             if (id == "books" or config.show_tabs[id]) and tabs_by_id[id] then
                 table.insert(visible, tabs_by_id[id])
+                if #visible >= navbar_max_tabs then break end
             end
         end
         return visible
@@ -675,11 +699,18 @@ local function apply_navbar()
         local num_tabs = #visible_tabs
         local label_max_w = math.floor(inner_w / num_tabs) - Screen:scaleBySize(4)
 
+        -- Compute one font size that fits all labels so every tab uses the same size
+        local tab_labels = {}
+        for _, tab in ipairs(visible_tabs) do
+            table.insert(tab_labels, tab.label)
+        end
+        local shared_font_size = getSharedFontSize(tab_labels, label_max_w)
+
         -- Build tab content widgets and measure their natural widths
         local tab_widgets = {}
         local total_content_w = 0
         for i, tab in ipairs(visible_tabs) do
-            local widget = createTabWidget(tab, label_max_w, tab.id == active_tab)
+            local widget = createTabWidget(tab, label_max_w, tab.id == active_tab, shared_font_size)
             tab_widgets[i] = widget
             total_content_w = total_content_w + widget:getSize().w
         end
@@ -987,8 +1018,21 @@ local function apply_navbar()
             local idx = tapIndexForTab(tap_x, tab_w_local, #vis_tabs)
             local tapped_id = vis_tabs[idx].id
 
-            -- Already in this view, do nothing
+            -- Already in this view: close detail to return to group, or scroll to first page
             if tapped_id == view_tab_id then
+                local is_detail = menu.name == "authors_detail" or menu.name == "series_detail"
+                if is_detail then
+                    if menu.close_callback then
+                        menu.close_callback()
+                    elseif menu.onClose then
+                        menu:onClose()
+                    else
+                        UIManager:close(menu)
+                    end
+                else
+                    menu.page = 1
+                    menu:updateItems()
+                end
                 return true
             end
 
@@ -1204,6 +1248,19 @@ local function apply_navbar()
     -- Hook QuickRSS init eagerly so navbar support is ready regardless
     -- of how QuickRSS is opened.
     hookQuickRSSInit()
+
+    -- Expose a reinject function for external callers (e.g. quickstart on_close).
+    -- Allows main.lua to rebuild the navbar after quickstart changes tab config.
+    _G.__ZEN_UI_REINJECT_FM_NAVBAR = function()
+        local fm = FileManager.instance
+        if fm then
+            injectNavbar(fm)
+            UIManager:setDirty(fm, "full")
+        else
+            UIManager:setDirty(nil, "full")
+        end
+        UIManager:forceRePaint()
+    end
 end
 
 

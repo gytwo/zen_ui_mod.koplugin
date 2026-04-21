@@ -93,7 +93,10 @@ function M.build(ctx)
     table.insert(items, {
         text = _("Quick settings"),
         sub_item_table = {
-            make_enable_feature_item("quick_settings", _("Enable quick settings panel")),
+            {
+                text = _("Buttons"),
+                sub_item_table = quick_button_sub_items,
+            },
             {
                 text = _("Show brightness slider"),
                 checked_func = function() return config.quick_settings.show_frontlight == true end,
@@ -109,18 +112,6 @@ function M.build(ctx)
                     config.quick_settings.show_warmth = not (config.quick_settings.show_warmth == true)
                     save_and_apply_quick_settings()
                 end,
-            },
-            {
-                text = _("Always open on this tab"),
-                checked_func = function() return config.quick_settings.open_on_start == true end,
-                callback = function()
-                    config.quick_settings.open_on_start = not (config.quick_settings.open_on_start == true)
-                    save_and_apply_quick_settings()
-                end,
-            },
-            {
-                text = _("Buttons"),
-                sub_item_table = quick_button_sub_items,
             },
         },
     })

@@ -5,7 +5,6 @@
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
 local utils = require("settings/zen_settings_utils")
-local dict_installer = require("settings/dict_installer")
 
 local M = {}
 
@@ -59,7 +58,7 @@ function M.build(ctx)
     })
 
     table.insert(items, {
-        text = _("Show hidden and unsupported files outside home folder"),
+        text = _("Show hidden files"),
         checked_func = function()
             return type(config.developer) == "table"
                 and config.developer.show_hidden_outside_home == true
@@ -128,40 +127,28 @@ function M.build(ctx)
         end,
     })
 
-    table.insert(items, {
-        text = _("Install dictionary"),
-        sub_item_table = {
-            {
-                text      = _("Short Oxford English (26 MB)"),
-                callback  = function()
-                    dict_installer.install(_("Short Oxford English"), dict_installer.SHORT_OXFORD,
-                        _("This may take a few minutes. Please wait."))
-                end,
+    local ok_dict, dict_installer = pcall(require, "settings/dict_installer")
+    if ok_dict and dict_installer then
+        table.insert(items, {
+            text = _("Install dictionary"),
+            sub_item_table = {
+                {
+                    text     = _("Short Oxford English (26 MB)"),
+                    callback = function()
+                        dict_installer.install(_("Short Oxford English"), dict_installer.SHORT_OXFORD,
+                            _("This may take a few minutes. Please wait."))
+                    end,
+                },
+                {
+                    text     = _("Regular Oxford English (203 MB)"),
+                    callback = function()
+                        dict_installer.install(_("Regular Oxford English"), dict_installer.REGULAR_OXFORD,
+                            _("This is a large file and may take a few minutes. Please wait."))
+                    end,
+                },
             },
-            {
-                text      = _("Regular Oxford English (203 MB)"),
-                callback  = function()
-                    dict_installer.install(_("Regular Oxford English"), dict_installer.REGULAR_OXFORD,
-                        _("This is a large file and may take a few minutes. Please wait."))
-                end,
-            },
-        },
-    })
-
-    table.insert(items, {
-        text = _("Tools"),
-        sub_item_table_func = function()
-            local ok, FM = pcall(require, "apps/filemanager/filemanager")
-            local fm = ok and FM and FM.instance
-            if fm and type(fm.tab_item_table) == "table" then
-                local tools = fm.tab_item_table["tools"]
-                if type(tools) == "table" then
-                    return tools
-                end
-            end
-            return {}
-        end,
-    })
+        })
+    end
 
     table.insert(items, {
         text = _("Plugin management"),

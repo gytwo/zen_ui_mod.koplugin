@@ -137,7 +137,7 @@ function M.build(plugin)
     -- when a newer release has been detected.
     local update_banner = updater.build_update_available_item(plugin)
     if update_banner then
-        table.insert(root_items, 2, update_banner)
+        table.insert(root_items, 1, update_banner)
     end
 
     return {

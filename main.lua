@@ -22,8 +22,8 @@ end)()
 require("common/inject_icons")
 if _plugin_root then
     local utils = require("common/utils")
-    -- Override KOReader's default dialog icons with the Zen UI logo.
-    local zen_icon = _plugin_root .. "/icons/zen_ui.svg"
+    local zen_icon
+
     utils.overrideIcons({
         ["notice-info"]     = zen_icon,
         ["notice-question"] = zen_icon,
@@ -231,12 +231,7 @@ function ZenUI:init()
             local _panel_hidden = type(_lc) == "table" and _lc.disable_settings_panel == true
                 and type(_ft) == "table" and _ft.lockdown_mode == true
             if not _panel_hidden then
-                -- TODO: // remove this -> Use the badge icon when an update is available.
-                if zen_updater.has_update() then
-                    zen_items.icon = "zen_settings_update"
-                else
-                    zen_items.icon = "zen_settings"
-                end
+                zen_items.icon = "zen_settings"
                 local qs_pos = find_quicksettings_pos(m_self.tab_item_table)
                 local insert_pos = qs_pos and (qs_pos + 1) or 1
                 table.insert(m_self.tab_item_table, insert_pos, zen_items)

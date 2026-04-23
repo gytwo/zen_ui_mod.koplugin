@@ -1,9 +1,5 @@
 <div align="center">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="./icons/zen_ui_light.svg" />
-      <source media="(prefers-color-scheme: light)" srcset="./icons/zen_ui.svg" />
       <img width="300" src="./icons/zen_ui.svg" />
-    </picture>
 </div>
 
 <br>
@@ -29,7 +25,7 @@ Zen UI is built to be lightweight and efficient. Tested with libraries containin
 
 Strips down the default KOReader interfaces to their bare essentials.
 
-<img src="./images/quickstart/onboarding/zen_mode.png" width="500" alt="Zen Mode">
+<img src="./images/quickstart/onboarding/zen_mode.png" width="250" alt="Zen Mode">
 
 ### Bottom Navigation Bar
 A clean, tab-based navigation bar at the bottom of the file browser. Configurable tabs (Library, Manga, Favorites, Authors, History, Collections, and more), with optional labels, custom icons, and sortable layout.
@@ -134,6 +130,12 @@ Thank you to everyone who published their KOReader work openly.
 ## Contributing
 
 Bug reports, feature requests, translations, and code contributions are all welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+Please follow these guidelines:
+
+- **One feature per PR** - Keep pull requests focused on a single feature or fix
+- **Review AI-generated code** - If using AI tools, all code must be thoroughly reviewed and tested before submitting
+- **Maintain consistency** - New code must align with the project's existing style, theme, and overall user experience
 
 ## Security
 

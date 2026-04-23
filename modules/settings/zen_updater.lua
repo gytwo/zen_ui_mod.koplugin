@@ -86,20 +86,24 @@ local function https_get(url)
     return table.concat(body)
 end
 
---- Find the browser_download_url for the asset named "release.zip" inside the
---- GitHub releases API JSON body; falls back to zipball_url.
+--- Find the browser_download_url for the asset named "zen_ui.koplugin.zip" inside the
+--- GitHub releases API JSON body. Returns nil if not found.
 local function extract_asset_url(json)
     local assets = json:match('"assets"%s*:%s*(%b[])')
     if assets then
         for obj in assets:gmatch('%b{}') do
-            if obj:find('"release%.zip"') then
+            if obj:find('"zen_ui%.koplugin%.zip"') then
                 local url = json_str(obj, "browser_download_url")
                 if url then return url end
             end
         end
     end
-    -- Fallback: zipball_url is the auto-generated source archive.
-    return json_str(json, "zipball_url")
+    return nil
+end
+
+--- Returns true only for a proper release asset download URL.
+local function is_valid_asset_url(url)
+    return type(url) == "string" and url:find("/releases/download/", 1, true) ~= nil
 end
 
 --- Download a file via HTTPS to dest_path, following up to 5 redirects.
@@ -183,7 +187,8 @@ local function load_cached_state()
     local ver = gs:readSetting(GS_KEY_VER)
     M._latest_ver = (type(ver) == "string" and ver ~= "") and ver or nil
     local url = gs:readSetting(GS_KEY_URL)
-    M._dl_url = (type(url) == "string" and url ~= "") and url or nil
+    -- Reject stale zipball/tarball URLs from before the asset-only fix.
+    M._dl_url = is_valid_asset_url(url) and url or nil
 end
 
 --- Perform an actual network check; returns true on success.
@@ -253,9 +258,14 @@ function M.run_update(plugin)
         return
     end
 
-    if not M._dl_url or M._dl_url == "" then
+    if not is_valid_asset_url(M._dl_url) then
+        -- Cached URL missing or invalid (e.g. old zipball URL); try a fresh fetch.
+        do_network_check()
+    end
+
+    if not is_valid_asset_url(M._dl_url) then
         UIManager:show(InfoMessage:new{
-            text = _("No download URL found. Check your network connection and try again."),
+            text = _("No zen_ui.koplugin.zip asset found for this release. Check the GitHub release page."),
         })
         return
     end
@@ -265,8 +275,7 @@ function M.run_update(plugin)
     local plugins_dir = plugin_root:match("^(.*)/[^/]+$") or plugin_root
 
     UIManager:show(ConfirmBox:new{
-        text = _("Update Zen UI to ") .. ver_label .. "?\n\n"
-            .. _("The existing plugin will be fully replaced. KOReader will then restart."),
+        text = _("Zen UI ") .. ver_label,
         ok_text     = _("Update"),
         cancel_text = _("Cancel"),
         ok_callback = function()
@@ -330,7 +339,7 @@ function M.build_update_available_item(plugin)
     if not M._has_update then return nil end
     local ver_label = M._latest_ver and ("v" .. M._latest_ver) or _("latest")
     return {
-        text          = _("⬆ Update available: ") .. ver_label,
+        text          = _("\u{F01B} Update available: ") .. ver_label,
         keep_menu_open = true,
         callback      = function()
             M.run_update(plugin)
@@ -346,7 +355,7 @@ function M.build_update_now_item(plugin)
         text_func = function()
             if M._has_update then
                 local ver_label = M._latest_ver and ("v" .. M._latest_ver) or _("latest")
-                return _("Update available — install ") .. ver_label
+                return _("\u{F01B} Update available: ") .. ver_label
             end
             return _("Check for updates")
         end,

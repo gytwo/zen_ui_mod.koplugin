@@ -1,2 +1,5 @@
-include:
-  - CONTRIBUTING.md
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default

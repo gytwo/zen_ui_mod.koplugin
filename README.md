@@ -25,7 +25,7 @@ Zen UI is built to be lightweight and efficient. Tested with libraries containin
 
 Strips down the default KOReader interfaces to their bare essentials.
 
-<img src="./images/quickstart/onboarding/zen_mode.png" width="250" alt="Zen Mode">
+<img src="./images/quickstart/onboarding/zen_mode.png" width="175" alt="Zen Mode">
 
 ### Bottom Navigation Bar
 A clean, tab-based navigation bar at the bottom of the file browser. Configurable tabs (Library, Manga, Favorites, Authors, History, Collections, and more), with optional labels, custom icons, and sortable layout.
@@ -97,7 +97,7 @@ Settings are grouped by feature area (File Browser, Navbar, Quick Settings, Stat
 
 ## Localization
 
-Zen UI is fully translated into:
+Zen UI is currently translated into:
 
 | Locale | Language |
 |--------|----------|
@@ -112,6 +112,8 @@ Zen UI is fully translated into:
 | `ru` | Russian |
 | `zh_CN` | Simplified Chinese |
 | `zh_TW` | Traditional Chinese |
+
+These translations may not be fully correct or complete. If you find any issues or corrections that you would like to see made, please feel free to contribute.
 
 To contribute a translation or fix an existing one, see [locales/README.md](locales/README.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 

@@ -160,11 +160,14 @@ local function apply_browser_series_badge()
                 return make_tw(label, 7)
             end
 
+            -- Single-digit whole numbers (#1-#9) always keep the "#".
+            local is_single_digit = (series_idx == math.floor(series_idx) and series_idx >= 1 and series_idx <= 9)
+
             local tw = make_tw(idx_str, font_size)
             if tw:getSize().w > inner_w then
                 if tw.free then tw:free() end
-                -- Drop "#" for multi-character labels before shrinking the font.
-                local no_hash = idx_str:sub(1, 1) == "#" and idx_str:sub(2) or idx_str
+                -- Only drop "#" for labels that won't fit and are not single-digit whole numbers.
+                local no_hash = (not is_single_digit and idx_str:sub(1, 1) == "#") and idx_str:sub(2) or idx_str
                 if no_hash ~= idx_str then
                     local tw2 = make_tw(no_hash, font_size)
                     if tw2:getSize().w <= inner_w then

@@ -854,6 +854,9 @@ local function sortDetailFiles(files, collate, reverse)
 
         if collate == "title" then
             sort_key = (bookinfo and bookinfo.title) or fpath:match("([^/]+)$") or fpath
+        elseif collate == "series_index" then
+            -- Numeric; books without an index sort last.
+            sort_key = (bookinfo and tonumber(bookinfo.series_index)) or math.huge
         elseif collate == "series" then
             sort_key = (bookinfo and bookinfo.series) or ""
         elseif collate == "access" then
@@ -868,11 +871,17 @@ local function sortDetailFiles(files, collate, reverse)
 
     -- Sort by key
     table.sort(items, function(a, b)
-        if collate == "access" then
-            -- For access, higher timestamp = more recent, so reverse the comparison
-            return reverse and (a.key < b.key) or (a.key > b.key)
+        if collate == "series_index" or collate == "access" then
+            -- Numeric comparison; for access higher = more recent so invert.
+            local a_n = type(a.key) == "number" and a.key or 0
+            local b_n = type(b.key) == "number" and b.key or 0
+            if collate == "access" then
+                return reverse and (a_n < b_n) or (a_n > b_n)
+            else
+                return reverse and (a_n > b_n) or (a_n < b_n)
+            end
         else
-            -- For title/series, alphabetical
+            -- Alphabetical for title/series
             local a_lower = type(a.key) == "string" and a.key:lower() or tostring(a.key)
             local b_lower = type(b.key) == "string" and b.key:lower() or tostring(b.key)
             return reverse and (a_lower > b_lower) or (a_lower < b_lower)
@@ -905,13 +914,14 @@ local function showDetailSortDialog(group_name, tab_id, menu, files)
     local g_settings = rawget(_G, "G_reader_settings")
     if not g_settings then return end
 
-    local cur_collate = g_settings:readSetting(collate_key) or "title"
+    local default_collate = tab_id == "series" and "series_index" or "title"
+    local cur_collate = g_settings:readSetting(collate_key) or default_collate
     local cur_reverse = g_settings:isTrue(reverse_key)
 
     local SORT_OPTIONS = {
-        { key = "title",  text = "\u{F031}  " .. _("Title") },
-        { key = "series", text = "\u{F0CB}  " .. _("Series") },
-        { key = "access", text = "\u{F073}  " .. _("Recently read") },
+        { key = "series_index", text = "\u{F0CB}  " .. _("Series number") },
+        { key = "title",        text = "\u{F031}  " .. _("Title") },
+        { key = "access",       text = "\u{F073}  " .. _("Recently read") },
     }
 
     local function rebuildMenu(collate, reverse)
@@ -1019,7 +1029,9 @@ local function showDetailView(group_item, injectNavbar, tab_id)
     local collate_key = "zen_" .. tab_id .. "_detail_collate_" .. group_name
     local reverse_key = "zen_" .. tab_id .. "_detail_reverse_" .. group_name
     local g_settings = rawget(_G, "G_reader_settings")
-    local cur_collate = g_settings and g_settings:readSetting(collate_key) or "title"
+    -- Series detail views default to series_index order; author views default to title.
+    local default_collate = tab_id == "series" and "series_index" or "title"
+    local cur_collate = (g_settings and g_settings:readSetting(collate_key)) or default_collate
     local cur_reverse = g_settings and g_settings:isTrue(reverse_key) or false
 
     -- Sort files based on current settings

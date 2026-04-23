@@ -54,5 +54,4 @@ jobs:
             dist/zen_ui.koplugin.zip \
             --repo "$GITHUB_REPOSITORY" \
             --title "Zen UI $TAG" \
-            --draft \
             --generate-notes

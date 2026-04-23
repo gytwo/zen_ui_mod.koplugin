@@ -1018,6 +1018,12 @@ local function apply_navbar()
         end
         if not menu or not menu[1] then return end
 
+        -- Suppress the invisible page-info tap target ("go to letter/page" dialog)
+        if menu.page_info_text then
+            menu.page_info_text.tap_input  = nil
+            menu.page_info_text.hold_input = nil
+        end
+
         -- Temporarily highlight the view's tab
         local saved_active = active_tab
         active_tab = view_tab_id
@@ -1395,6 +1401,16 @@ local function apply_navbar()
     -- Hook QuickRSS init eagerly so navbar support is ready regardless
     -- of how QuickRSS is opened.
     hookQuickRSSInit()
+
+    -- setupLayout fires before this plugin loads on first start, so the initial
+    -- FM paint has no navbar. Reinject on the first event loop tick to fix it.
+    UIManager:nextTick(function()
+        local fm = FileManager.instance
+        if fm then
+            injectNavbar(fm)
+            UIManager:setDirty(fm, "ui")
+        end
+    end)
 
     -- Expose a reinject function for external callers (e.g. quickstart on_close).
     -- Allows main.lua to rebuild the navbar after quickstart changes tab config.

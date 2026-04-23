@@ -586,14 +586,12 @@ function M.build_install_pages(ctx)
                 { id = "keep",          text = "Keep existing settings",         checked = true  },
                 { id = "cover_black",   text = "Book cover — black background", checked = false },
                 { id = "zen_white",     text = "Zen icon — white background",   checked = false },
-                { id = "zen_minimal",   text = "Zen icon — minimal background", checked = false },
             },
             on_apply = function(sel)
                 if sel["keep"] then return end
                 local preset
                 if     sel["cover_black"] then preset = builtin_presets[1]
                 elseif sel["zen_white"]   then preset = builtin_presets[2]
-                elseif sel["zen_minimal"] then preset = builtin_presets[3]
                 end
                 if preset then
                     apply_screensaver_preset(preset)
@@ -621,6 +619,12 @@ function M.build_install_pages(ctx)
                 elseif sel["24h"] then
                     G_reader_settings:makeFalse("twelve_hour_clock")
                 end
+                -- TimeFormatChanged is reader-only; file manager status bar needs a direct refresh.
+                local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
+                local fm = ok_fm and FileManager and FileManager.instance
+                if fm and type(fm._updateStatusBar) == "function" then
+                    fm:_updateStatusBar()
+                end
             end,
         },
 
@@ -628,7 +632,7 @@ function M.build_install_pages(ctx)
         {
             title       = "Reader",
             image       = img("onboarding/reader.png"),
-            description = "An unobtrusive reader view with customizable top clock bar and bottom progress bar.",
+            description = "An unobtrusive reader view with customizable top clock and bottom progress bar.",
         },
 
         -- 15. Reader Progress (INTERACTIVE — radio)
@@ -640,7 +644,7 @@ function M.build_install_pages(ctx)
                 { id = "keep",     text = "Keep existing settings",                                                       checked = true  },
                 { id = "kindle",   text = "Chapter Time + %",      image = img("onboarding/kindle_like.png"),        checked = false },
                 { id = "pages",    text = "Pages and %",      image = img("onboarding/pages_percent.png"),      checked = false },
-                { id = "full",     text = "Pages + Time + %", image = img("onboarding/pages_time_percent.png"), checked = false },
+                { id = "full",     text = "Pages + Chapter Time + %", image = img("onboarding/pages_time_percent.png"), checked = false },
                 { id = "centered", text = "Centered Pages",   image = img("onboarding/centered_pages.png"),     checked = false },
             },
             on_apply = function(sel)

@@ -129,6 +129,19 @@ function M.init(logger, plugin)
         local browser_cover_mosaic_uniform_fn = load_patch("browser_cover_mosaic_uniform")
         if browser_cover_mosaic_uniform_fn then
             run_feature(logger, plugin, "browser_cover_mosaic_uniform", browser_cover_mosaic_uniform_fn)
+            -- Items already visible when the patch runs won't reflect uniform sizing.
+            -- Defer a rebuild so they are reconstructed with the patched MosaicMenuItem.
+            local ok_um, UIManager = pcall(require, "ui/uimanager")
+            if ok_um then
+                UIManager:nextTick(function()
+                    local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
+                    local fm = ok_fm and FileManager and FileManager.instance
+                    local fc = fm and fm.file_chooser
+                    if fc and fc.display_mode_type == "mosaic" then
+                        fc:updateItems(1, true)
+                    end
+                end)
+            end
         end
     end
 

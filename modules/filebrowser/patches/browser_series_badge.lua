@@ -125,26 +125,59 @@ local function apply_browser_series_badge()
             if series_idx == math.floor(series_idx) then
                 idx_str = "#" .. tostring(math.floor(series_idx))
             else
-                -- Show one decimal place (e.g. "#1.5")
                 idx_str = "#" .. string.format("%.1f", series_idx)
             end
 
-            local font_size = math.max(7, math.floor(eff_size * 0.24))
-            local tw = TextWidget:new{
-                text    = idx_str,
-                face    = Font:getFace("cfont", font_size),
-                bold    = true,
-                fgcolor = Blitbuffer.COLOR_BLACK,
-                padding = 0,
-            }
-            local tw_sz = tw:getSize()
-            -- Diameter: large enough to contain the text with padding on all sides.
-            local diam   = math.max(tw_sz.w, tw_sz.h) + math.floor(eff_size * 0.3)
-            local r      = math.floor(diam / 2)
+            -- Fixed circle radius — never grows with label length.
+            local r      = math.max(math.floor(eff_size * 0.38), Screen:scaleBySize(10))
             local margin = math.floor(eff_size * 0.3)
-            -- Centre of the circle, anchored to bottom-right of cover.
             local cx = cover_right  - r - margin
             local cy = cover_bottom - r - margin
+
+            -- Usable text width inside the circle (conservative inner chord).
+            local inner_w  = math.floor(r * 1.30)
+            local font_size = math.max(7, math.floor(eff_size * 0.26))
+
+            local function make_tw(label, sz)
+                return TextWidget:new{
+                    text    = label,
+                    face    = Font:getFace("cfont", sz),
+                    bold    = true,
+                    fgcolor = Blitbuffer.COLOR_BLACK,
+                    padding = 0,
+                }
+            end
+
+            -- Shrink font until label fits within inner_w (down to size 7).
+            local function shrink_to_fit(label)
+                local sz = font_size
+                while sz > 7 do
+                    local tw = make_tw(label, sz)
+                    if tw:getSize().w <= inner_w then return tw end
+                    if tw.free then tw:free() end
+                    sz = sz - 1
+                end
+                return make_tw(label, 7)
+            end
+
+            local tw = make_tw(idx_str, font_size)
+            if tw:getSize().w > inner_w then
+                if tw.free then tw:free() end
+                -- Drop "#" for multi-character labels before shrinking the font.
+                local no_hash = idx_str:sub(1, 1) == "#" and idx_str:sub(2) or idx_str
+                if no_hash ~= idx_str then
+                    local tw2 = make_tw(no_hash, font_size)
+                    if tw2:getSize().w <= inner_w then
+                        tw = tw2
+                    else
+                        if tw2.free then tw2:free() end
+                        tw = shrink_to_fit(no_hash)
+                    end
+                else
+                    tw = shrink_to_fit(idx_str)
+                end
+            end
+            local tw_sz = tw:getSize()
 
             -- 7. Paint circle: 2-px border ring then fill.
             paintCircle(bb, cx, cy, r + 2, Blitbuffer.COLOR_BLACK)

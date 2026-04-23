@@ -1096,6 +1096,12 @@ local function showDetailView(group_item, injectNavbar, tab_id)
     }
     TitleBar.new = orig_tb_new
 
+    -- Suppress the invisible page-info tap target ("go to letter/page" dialog)
+    if detail_menu.page_info_text then
+        detail_menu.page_info_text.tap_input  = nil
+        detail_menu.page_info_text.hold_input = nil
+    end
+
     -- Install same display mode as the library (mosaic/list/classic)
     local mode_type = setup_display_mode(detail_menu, false, tab_id)
     if mode_type == "mosaic" then
@@ -1257,6 +1263,12 @@ showGroupView = function(tab_id, injectNavbar, groups)
         updateItems        = function(menu_self, ...) end,  -- prevent default pagination
     }
     TitleBar.new = orig_tb_new
+
+    -- Suppress the invisible page-info tap target ("go to letter/page" dialog)
+    if menu.page_info_text then
+        menu.page_info_text.tap_input  = nil
+        menu.page_info_text.hold_input = nil
+    end
 
     -- Install display mode (mosaic/list) and set _zen_group_view sentinel
     local mode_type = setup_display_mode(menu, true, tab_id)
@@ -1492,6 +1504,12 @@ function M.showTBRView(injectNavbar)
         updateItems        = function(menu_self, ...) end,
     }
     TitleBar.new = orig_tb_new
+
+    -- Suppress the invisible page-info tap target ("go to letter/page" dialog)
+    if menu.page_info_text then
+        menu.page_info_text.tap_input  = nil
+        menu.page_info_text.hold_input = nil
+    end
 
     local mode_type = setup_display_mode(menu, false, tab_id)
     if mode_type == "mosaic" then

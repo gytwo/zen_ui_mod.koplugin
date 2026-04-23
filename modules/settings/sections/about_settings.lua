@@ -45,7 +45,7 @@ function M.build(ctx)
     end
 
     table.insert(items, {
-        text = _("Show quickstart"),
+        text = _("Setup Guide"),
         separator = true,
         callback = function()
             local ok_qs, QuickstartScreen = pcall(require, "common/quickstart_screen")

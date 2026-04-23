@@ -77,7 +77,6 @@ local function apply_quick_settings()
         },
         show_frontlight = true,
         show_warmth = true,
-        open_on_start = false,
     }
 
     local config
@@ -680,11 +679,11 @@ local function apply_quick_settings()
     local datetime = require("datetime")
     local BD = require("ui/bidi")
 
-    -- Hook init to force tab 1 before bar:switchToTab runs when open_on_start
+    -- Always open to tab 1 (quick settings) regardless of last-used tab.
     local GestureRange = require("ui/gesturerange")
     local orig_init = TouchMenu.init
     function TouchMenu:init()
-        if is_enabled() and config.open_on_start then
+        if is_enabled() then
             self.last_index = 1
         end
         orig_init(self)
@@ -847,10 +846,8 @@ local function apply_quick_settings()
         if not is_enabled() then
             return
         end
-        -- When "open on start" is enabled, always reset last_index to quick settings tab
-        if config.open_on_start then
-            self.last_index = 1
-        end
+        -- Always reset last_index so next open returns to quick settings tab.
+        self.last_index = 1
     end
 
     -- Cancel status bar refresh timer when the menu is closed

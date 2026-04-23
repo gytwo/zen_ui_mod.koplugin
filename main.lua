@@ -22,7 +22,8 @@ end)()
 require("common/inject_icons")
 if _plugin_root then
     local utils = require("common/utils")
-    local zen_icon
+    -- Override KOReader's default dialog icons with the Zen UI logo.
+    local zen_icon = _plugin_root .. "/icons/zen_ui.svg"
 
     utils.overrideIcons({
         ["notice-info"]     = zen_icon,
@@ -182,6 +183,22 @@ function ZenUI:init()
                         -- scheduleIn(0) lets UIManager finish the close-frame before
                         -- we force a full repaint and navbar reinject.
                         require("ui/uimanager"):scheduleIn(0, function()
+                            if shown_ver == false then -- first install defaults
+                                -- Disable CoverBrowser description hint (on by default).
+                                local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
+                                if ok_bim then
+                                    pcall(BookInfoManager.saveSetting, BookInfoManager,
+                                        "no_hint_description", true)
+                                end
+                                -- Disable auto-show bottom menu in reader.
+                                G_reader_settings:makeFalse("show_bottom_menu")
+                                -- Refresh file manager status bar with the chosen clock format.
+                                local ok_fm2, FileManager2 = pcall(require, "apps/filemanager/filemanager")
+                                local fm2 = ok_fm2 and FileManager2 and FileManager2.instance
+                                if fm2 and type(fm2._updateStatusBar) == "function" then
+                                    fm2:_updateStatusBar()
+                                end
+                            end
                             local reinject = _G.__ZEN_UI_REINJECT_FM_NAVBAR
                             if type(reinject) == "function" then
                                 reinject()

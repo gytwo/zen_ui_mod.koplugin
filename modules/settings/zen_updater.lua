@@ -180,6 +180,20 @@ local function persist_state(now)
     pcall(gs.flush, gs)
 end
 
+--- Clear all persisted update state (called after a successful install).
+local function clear_update_state()
+    M._has_update = false
+    M._latest_ver = nil
+    M._dl_url     = nil
+    local gs = get_gs()
+    if gs then
+        gs:saveSetting(GS_KEY_AVAIL, false)
+        gs:saveSetting(GS_KEY_VER,   "")
+        gs:saveSetting(GS_KEY_URL,   "")
+        pcall(gs.flush, gs)
+    end
+end
+
 local function load_cached_state()
     local gs = get_gs()
     if not gs then return end
@@ -189,6 +203,11 @@ local function load_cached_state()
     local url = gs:readSetting(GS_KEY_URL)
     -- Reject stale zipball/tarball URLs from before the asset-only fix.
     M._dl_url = is_valid_asset_url(url) and url or nil
+    -- Discard stale notifications when the installed version already matches
+    -- or exceeds the cached release (e.g. after a successful update).
+    if M._has_update and not semver_gt(M._latest_ver or "", get_current_version()) then
+        clear_update_state()
+    end
 end
 
 --- Perform an actual network check; returns true on success.
@@ -319,6 +338,9 @@ function M.run_update(plugin)
                     })
                     return
                 end
+
+                -- Clear the notification so it doesn't re-appear after restart.
+                clear_update_state()
 
                 UIManager:show(ConfirmBox:new{
                     text        = _("Zen UI updated successfully. Restart KOReader now?"),

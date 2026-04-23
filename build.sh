@@ -51,6 +51,8 @@ rsync -a \
   --exclude '*.zip' \
   --exclude '*.sh' \
   --exclude '*.md' \
+  --exclude '*_includes/' \
+  --exclude '*.yml/' \
   "$REPO_ROOT/" "$STAGE_DIR/"
 
 if [[ "$WITH_DICT" -eq 1 ]]; then

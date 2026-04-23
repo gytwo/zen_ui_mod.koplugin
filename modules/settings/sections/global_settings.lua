@@ -6,7 +6,7 @@ local _ = require("gettext")
 local UIManager = require("ui/uimanager")
 local Device = require("device")
 local ConfirmBox = require("ui/widget/confirmbox")
-local utils = require("settings/zen_settings_utils")
+local utils = require("modules/settings/zen_settings_utils")
 
 local M = {}
 
@@ -90,7 +90,7 @@ function M.build(ctx)
     do
         local src = debug.getinfo(1, "S").source or ""
         if src:sub(1, 1) == "@" then
-            local root = src:sub(2):match("^(.*)/settings/")
+            local root = src:sub(2):match("^(.*)/modules/settings/")
             if root then
                 local lfs = require("libs/libkoreader-lfs")
                 if lfs.attributes(root .. "/icons/zen_ui.svg", "mode") == "file" then

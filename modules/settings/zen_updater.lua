@@ -11,7 +11,7 @@ local GITHUB_API_URL = "https://api.github.com/repos/AnthonyGress/zen_ui.koplugi
 local PLUGIN_ROOT = (function()
     local src = debug.getinfo(1, "S").source or ""
     if src:sub(1, 1) == "@" then
-        return src:sub(2):match("^(.*)/settings/zen_updater%.lua$")
+        return src:sub(2):match("^(.*)/modules/settings/zen_updater%.lua$")
     end
 end)()
 
@@ -261,10 +261,12 @@ function M.run_update(plugin)
     end
 
     local ver_label = M._latest_ver and ("v" .. M._latest_ver) or _("latest")
+    -- The zip contains zen_ui.koplugin/ at root; unzip to the plugins dir.
+    local plugins_dir = plugin_root:match("^(.*)/[^/]+$") or plugin_root
 
     UIManager:show(ConfirmBox:new{
         text = _("Update Zen UI to ") .. ver_label .. "?\n\n"
-            .. _("The update will be downloaded and installed. KOReader will then restart."),
+            .. _("The existing plugin will be fully replaced. KOReader will then restart."),
         ok_text     = _("Update"),
         cancel_text = _("Cancel"),
         ok_callback = function()
@@ -273,7 +275,8 @@ function M.run_update(plugin)
             UIManager:forceRePaint()
 
             UIManager:scheduleIn(0.1, function()
-                local zip_path = plugin_root .. "/zen_ui_update.zip"
+                -- Download outside the plugin dir (we will delete it next).
+                local zip_path = plugins_dir .. "/zen_ui_update.zip"
 
                 local ok, err = https_download(M._dl_url, zip_path)
                 UIManager:close(progress)
@@ -285,17 +288,25 @@ function M.run_update(plugin)
                     return
                 end
 
-                -- The release zip is expected to contain "zen_ui.koplugin/" at its
-                -- root (matching the build.sh convention) so we unzip into the
-                -- plugin's parent directory so files land in the correct location.
-                local parent = plugin_root:match("^(.*)/[^/]+$") or plugin_root
-                local unzip_cmd = string.format("unzip -o %q -d %q", zip_path, parent)
-                local rc = os.execute(unzip_cmd)
+                -- Remove the old plugin dir entirely so renamed/moved files
+                -- from previous versions don't persist. Lua modules are already
+                -- loaded in memory so this is safe at runtime.
+                local rm_rc = os.execute(string.format("rm -rf %q", plugin_root))
+                if rm_rc ~= 0 and rm_rc ~= true then
+                    os.remove(zip_path)
+                    UIManager:show(InfoMessage:new{
+                        text = _("Failed to remove the existing plugin. Update aborted."),
+                    })
+                    return
+                end
+
+                -- Unzip into the plugins dir; creates a fresh zen_ui.koplugin/.
+                local unzip_rc = os.execute(string.format("unzip -q %q -d %q", zip_path, plugins_dir))
                 os.remove(zip_path)
 
-                if rc ~= 0 and rc ~= true then
+                if unzip_rc ~= 0 and unzip_rc ~= true then
                     UIManager:show(InfoMessage:new{
-                        text = _("Failed to unpack the update. You can install it manually."),
+                        text = _("Failed to unpack the update. You may need to reinstall manually."),
                     })
                     return
                 end

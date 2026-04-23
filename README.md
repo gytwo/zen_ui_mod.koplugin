@@ -127,6 +127,7 @@ Zen UI is original work, but it wouldn't exist without the broader KOReader comm
 - **[qewer33/koreader-patches](https://github.com/qewer33/koreader-patches)** — The bottom navbar and quicksettings components. Additional patch approaches and ideas, particularly around UI customization.
 - **[sebdelsol/KOReader.patches](https://github.com/sebdelsol/KOReader.patches)** — Patches and UI techniques that informed several of Zen UI's features.
 - **[doctorhetfield-cmd/simpleui.koplugin](https://github.com/doctorhetfield-cmd/simpleui.koplugin)** — A fellow KOReader UI plugin that served as an inspiration as well as a model for how to apply language translations throughout the plugin.
+- **[kristianpennacchia/zzz-readermenuredesign.koplugin](https://github.com/kristianpennacchia/zzz-readermenuredesign.koplugin)** — Inspiration for the reader search menu redesign
 
 Thank you to everyone who published their KOReader work openly.
 

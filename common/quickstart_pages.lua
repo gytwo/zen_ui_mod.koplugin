@@ -353,7 +353,7 @@ function M.build_install_pages(ctx)
 
     local function save_and_apply(feature)
         plugin:saveConfig()
-        local ok, apply_mod = pcall(require, "settings/zen_settings_apply")
+        local ok, apply_mod = pcall(require, "modules/settings/zen_settings_apply")
         if ok and type(apply_mod.apply_feature_toggle) == "function" then
             apply_mod.apply_feature_toggle(plugin, feature, config.features[feature] == true)
         end

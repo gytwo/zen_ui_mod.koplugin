@@ -37,7 +37,7 @@ local function apply_coverbrowser_check()
                         G_reader_settings:saveSetting("plugins_disabled", disabled_list)
                         G_reader_settings:flush()
                     end
-                    require("settings/zen_settings_apply").prompt_restart()
+                    require("modules/settings/zen_settings_apply").prompt_restart()
                 end,
             }})
         end

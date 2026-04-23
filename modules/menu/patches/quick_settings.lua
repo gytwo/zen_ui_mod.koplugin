@@ -384,7 +384,7 @@ local function apply_quick_settings()
                 if touch_menu and touch_menu.updateItems then
                     touch_menu:updateItems(1)
                 end
-                require("settings/zen_settings_apply").prompt_restart()
+                require("modules/settings/zen_settings_apply").prompt_restart()
             end,
         },
         filebrowser = {

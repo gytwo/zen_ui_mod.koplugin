@@ -4,7 +4,7 @@
 
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
-local utils = require("settings/zen_settings_utils")
+local utils = require("modules/settings/zen_settings_utils")
 
 local M = {}
 
@@ -129,7 +129,7 @@ function M.build(ctx)
         end,
     })
 
-    local ok_dict, dict_installer = pcall(require, "settings/dict_installer")
+    local ok_dict, dict_installer = pcall(require, "modules/settings/dict_installer")
     if ok_dict and dict_installer then
         table.insert(items, {
             text = _("Install dictionary"),

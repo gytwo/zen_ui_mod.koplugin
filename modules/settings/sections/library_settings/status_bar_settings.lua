@@ -5,7 +5,7 @@
 
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
-local utils = require("settings/zen_settings_utils")
+local utils = require("modules/settings/zen_settings_utils")
 
 local M = {}
 

@@ -9,8 +9,8 @@ local _ = require("gettext")
 
 local ConfigManager = require("config/manager")
 local registry = require("modules/registry")
-local zen_settings = require("settings/zen_settings")
-local zen_updater   = require("settings/zen_updater")
+local zen_settings = require("modules/settings/zen_settings")
+local zen_updater   = require("modules/settings/zen_updater")
 
 -- Absolute path to this plugin's root directory (used for custom icon paths).
 local _plugin_root = (function()
@@ -19,7 +19,7 @@ local _plugin_root = (function()
 end)()
 
 -- Register all plugin icons into KOReader's icon cache (copies to user icons dir).
-require("inject_icons")
+require("common/inject_icons")
 if _plugin_root then
     local utils = require("common/utils")
     -- Override KOReader's default dialog icons with the Zen UI logo.

@@ -1,17 +1,17 @@
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
 
-local settings_apply = require("settings/zen_settings_apply")
-local updater        = require("settings/zen_updater")
-local utils          = require("settings/zen_settings_utils")
+local settings_apply = require("modules/settings/zen_settings_apply")
+local updater        = require("modules/settings/zen_updater")
+local utils          = require("modules/settings/zen_settings_utils")
 
-local lib_section      = require("settings/sections/library_settings")
-local navbar_section   = require("settings/sections/library_settings/navbar_settings")
-local menu_section     = require("settings/sections/menu_settings")
-local reader_section   = require("settings/sections/reader_settings")
-local global_section   = require("settings/sections/global_settings")
-local advanced_section = require("settings/sections/advanced_settings")
-local about_section    = require("settings/sections/about_settings")
+local lib_section      = require("modules/settings/sections/library_settings")
+local navbar_section   = require("modules/settings/sections/library_settings/navbar_settings")
+local menu_section     = require("modules/settings/sections/menu_settings")
+local reader_section   = require("modules/settings/sections/reader_settings")
+local global_section   = require("modules/settings/sections/global_settings")
+local advanced_section = require("modules/settings/sections/advanced_settings")
+local about_section    = require("modules/settings/sections/about_settings")
 
 local M = {}
 

@@ -54,7 +54,7 @@ rsync -a \
   "$REPO_ROOT/" "$STAGE_DIR/"
 
 if [[ "$WITH_DICT" -eq 1 ]]; then
-  DICT_DEST="$STAGE_DIR/settings/dict_installer.lua"
+  DICT_DEST="$STAGE_DIR/modules/settings/dict_installer.lua"
   if [[ "$DICT_SOURCE" == http://* || "$DICT_SOURCE" == https://* ]]; then
     if ! command -v curl >/dev/null 2>&1; then
       echo "Error: curl is required for --with-dict URL downloads" >&2; exit 1

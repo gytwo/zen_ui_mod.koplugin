@@ -5,8 +5,8 @@
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
 
-local status_bar_section = require("settings/sections/library_settings/status_bar_settings")
-local settings_apply     = require("settings/zen_settings_apply")
+local status_bar_section = require("modules/settings/sections/library_settings/status_bar_settings")
+local settings_apply     = require("modules/settings/zen_settings_apply")
 
 local M = {}
 

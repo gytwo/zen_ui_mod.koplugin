@@ -133,11 +133,30 @@ function M.build(plugin)
         },
     }
 
-    -- Insert an "Update available" banner at position 2 (right after Zen Mode)
-    -- when a newer release has been detected.
+    -- Insert banner if an update is already known.
     local update_banner = updater.build_update_available_item(plugin)
     if update_banner then
         table.insert(root_items, 1, update_banner)
+    end
+
+    -- KOReader reuses tab_item_table across menu open/close cycles, so
+    -- setUpdateItemTable (and build()) only runs once per session. The
+    -- tab callback fires on every switchMenuTab call — including when the
+    -- menu reopens — letting us keep the banner current in-place.
+    root_items.callback = function()
+        if root_items[1] and root_items[1]._zen_update_banner then
+            table.remove(root_items, 1)
+        end
+        local banner = updater.build_update_available_item(plugin)
+        if banner then
+            table.insert(root_items, 1, banner)
+        end
+    end
+
+    -- fires when navigating back from a submenu (e.g. About after manual check).
+    root_items.needs_refresh = true
+    root_items.refresh_func  = function()
+        return M.build(plugin).sub_item_table
     end
 
     return {

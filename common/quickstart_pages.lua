@@ -687,11 +687,13 @@ function M.build_install_pages(ctx)
                 G_reader_settings:saveSetting("copt_t_page_margin", 30)
                 G_reader_settings:saveSetting("copt_b_page_margin", 30)
                 G_reader_settings:saveSetting("copt_word_spacing", {100, 90})
+                G_reader_settings:saveSetting("copt_line_spacing", 110)
                 G_reader_settings:saveSetting("copt_font_gamma", 25)  -- gamma index for 1.45
                 G_reader_settings:saveSetting("copt_font_size", 23)
                 G_reader_settings:saveSetting("copt_embedded_css", 0)
                 G_reader_settings:saveSetting("copt_embedded_fonts", 0)
                 G_reader_settings:saveSetting("copt_nightmode_images", 1)
+                G_reader_settings:saveSetting("alt_status_bar", false)
             end,
         },
 

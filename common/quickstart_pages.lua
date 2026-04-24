@@ -670,11 +670,29 @@ function M.build_install_pages(ctx)
             end,
         },
 
-        -- 13. Reader (static)
+        -- 13. Reader (INTERACTIVE — radio)
         {
             title       = "Reader",
             image       = img("onboarding/reader.png"),
             description = "An unobtrusive reader view with customizable top clock and bottom progress bar.",
+            choice_type = "radio",
+            choices     = {
+                { id = "keep", text = "Keep existing settings", checked = true  },
+                { id = "zen",  text = "Zen UI defaults", checked = false },
+            },
+            on_apply = function(sel)
+                if sel["keep"] then return end
+                G_reader_settings:saveSetting("copt_h_page_margins", {30, 30})
+                G_reader_settings:saveSetting("copt_sync_t_b_page_margins", 1)
+                G_reader_settings:saveSetting("copt_t_page_margin", 30)
+                G_reader_settings:saveSetting("copt_b_page_margin", 30)
+                G_reader_settings:saveSetting("copt_word_spacing", {100, 90})
+                G_reader_settings:saveSetting("copt_font_gamma", 25)  -- gamma index for 1.45
+                G_reader_settings:saveSetting("copt_font_size", 23)
+                G_reader_settings:saveSetting("copt_embedded_css", 0)
+                G_reader_settings:saveSetting("copt_embedded_fonts", 0)
+                G_reader_settings:saveSetting("copt_nightmode_images", 1)
+            end,
         },
 
         -- 15. Reader Progress (INTERACTIVE — radio)

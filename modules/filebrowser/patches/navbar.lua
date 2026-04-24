@@ -241,6 +241,7 @@ local function apply_navbar()
     local function onTabBooks()
         local fm = FileManager.instance
         if not fm then return end
+        utils.closeWidgetsAbove(fm)
         local home_dir = G_reader_settings:readSetting("home_dir")
                          or require("apps/filemanager/filemanagerutil").getDefaultDir()
         fm.file_chooser.path_items[home_dir] = nil

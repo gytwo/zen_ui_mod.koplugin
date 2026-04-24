@@ -208,4 +208,19 @@ function M.formatPageCount(pages, long)
     return tostring(pages) .. "\u{00A0}" .. _C(ctx, msgid)
 end
 
+-- Close all UIManager window-stack entries above `anchor_widget`.
+-- Collects first to avoid mutating the stack during iteration.
+function M.closeWidgetsAbove(anchor_widget)
+    local UIManager = require("ui/uimanager")
+    local stack = UIManager._window_stack
+    if not stack or not anchor_widget then return end
+    local to_close = {}
+    for i = #stack, 1, -1 do
+        local entry = stack[i]
+        if not entry or entry.widget == anchor_widget then break end
+        table.insert(to_close, entry.widget)
+    end
+    for _, w in ipairs(to_close) do UIManager:close(w) end
+end
+
 return M

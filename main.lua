@@ -297,8 +297,9 @@ function ZenUI:init()
             local home_tab = { icon = "library", remember = false }
             home_tab.callback = function()
                 require("ui/uimanager"):scheduleIn(0, function()
+                    local UIManager = require("ui/uimanager")
                     if m_self.menu_container then
-                        require("ui/uimanager"):close(m_self.menu_container)
+                        UIManager:close(m_self.menu_container)
                         m_self.menu_container = nil
                     end
                     local ui = m_self.ui
@@ -310,8 +311,12 @@ function ZenUI:init()
                         if type(ui.showFileManager) == "function" then
                             ui:showFileManager(file)
                         end
-                    elseif type(ui.onHome) == "function" then
-                        ui:onHome()
+                    else
+                        local fm = require("apps/filemanager/filemanager").instance
+                        if fm then utils.closeWidgetsAbove(fm) end
+                        if type(ui.onHome) == "function" then
+                            ui:onHome()
+                        end
                     end
                 end)
             end

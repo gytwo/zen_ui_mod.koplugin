@@ -7,6 +7,7 @@ local PATCH_MODULES = {
     brightness_schedule    = "modules/global/patches/brightness_schedule",
     disable_night_on_exit  = "modules/global/patches/disable_night_on_exit",
     menu_top_swipe         = "modules/global/patches/menu_top_swipe",
+    opds                   = "modules/global/patches/opds",
     lockdown_mode          = "modules/global/patches/lockdown_mode",
 }
 
@@ -60,6 +61,11 @@ function M.init(logger, plugin)
     local menu_top_swipe_fn = load_patch("menu_top_swipe")
     if menu_top_swipe_fn then
         run_patch(logger, plugin, "menu_top_swipe", menu_top_swipe_fn)
+    end
+
+    local opds_fn = load_patch("opds")
+    if opds_fn then
+        run_patch(logger, plugin, "opds", opds_fn)
     end
 
     -- Lockdown mode runs last so it wraps any reader-layer patches (e.g. margin_hold_guard).

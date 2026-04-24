@@ -161,8 +161,10 @@ local function patch_mosaic_item()
 
         local files      = self.entry._zen_files
         local book_count = #files
+        local is_gallery = BookInfoManager:getSetting("folder_gallery_mode")
+        local max_covers = is_gallery and 4 or 1
         local covers     = {}
-        for i = 1, math.min(book_count, 4) do
+        for i = 1, math.min(book_count, max_covers) do
             local bi = BookInfoManager:getBookInfo(files[i], true)
             if bi and bi.cover_bb and bi.has_cover
                     and bi.cover_fetched and not bi.ignore_cover then
@@ -174,9 +176,17 @@ local function patch_mosaic_item()
             end
         end
 
-        -- Delegate to browser_folder_cover's method when available
+        -- Delegate to browser_folder_cover's method when available.
+        -- Respect gallery_mode: off means single cover or no_image, not a 4-cell grid.
         if self._setFolderCover then
-            self:_setFolderCover{ gallery = covers, book_count = book_count }
+            local is_gallery = BookInfoManager:getSetting("folder_gallery_mode")
+            if is_gallery then
+                self:_setFolderCover{ gallery = covers, book_count = book_count }
+            elseif #covers > 0 then
+                self:_setFolderCover{ data = covers[1].data, w = covers[1].w, h = covers[1].h, book_count = book_count }
+            else
+                self:_setFolderCover{ no_image = true, book_count = book_count }
+            end
             return
         end
 
@@ -470,7 +480,7 @@ local function patch_list_item()
                     margin = 0, padding = 0, bordersize = border_size,
                     background = Blitbuffer.COLOR_LIGHT_GRAY,
                     CenterContainer:new{
-                        dimen = { w = max_img, h = max_img },
+                        dimen = { w = cover_w, h = max_img },
                         VerticalSpan:new{ width = 1 },
                     },
                 }

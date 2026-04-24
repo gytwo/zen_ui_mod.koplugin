@@ -402,6 +402,7 @@ function M.build(ctx)
                 keep_menu_open = true,
                 callback = function(touchmenu_instance)
                     local cfg = get_brightness_schedule_config()
+                    local powerd = Device.powerd
                     utils.show_value_picker(_("Day brightness"), cfg.day_value,
                         function(v)
                             if type(config.brightness_schedule) ~= "table" then
@@ -410,7 +411,7 @@ function M.build(ctx)
                             config.brightness_schedule.day_value = v
                             plugin:saveConfig()
                             if touchmenu_instance then touchmenu_instance:updateItems() end
-                        end)
+                        end, powerd.fl_min, powerd.fl_max)
                 end,
             },
             {
@@ -448,6 +449,7 @@ function M.build(ctx)
                 keep_menu_open = true,
                 callback = function(touchmenu_instance)
                     local cfg = get_brightness_schedule_config()
+                    local powerd = Device.powerd
                     utils.show_value_picker(_("Night brightness"), cfg.night_value,
                         function(v)
                             if type(config.brightness_schedule) ~= "table" then
@@ -456,7 +458,7 @@ function M.build(ctx)
                             config.brightness_schedule.night_value = v
                             plugin:saveConfig()
                             if touchmenu_instance then touchmenu_instance:updateItems() end
-                        end)
+                        end, powerd.fl_min, powerd.fl_max)
                 end,
             },
         },
@@ -513,6 +515,7 @@ function M.build(ctx)
                 keep_menu_open = true,
                 callback = function(touchmenu_instance)
                     local cfg = get_warmth_schedule_config()
+                    local powerd = Device.powerd
                     utils.show_value_picker(_("Day warmth"), cfg.day_value,
                         function(v)
                             if type(config.warmth_schedule) ~= "table" then
@@ -521,7 +524,7 @@ function M.build(ctx)
                             config.warmth_schedule.day_value = v
                             plugin:saveConfig()
                             if touchmenu_instance then touchmenu_instance:updateItems() end
-                        end)
+                        end, powerd.fl_warmth_min, powerd.fl_warmth_max)
                 end,
             },
             {
@@ -559,6 +562,7 @@ function M.build(ctx)
                 keep_menu_open = true,
                 callback = function(touchmenu_instance)
                     local cfg = get_warmth_schedule_config()
+                    local powerd = Device.powerd
                     utils.show_value_picker(_("Night warmth"), cfg.night_value,
                         function(v)
                             if type(config.warmth_schedule) ~= "table" then
@@ -567,7 +571,7 @@ function M.build(ctx)
                             config.warmth_schedule.night_value = v
                             plugin:saveConfig()
                             if touchmenu_instance then touchmenu_instance:updateItems() end
-                        end)
+                        end, powerd.fl_warmth_min, powerd.fl_warmth_max)
                 end,
             },
         },

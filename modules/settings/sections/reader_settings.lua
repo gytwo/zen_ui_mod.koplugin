@@ -71,10 +71,10 @@ function M.build(ctx)
             },
             {
                 text_func = function()
-                    local FontChooser = require("ui/widget/fontchooser")
+                    local ok_fc, FontChooser = pcall(require, "ui/widget/fontchooser")
                     local face = config.reader_clock and config.reader_clock.font_face
-                    local text = (not face or face == "default")
-                        and _("default") or FontChooser.getFontNameText(face)
+                    local text = (not face or face == "default") and _("default")
+                        or (ok_fc and FontChooser.getFontNameText(face) or face)
                     local size = config.reader_clock and config.reader_clock.font_size or 14
                     return string.format("%s %s, %s", _("Font:"), text, size)
                 end,
@@ -104,15 +104,16 @@ function M.build(ctx)
                     },
                     {
                         text_func = function()
-                            local FontChooser = require("ui/widget/fontchooser")
+                            local ok_fc, FontChooser = pcall(require, "ui/widget/fontchooser")
                             local face = config.reader_clock and config.reader_clock.font_face
-                            local text = (not face or face == "default")
-                                and _("default") or FontChooser.getFontNameText(face)
+                            local text = (not face or face == "default") and _("default")
+                                or (ok_fc and FontChooser.getFontNameText(face) or face)
                             return string.format("%s %s", _("Font:"), text)
                         end,
                         keep_menu_open = true,
                         callback = function(touchmenu_instance)
-                            local FontChooser = require("ui/widget/fontchooser")
+                            local ok_fc, FontChooser = pcall(require, "ui/widget/fontchooser")
+                            if not ok_fc then return end
                             local footer_settings = G_reader_settings:readSetting("footer") or {}
                             local footer_font = footer_settings.text_font_face or "NotoSans-Regular.ttf"
                             local current_face = config.reader_clock and config.reader_clock.font_face
@@ -143,6 +144,10 @@ function M.build(ctx)
                     },
                     {
                         text = _("Use default font"),
+                        show_func = function()
+                            local ok = pcall(require, "ui/widget/fontchooser")
+                            return ok
+                        end,
                         callback = function(touchmenu_instance)
                             if type(config.reader_clock) ~= "table" then config.reader_clock = {} end
                             config.reader_clock.font_face = "default"
@@ -173,7 +178,8 @@ function M.build(ctx)
             end
             local function resolve_preset_font(preset)
                 if not (preset.footer and preset.footer.text_font_face) then return preset end
-                local FontChooser = require("ui/widget/fontchooser")
+                local ok_fc, FontChooser = pcall(require, "ui/widget/fontchooser")
+                if not ok_fc then return preset end
                 local face = preset.footer.text_font_face
                 if FontChooser.isFontRegistered(face) then return preset end
                 -- bare filename: search fontinfo for a matching full path
@@ -373,84 +379,91 @@ function M.build(ctx)
                 return {}
             end
 
+            local ok_fc, FontChooser = pcall(require, "ui/widget/fontchooser")
+            if not ok_fc then FontChooser = nil end
+
+            local font_sub_items = {
+                {
+                    text_func = function()
+                        local footer_settings = G_reader_settings:readSetting("footer") or {}
+                        local size = footer_settings.text_font_size or 14
+                        return string.format("%s %s", _("Font size:"), size)
+                    end,
+                    keep_menu_open = true,
+                    callback = function(touchmenu_instance)
+                        local SpinWidget = require("ui/widget/spinwidget")
+                        local footer_settings = G_reader_settings:readSetting("footer") or {}
+                        UIManager:show(SpinWidget:new{
+                            title_text = _("Font size"),
+                            value = footer_settings.text_font_size or 14,
+                            value_min = 8,
+                            value_max = 36,
+                            default_value = 14,
+                            callback = function(spin)
+                                ui.view.footer.settings.text_font_size = spin.value
+                                ui.view.footer:updateFooterFont()
+                                ui.view.footer:refreshFooter(true, true)
+                                if touchmenu_instance then touchmenu_instance:updateItems() end
+                            end,
+                        })
+                    end,
+                },
+            }
+            if FontChooser then
+                table.insert(font_sub_items, {
+                    text_func = function()
+                        local footer_settings = G_reader_settings:readSetting("footer") or {}
+                        local face = footer_settings.text_font_face
+                        local text = (not face or face == "NotoSans-Regular.ttf")
+                            and _("default") or FontChooser.getFontNameText(face)
+                        return string.format("%s %s", _("Font:"), text)
+                    end,
+                    keep_menu_open = true,
+                    callback = function(touchmenu_instance)
+                        local footer_settings = G_reader_settings:readSetting("footer") or {}
+                        UIManager:show(FontChooser:new{
+                            title = _("Font"),
+                            font_file = footer_settings.text_font_face or "NotoSans-Regular.ttf",
+                            default_font_file = "NotoSans-Regular.ttf",
+                            callback = function(file)
+                                ui.view.footer.settings.text_font_face = file
+                                ui.view.footer:updateFooterFont()
+                                ui.view.footer:refreshFooter(true, true)
+                                if touchmenu_instance then touchmenu_instance:updateItems() end
+                            end,
+                        })
+                    end,
+                })
+            end
+            table.insert(font_sub_items, {
+                text = _("Bold"),
+                checked_func = function()
+                    local footer_settings = G_reader_settings:readSetting("footer") or {}
+                    return footer_settings.text_font_bold == true
+                end,
+                callback = function()
+                    ui.view.footer.settings.text_font_bold = not ui.view.footer.settings.text_font_bold
+                    ui.view.footer:updateFooterFont()
+                    ui.view.footer:refreshFooter(true, true)
+                end,
+            })
+            local ok_fc_default = pcall(require, "ui/widget/fontchooser")
+            if ok_fc_default then
+                table.insert(font_sub_items, {
+                    text = _("Use default font"),
+                    callback = function(touchmenu_instance)
+                        ui.view.footer.settings.text_font_face = "NotoSans-Regular.ttf"
+                        ui.view.footer.settings.text_font_size = 14
+                        ui.view.footer.settings.text_font_bold = false
+                        ui.view.footer:updateFooterFont()
+                        ui.view.footer:refreshFooter(true, true)
+                        if touchmenu_instance then touchmenu_instance:updateItems() end
+                    end,
+                })
+            end
             local font_submenu = {
                 text = _("Font"),
-                sub_item_table = {
-                    {
-                        text_func = function()
-                            local footer_settings = G_reader_settings:readSetting("footer") or {}
-                            local size = footer_settings.text_font_size or 14
-                            return string.format("%s %s", _("Font size:"), size)
-                        end,
-                        keep_menu_open = true,
-                        callback = function(touchmenu_instance)
-                            local SpinWidget = require("ui/widget/spinwidget")
-                            local footer_settings = G_reader_settings:readSetting("footer") or {}
-                            UIManager:show(SpinWidget:new{
-                                title_text = _("Font size"),
-                                value = footer_settings.text_font_size or 14,
-                                value_min = 8,
-                                value_max = 36,
-                                default_value = 14,
-                                callback = function(spin)
-                                    ui.view.footer.settings.text_font_size = spin.value
-                                    ui.view.footer:updateFooterFont()
-                                    ui.view.footer:refreshFooter(true, true)
-                                    if touchmenu_instance then touchmenu_instance:updateItems() end
-                                end,
-                            })
-                        end,
-                    },
-                    {
-                        text_func = function()
-                            local FontChooser = require("ui/widget/fontchooser")
-                            local footer_settings = G_reader_settings:readSetting("footer") or {}
-                            local face = footer_settings.text_font_face
-                            local text = (not face or face == "NotoSans-Regular.ttf")
-                                and _("default") or FontChooser.getFontNameText(face)
-                            return string.format("%s %s", _("Font:"), text)
-                        end,
-                        keep_menu_open = true,
-                        callback = function(touchmenu_instance)
-                            local FontChooser = require("ui/widget/fontchooser")
-                            local footer_settings = G_reader_settings:readSetting("footer") or {}
-                            UIManager:show(FontChooser:new{
-                                title = _("Font"),
-                                font_file = footer_settings.text_font_face or "NotoSans-Regular.ttf",
-                                default_font_file = "NotoSans-Regular.ttf",
-                                callback = function(file)
-                                    ui.view.footer.settings.text_font_face = file
-                                    ui.view.footer:updateFooterFont()
-                                    ui.view.footer:refreshFooter(true, true)
-                                    if touchmenu_instance then touchmenu_instance:updateItems() end
-                                end,
-                            })
-                        end,
-                    },
-                    {
-                        text = _("Bold"),
-                        checked_func = function()
-                            local footer_settings = G_reader_settings:readSetting("footer") or {}
-                            return footer_settings.text_font_bold == true
-                        end,
-                        callback = function()
-                            ui.view.footer.settings.text_font_bold = not ui.view.footer.settings.text_font_bold
-                            ui.view.footer:updateFooterFont()
-                            ui.view.footer:refreshFooter(true, true)
-                        end,
-                    },
-                    {
-                        text = _("Use default font"),
-                        callback = function(touchmenu_instance)
-                            ui.view.footer.settings.text_font_face = "NotoSans-Regular.ttf"
-                            ui.view.footer.settings.text_font_size = 14
-                            ui.view.footer.settings.text_font_bold = false
-                            ui.view.footer:updateFooterFont()
-                            ui.view.footer:refreshFooter(true, true)
-                            if touchmenu_instance then touchmenu_instance:updateItems() end
-                        end,
-                    },
-                },
+                sub_item_table = font_sub_items,
             }
 
             local mock = {}

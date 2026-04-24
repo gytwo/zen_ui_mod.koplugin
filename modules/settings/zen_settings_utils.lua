@@ -316,15 +316,13 @@ function M.show_time_picker(title, h, m, callback)
     })
 end
 
-function M.show_value_picker(title, value, callback)
-    UIManager:show(require("ui/widget/spinwidget"):new{
-        title_text      = title,
-        value           = value,
-        value_min       = 0,
-        value_max       = 24,
-        value_step      = 1,
-        value_hold_step = 4,
-        callback        = function(spin) callback(spin.value) end,
+function M.show_value_picker(title, value, callback, min, max)
+    UIManager:show(require("common/zen_slider_dialog"):new{
+        title     = title,
+        value     = value,
+        value_min = min or 0,
+        value_max = max or 24,
+        callback  = callback,
     })
 end
 

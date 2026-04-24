@@ -89,7 +89,9 @@ local function apply_brightness_schedule()
     local function set_brightness(value)
         local Powerd = Device.powerd
         if Powerd and type(Powerd.setIntensity) == "function" then
-            pcall(Powerd.setIntensity, Powerd, math.max(0, math.min(100, value)))
+            local lo = Powerd.fl_min or 0
+            local hi = Powerd.fl_max or 100
+            pcall(Powerd.setIntensity, Powerd, math.max(lo, math.min(hi, value)))
             UIManager:setDirty("all", "ui")
         end
     end

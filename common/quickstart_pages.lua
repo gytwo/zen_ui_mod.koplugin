@@ -752,6 +752,10 @@ function M.build_install_pages(ctx)
                 },
                 on_apply = function(sel)
                     if sel["skip"] then return end
+                    local function apply_sort_defaults()
+                        G_reader_settings:saveSetting("collate", "access")
+                        G_reader_settings:saveSetting("collate_mixed", true)
+                    end
                     if sel["books"] then
                         local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
                         if not ok_lfs then return end
@@ -760,6 +764,7 @@ function M.build_install_pages(ctx)
                         end
                         if lfs.attributes(books_dir, "mode") == "directory" then
                             G_reader_settings:saveSetting("home_dir", books_dir)
+                            apply_sort_defaults()
                         end
                     elseif sel["choose"] then
                         local ok_ui, UIMan = pcall(require, "ui/uimanager")
@@ -773,6 +778,7 @@ function M.build_install_pages(ctx)
                                 onConfirm        = function(chosen_path)
                                     if chosen_path and chosen_path ~= "" then
                                         G_reader_settings:saveSetting("home_dir", chosen_path)
+                                        apply_sort_defaults()
                                     end
                                 end,
                             })

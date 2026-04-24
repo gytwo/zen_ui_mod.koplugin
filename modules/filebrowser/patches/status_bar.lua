@@ -886,7 +886,9 @@ local function apply_status_bar()
             end
         end
 
-        UIManager:setDirty(self.show_parent or self, "ui", tb.dimen)
+        -- Clear the full titlebar region to white before repainting so stale
+        -- pixels from a previously wider right-side group don't leave ghosts.
+        repaintTitleBar(tb)
     end
 
     -- === Hooks ===

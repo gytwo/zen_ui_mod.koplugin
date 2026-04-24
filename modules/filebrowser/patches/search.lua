@@ -107,6 +107,7 @@ local function apply_search()
 
     -- Whole-word matching and description exclusion for Zen search
     local util = require("util")
+    local str_lower = util.stringLower or string.lower  -- util.stringLower added in newer KOReader
     local DocumentRegistry = require("document/documentregistry")
 
     local function find_whole_word(text, pattern)
@@ -140,7 +141,7 @@ local function apply_search()
             return true
         end
         -- Filename: whole-word, always case-insensitive
-        if find_whole_word(util.stringLower(filename), search_string) then
+        if find_whole_word(str_lower(filename), search_string) then
             return true
         end
         -- Metadata: skip description, whole-word matching
@@ -152,7 +153,7 @@ local function apply_search()
                     local prop = book_props[key]
                     if prop then
                         if key == "series_index" then prop = tostring(prop) end
-                        if find_whole_word(util.stringLower(prop), search_string) then
+                        if find_whole_word(str_lower(prop), search_string) then
                             return true
                         end
                     end

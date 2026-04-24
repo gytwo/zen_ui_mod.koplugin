@@ -121,12 +121,14 @@ local function build_brightness_slider(touch_menu, opts)
             Screen.bb:paintRect(num_x, label_y, fl_drag_max_num_w, lh, Blitbuffer.COLOR_WHITE)
             fl_drag_num:setText(tostring(fl.cur))
             fl_drag_num:paintTo(Screen.bb, num_x, label_y)
-            -- Two non-overlapping A2s: number area and slider
+            -- Single A2 covering label + slider (two back-to-back A2 calls
+            -- can race on Kobo, causing the second refresh to be dropped).
             UIManager:setDirty(nil, "fast", Geom:new{
-                x = num_x, y = label_y,
-                w = fl_drag_max_num_w, h = lh,
+                x = fl_progress.dimen.x,
+                y = label_y,
+                w = fl_progress.dimen.w,
+                h = fl_progress.dimen.y + fl_progress.dimen.h - label_y,
             })
-            UIManager:setDirty(nil, "fast", fl_progress.dimen)
         else
             if fl_label_fn then UIManager:unschedule(fl_label_fn) ; fl_label_fn = nil end
             fl_drag_num:setText(tostring(fl.cur))

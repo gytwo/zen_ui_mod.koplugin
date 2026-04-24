@@ -681,8 +681,9 @@ local function apply_page_browser()
             local badge_face_s = Font:getFace("cfont", 13)
             local ph_s         = Screen:scaleBySize(4)
             local pv_s         = Screen:scaleBySize(2)
-            local bg_color_s   = Blitbuffer.gray(0x33)
-            local fg_color_s   = Blitbuffer.gray(0xFF)
+            -- Pure B/W so A2 waveform renders the badge cleanly (same as chapter text).
+            local bg_color_s   = Blitbuffer.COLOR_BLACK
+            local fg_color_s   = Blitbuffer.COLOR_WHITE
             local gap_bot_s    = Screen:scaleBySize(3)
             local bs_s         = Size.border.thin
 

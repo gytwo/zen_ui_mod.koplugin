@@ -54,10 +54,10 @@ local function apply_warmth_schedule()
         return {
             day_h       = tonumber(cfg.day_h)       or 7,
             day_m       = tonumber(cfg.day_m)       or 0,
-            day_value   = tonumber(cfg.day_value)   or 30,
+            day_value   = tonumber(cfg.day_value)   or 3,
             night_h     = tonumber(cfg.night_h)     or 20,
             night_m     = tonumber(cfg.night_m)     or 0,
-            night_value = tonumber(cfg.night_value) or 80,
+            night_value = tonumber(cfg.night_value) or 8,
         }
     end
 
@@ -89,10 +89,11 @@ local function apply_warmth_schedule()
 
     local function set_warmth(value)
         local Powerd = Device.powerd
-        if Powerd and type(Powerd.setWarmth) == "function" then
-            -- setWarmth expects an internal 0-100 range; our config stores 0-24.
-            local scaled = math.floor(value * 100 / 24 + 0.5)
-            pcall(Powerd.setWarmth, Powerd, math.max(0, math.min(100, scaled)))
+        if Powerd and type(Powerd.setWarmth) == "function"
+           and type(Powerd.fromNativeWarmth) == "function" then
+            local lo = Powerd.fl_warmth_min or 0
+            local hi = Powerd.fl_warmth_max or 24
+            pcall(Powerd.setWarmth, Powerd, Powerd:fromNativeWarmth(math.max(lo, math.min(hi, value))))
             UIManager:setDirty("all", "ui")
         end
     end

@@ -33,8 +33,20 @@ function M.build(ctx)
         { key = "custom_text", text = _("Custom text") },
     }
 
+    -- Canonical positions within each slot: items are inserted at the slot
+    -- position matching this order when the user enables them, rather than
+    -- always appending to the end.
+    local CANONICAL_ORDERS = {
+        left   = { "time", "custom_text" },
+        center = {},
+        right  = { "custom_text", "disk", "ram", "frontlight", "wifi", "battery" },
+    }
+
     local function make_status_bar_slot_items(slot_name, arrange_title)
         local order_key = slot_name .. "_order"
+        local canonical = CANONICAL_ORDERS[slot_name] or {}
+        local canon_pos = {}
+        for i, k in ipairs(canonical) do canon_pos[k] = i end
         local other_keys = {}
         for _, s in ipairs({ "left", "center", "right" }) do
             if s ~= slot_name then
@@ -77,13 +89,23 @@ function M.build(ctx)
             local key = def.key
             table.insert(t, {
                 text = def.text,
+                keep_menu_open = true,
+                enabled_func = function()
+                    -- Disable if already active in another slot.
+                    for _, other_key in ipairs(other_keys) do
+                        for _, k in ipairs(config.status_bar[other_key] or {}) do
+                            if k == key then return false end
+                        end
+                    end
+                    return true
+                end,
                 checked_func = function()
                     for _, k in ipairs(config.status_bar[order_key] or {}) do
                         if k == key then return true end
                     end
                     return false
                 end,
-                callback = function()
+                callback = function(touchmenu_instance)
                     local this_order = config.status_bar[order_key] or {}
                     local found = false
                     local new_this = {}
@@ -100,8 +122,22 @@ function M.build(ctx)
                             end
                             config.status_bar[other_key] = new_other
                         end
-                        table.insert(this_order, key)
+                        -- Insert at the canonical position rather than appending.
+                        local new_key_canon = canon_pos[key] or math.huge
+                        local insert_at = #this_order + 1
+                        for i, k in ipairs(this_order) do
+                            if (canon_pos[k] or math.huge) > new_key_canon then
+                                insert_at = i
+                                break
+                            end
+                        end
+                        table.insert(this_order, insert_at, key)
                         config.status_bar[order_key] = this_order
+                    end
+                    -- Repaint the menu's checkmarks before the deferred reinit fires,
+                    -- preventing ghost artifacts from the old checked state.
+                    if touchmenu_instance then
+                        touchmenu_instance:updateItems()
                     end
                     save_and_apply_status_bar()
                 end,

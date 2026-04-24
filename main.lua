@@ -134,6 +134,29 @@ function ZenUI:init()
         self:saveConfig()
     end
 
+    -- First-run: default sort to recently read, mix files and folders.
+    -- Always override: KOReader ships "title" as its own default, so guarding
+    -- on readSetting() would silently skip this on a fresh install.
+    if not self.config._meta.sort_defaults_applied then
+        G_reader_settings:saveSetting("collate", "access")
+        G_reader_settings:saveSetting("collate_mixed", true)
+        self.config._meta.sort_defaults_applied = true
+        self:saveConfig()
+    end
+
+    -- First-run: default gallery view ON, folder name bottom + transparent bg.
+    if not self.config._meta.gallery_mode_defaulted then
+        local ok_bim2, BookInfoManager2 = pcall(require, "bookinfomanager")
+        if ok_bim2 then
+            BookInfoManager2:saveSetting("folder_gallery_mode", true)
+            -- Storing true makes BooleanSetting(default=true).get() return false = off.
+            BookInfoManager2:saveSetting("folder_name_centered", true) -- bottom placement
+            BookInfoManager2:saveSetting("folder_name_opaque", true)   -- transparent bg
+        end
+        self.config._meta.gallery_mode_defaulted = true
+        self:saveConfig()
+    end
+
     -- First-run: default portrait list mode to 5 items per page.
     if not self.config._meta.files_per_page_defaulted then
         local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")

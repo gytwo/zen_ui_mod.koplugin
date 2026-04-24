@@ -109,12 +109,14 @@ local function build_warmth_slider(touch_menu, opts)
             Screen.bb:paintRect(num_x, label_y, nl_drag_max_num_w, lh, Blitbuffer.COLOR_WHITE)
             nl_drag_num:setText(tostring(nl.cur))
             nl_drag_num:paintTo(Screen.bb, num_x, label_y)
-            -- Two non-overlapping A2s: number area and slider
+            -- Single A2 covering label + slider (two back-to-back A2 calls
+            -- can race on Kobo, causing the second refresh to be dropped).
             UIManager:setDirty(nil, "fast", Geom:new{
-                x = num_x, y = label_y,
-                w = nl_drag_max_num_w, h = lh,
+                x = nl_progress.dimen.x,
+                y = label_y,
+                w = nl_progress.dimen.w,
+                h = nl_progress.dimen.y + nl_progress.dimen.h - label_y,
             })
-            UIManager:setDirty(nil, "fast", nl_progress.dimen)
         else
             if nl_label_fn then UIManager:unschedule(nl_label_fn) ; nl_label_fn = nil end
             nl_drag_num:setText(tostring(nl.cur))

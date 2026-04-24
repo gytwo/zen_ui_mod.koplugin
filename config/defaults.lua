@@ -6,6 +6,7 @@ local defaults = {
         screensaver_backup_created = false,
         footer_backup_created = false,
         quickstart_shown_for_version = false,
+        sort_defaults_applied = false,
     },
     localization = {
         default_locale = "en",
@@ -170,10 +171,10 @@ local defaults = {
     warmth_schedule = {
         day_h       = 7,
         day_m       = 0,
-        day_value   = 6,
+        day_value   = 3,
         night_h     = 20,
         night_m     = 0,
-        night_value = 20,
+        night_value = 8,
     },
     brightness_schedule = {
         day_h       = 7,

@@ -28,6 +28,7 @@ jobs:
           cp *.md _stage/
           cp _config.yml _stage/
           cp _includes/head-custom.html _stage/_includes/
+          cp _includes/dark-mode.css _stage/_includes/
           cp -r images _stage/
           cp -r icons _stage/
       - uses: actions/jekyll-build-pages@v1

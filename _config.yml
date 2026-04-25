@@ -8,3 +8,11 @@ defaults:
       path: ""
     values:
       layout: default
+
+remote_theme: jekyll/minima
+
+plugins:
+  - jekyll-remote-theme
+
+minima:
+  skin: auto

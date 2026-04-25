@@ -89,13 +89,32 @@ local function apply_quick_settings()
             end
         end
         if type(config.show_buttons) == "table" then
+            -- Track which buttons are being set for the first time (nil = never explicitly stored)
+            local first_time = {}
             for k, v in pairs(config_default.show_buttons) do
                 if config.show_buttons[k] == nil then
+                    first_time[k] = true
                     config.show_buttons[k] = v
+                end
+            end
+            -- Auto-enable filebrowser button on first run if the plugin is installed
+            if first_time.filebrowser then
+                local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
+                local ok_ru, ReaderUI    = pcall(require, "apps/reader/readerui")
+                local ui = (ok_fm and FileManager.instance) or (ok_ru and ReaderUI.instance)
+                if ui and ui.filebrowser then
+                    config.show_buttons.filebrowser = true
                 end
             end
         else
             config.show_buttons = utils.deepcopy(config_default.show_buttons)
+            -- Auto-enable filebrowser on first ever config creation if plugin is installed
+            local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
+            local ok_ru, ReaderUI    = pcall(require, "apps/reader/readerui")
+            local ui = (ok_fm and FileManager.instance) or (ok_ru and ReaderUI.instance)
+            if ui and ui.filebrowser then
+                config.show_buttons.filebrowser = true
+            end
         end
         if type(config.button_order) ~= "table" then
             config.button_order = utils.deepcopy(config_default.button_order)

@@ -296,4 +296,38 @@ function M.getTBRBooks()
     return result
 end
 
+-- Returns the total number of fully-indexed books in the bookinfo cache
+-- that live under home_dir. Uses a SQL COUNT so no lfs calls are made.
+function M.getTotalBookCount()
+    local db_path = getDbPath()
+    if not db_path then return 0 end
+
+    local home_dir = getHomeDir()
+    local ok, conn = pcall(SQ3.open, db_path)
+    if not ok then return 0 end
+    conn:set_busy_timeout(3000)
+
+    local count = 0
+    local ok2, err = pcall(function()
+        local sql, row
+        if home_dir then
+            -- directory values include a trailing slash, e.g. "/storage/books/"
+            -- LIKE prefix match covers all subdirectories too
+            sql = string.format(
+                "SELECT COUNT(*) FROM bookinfo WHERE in_progress = 0 AND directory LIKE %q;",
+                home_dir .. "%")
+        else
+            sql = "SELECT COUNT(*) FROM bookinfo WHERE in_progress = 0;"
+        end
+        row = conn:rowexec(sql)
+        count = tonumber(row) or 0
+    end)
+    conn:close()
+    if not ok2 then
+        logger.warn("zen-ui db_bookinfo: getTotalBookCount error:", err)
+    end
+    logger.info("zen-ui db_bookinfo: total_book_count=", count)
+    return count
+end
+
 return M

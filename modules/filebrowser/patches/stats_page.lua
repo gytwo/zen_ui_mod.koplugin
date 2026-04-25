@@ -79,6 +79,7 @@ end
 
 local StatsDB       = require("common/db_stats")
 local LibraryDB     = require("common/db_library")
+local BookInfoDB    = require("common/db_bookinfo")
 local ConfigManager = require("config/manager")
 
 local MAX_ROWS = 5
@@ -152,7 +153,8 @@ local function queryStats()
     local book_counts = LibraryDB.getBookCounts()
     stats.books_finished = book_counts.finished
     stats.books_reading  = book_counts.reading
-    stats.total_books    = book_counts.total
+    -- use bookinfo cache for total count: covers all books regardless of read status
+    stats.total_books = BookInfoDB.getTotalBookCount()
     return stats
 end
 

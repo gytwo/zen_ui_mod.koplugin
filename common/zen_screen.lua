@@ -49,36 +49,42 @@ local function paintRoundedRect(bb, rx, ry, rw, rh, color, radius, bg_color)
 end
 
 local ZenScreen = InputContainer:extend{
-    title    = nil,   -- string shown in top bar; nil hides the title bar entirely
-    subtitle = nil,   -- string rendered above the icon (e.g. "Updated to v1.2.3")
-    button   = nil,   -- button label string; nil -> "Get Started"; false -> no button
-    on_close = nil,
+    title             = nil,   -- string shown in top bar; nil hides the title bar entirely
+    subtitle          = nil,   -- string rendered above the icon (e.g. "Updated to v1.2.3")
+    button            = nil,   -- button label string; nil -> "Get Started"; false -> no button
+    on_close          = nil,
+    dismissable       = true,  -- when false, swipe/tap-outside won't close the screen
+    _on_button_action = nil,   -- if set, button tap calls this instead of onClose
 }
+
+function ZenScreen:_computeLayout()
+    local sw = Screen:getWidth()
+    local sh = Screen:getHeight()
+    local PAD        = Screen:scaleBySize(20)
+    local TITLE_H    = self.title and Screen:scaleBySize(60) or 0
+    local SEP_H      = self.title and 1 or 0
+    local SUBTITLE_H = self.subtitle and Screen:scaleBySize(72) or 0
+    local BTN_H      = (self.button ~= false) and Screen:scaleBySize(80) or 0
+    self._L = {
+        sw         = sw,
+        sh         = sh,
+        pad        = PAD,
+        title_h    = TITLE_H,
+        sep_h      = SEP_H,
+        subtitle_h = SUBTITLE_H,
+        btn_h      = BTN_H,
+        logo_y     = TITLE_H + SEP_H + SUBTITLE_H,
+        logo_h     = sh - TITLE_H - SEP_H - SUBTITLE_H - BTN_H,
+        btn_y      = sh - BTN_H,
+    }
+end
 
 function ZenScreen:init()
     logger.info("ZenScreen:init title=", self.title)
     local sw = Screen:getWidth()
     local sh = Screen:getHeight()
     self.dimen = Geom:new{ x = 0, y = 0, w = sw, h = sh }
-
-    local PAD        = Screen:scaleBySize(20)
-    local TITLE_H   = self.title and Screen:scaleBySize(60) or 0
-    local SEP_H     = self.title and 1 or 0
-    local SUBTITLE_H = self.subtitle and Screen:scaleBySize(56) or 0
-    local BTN_H     = (self.button ~= false) and Screen:scaleBySize(80) or 0
-
-    self._L = {
-        sw          = sw,
-        sh          = sh,
-        pad         = PAD,
-        title_h     = TITLE_H,
-        sep_h       = SEP_H,
-        subtitle_h  = SUBTITLE_H,
-        btn_h       = BTN_H,
-        logo_y      = TITLE_H + SEP_H + SUBTITLE_H,
-        logo_h      = sh - TITLE_H - SEP_H - SUBTITLE_H - BTN_H,
-        btn_y       = sh - BTN_H,
-    }
+    self:_computeLayout()
     self._btn_rect = nil
 
     self:registerTouchZones({
@@ -86,7 +92,10 @@ function ZenScreen:init()
             id          = "zs_swipe",
             ges         = "swipe",
             screen_zone = { ratio_x = 0, ratio_y = 0, ratio_w = 1, ratio_h = 1 },
-            handler     = function() self:onClose() return true end,
+            handler     = function()
+                if self.dismissable then self:onClose() end
+                return true
+            end,
         },
         {
             id          = "zs_tap",
@@ -122,7 +131,7 @@ function ZenScreen:paintTo(bb, x, y)
         local sub_y = y + L.title_h + L.sep_h
         local sw2 = TextWidget:new{
             text    = self.subtitle,
-            face    = Font:getFace("cfont", 20),
+            face    = Font:getFace("cfont", 26),
             bold    = false,
             padding = 0,
         }
@@ -136,7 +145,7 @@ function ZenScreen:paintTo(bb, x, y)
     -- Centered logo
     if ImageWidget and _plugin_root ~= "" then
         local logo  = _plugin_root .. "/icons/zen_ui.svg"
-        local max_sz = math.min(L.sw - L.pad * 4, L.logo_h - L.pad * 4)
+        local max_sz = math.min(L.sw - L.pad * 4, L.logo_h - L.pad * 4) * 0.75
         if max_sz > 0 then
             pcall(function()
                 local iw = ImageWidget:new{
@@ -191,20 +200,36 @@ function ZenScreen:_onTap(ges)
     local L  = self._L
     local br = self._btn_rect
 
-    -- Button tap
+    -- Button tap: call action override if set, otherwise close
     if br and p.x >= br.x and p.x < br.x + br.w
            and p.y >= br.y and p.y < br.y + br.h then
-        self:onClose()
+        if self._on_button_action then
+            self._on_button_action()
+        else
+            self:onClose()
+        end
         return true
     end
 
-    -- Tap in the bottom nav area always closes (no button present or outside btn)
+    -- Bottom nav area: only close if dismissable
     if L.btn_h > 0 and p.y >= L.btn_y then
-        self:onClose()
+        if self.dismissable then self:onClose() end
         return true
     end
 
     return true
+end
+
+--- Mutate subtitle/button/dismissable and repaint without closing/reopening.
+function ZenScreen:update(opts)
+    if opts.subtitle ~= nil then self.subtitle = opts.subtitle end
+    if opts.button ~= nil then self.button = opts.button end
+    if opts.dismissable ~= nil then self.dismissable = opts.dismissable end
+    if opts.on_button ~= nil then self._on_button_action = opts.on_button end
+    self:_computeLayout()
+    UIManager:setDirty(self, function()
+        return "partial", self.dimen
+    end)
 end
 
 function ZenScreen:onShow()

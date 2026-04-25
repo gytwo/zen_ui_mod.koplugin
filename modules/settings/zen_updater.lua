@@ -344,6 +344,53 @@ function M.latest_version()
     return M._latest_ver
 end
 
+--- Download, unpack, and reboot using an existing ZenScreen for all UI feedback.
+local function _do_install(screen, plugin_root, plugins_dir)
+    local UIManager = require("ui/uimanager")
+
+    if not is_valid_asset_url(M._dl_url) then
+        do_network_check()
+    end
+    if not is_valid_asset_url(M._dl_url) then
+        screen:update{ subtitle = _("No update asset found."), button = _("OK"), dismissable = true }
+        return
+    end
+
+    local zip_path = plugins_dir .. "/zen_ui_update.zip"
+    local ok, err = https_download(M._dl_url, zip_path)
+    if not ok then
+        screen:update{ subtitle = _("Download failed: ") .. (err or _("unknown error")), button = _("OK"), dismissable = true }
+        return
+    end
+
+    local rm_rc = os.execute(string.format("rm -rf %q", plugin_root))
+    if rm_rc ~= 0 and rm_rc ~= true then
+        os.remove(zip_path)
+        screen:update{ subtitle = _("Failed to remove existing plugin."), button = _("OK"), dismissable = true }
+        return
+    end
+
+    local unzip_rc = os.execute(string.format("unzip -q %q -d %q", zip_path, plugins_dir))
+    os.remove(zip_path)
+    if unzip_rc ~= 0 and unzip_rc ~= true then
+        screen:update{ subtitle = _("Failed to unpack update."), button = _("OK"), dismissable = true }
+        return
+    end
+
+    clear_update_state()
+    local gs2 = get_gs()
+    if gs2 then
+        gs2:saveSetting("zen_ui_just_updated", M._latest_ver or "")
+        pcall(gs2.flush, gs2)
+    end
+
+    screen:update{ subtitle = _("Rebooting…"), button = false }
+    UIManager:forceRePaint()
+    UIManager:scheduleIn(1, function()
+        UIManager:broadcastEvent(require("ui/event"):new("Restart"))
+    end)
+end
+
 --- Download the latest release.zip, unpack it over the plugin directory, and
 --- prompt the user to restart KOReader.
 function M.run_update(plugin)
@@ -480,11 +527,10 @@ function M.build_update_now_item(plugin)
         end,
         keep_menu_open = true,
         callback = function()
-            local UIManager   = require("ui/uimanager")
-            local InfoMessage = require("ui/widget/infomessage")
+            local UIManager = require("ui/uimanager")
+            local ZenScreen = require("common/zen_screen")
 
-            -- Reset all in-memory state and clear the throttle timestamp so
-            -- the next check_for_update() call goes straight to the network.
+            -- Reset throttle so this check always goes to the network.
             M._checked    = false
             M._has_update = false
             M._latest_ver = nil
@@ -495,23 +541,39 @@ function M.build_update_now_item(plugin)
                 pcall(gs.flush, gs)
             end
 
-            -- Show feedback immediately so there are no artifacts while the
-            -- blocking network call runs on Kobo's slower SSL stack.
-            local checking = InfoMessage:new{ text = _("Checking for updates…") }
-            UIManager:show(checking)
+            local screen
+            screen = ZenScreen:new{
+                subtitle    = _("Checking for updates…"),
+                button      = false,
+                dismissable = false,
+            }
+            UIManager:show(screen)
             UIManager:forceRePaint()
 
             UIManager:scheduleIn(0.1, function()
                 M.check_for_update()
-                UIManager:close(checking)
 
                 if M._has_update then
-                    M.run_update(plugin)
+                    local ver_label = M._latest_ver and ("v" .. M._latest_ver) or _("latest")
+                    local plugin_root = PLUGIN_ROOT or ""
+                    local plugins_dir = plugin_root:match("^(.*)/[^/]+$") or plugin_root
+                    screen:update{
+                        subtitle  = _("Update available: ") .. ver_label,
+                        button    = _("Update now"),
+                        on_button = function()
+                            screen:update{ subtitle = _("Updating…"), button = false }
+                            UIManager:forceRePaint()
+                            UIManager:scheduleIn(0.1, function()
+                                _do_install(screen, plugin_root, plugins_dir)
+                            end)
+                        end,
+                    }
                 else
-                    UIManager:show(InfoMessage:new{
-                        text    = _("Zen UI is up to date."),
-                        timeout = 3,
-                    })
+                    screen:update{
+                        subtitle    = _("Zen UI is up to date."),
+                        button      = _("OK"),
+                        dismissable = true,
+                    }
                 end
             end)
         end,

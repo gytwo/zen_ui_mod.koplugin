@@ -131,6 +131,11 @@ local function apply_search()
         end
     end
 
+    -- Replace hyphens, en-dashes, underscores with spaces so "moby dick" matches "moby-dick".
+    local function normalize_for_search(s)
+        return s:gsub("[%-%_\u{2013}\u{2014}]", " ")
+    end
+
     local orig_isFileMatch = FileManagerFileSearcher.isFileMatch
 
     function FileManagerFileSearcher:isFileMatch(filename, fullpath, search_string, is_file)
@@ -140,8 +145,9 @@ local function apply_search()
         if search_string == "*" then
             return true
         end
+        local norm_search = normalize_for_search(search_string)
         -- Filename: whole-word, always case-insensitive
-        if find_whole_word(str_lower(filename), search_string) then
+        if find_whole_word(normalize_for_search(str_lower(filename)), norm_search) then
             return true
         end
         -- Metadata: skip description, whole-word matching
@@ -153,7 +159,7 @@ local function apply_search()
                     local prop = book_props[key]
                     if prop then
                         if key == "series_index" then prop = tostring(prop) end
-                        if find_whole_word(str_lower(prop), search_string) then
+                        if find_whole_word(normalize_for_search(str_lower(prop)), norm_search) then
                             return true
                         end
                     end

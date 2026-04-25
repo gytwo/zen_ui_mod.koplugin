@@ -28,9 +28,12 @@ M._dl_url     = nil   -- download URL for release.zip
 -- Helpers
 -- ---------------------------------------------------------------------------
 
---- Parse major/minor/patch integers from "v1.2.3" or "1.2.3".
+--- Parse major/minor/patch integers from version strings like "v1.2.3",
+--- "1.2.3", or "1.2.3-beta1". Pre-release suffixes are stripped so that
+--- "1.2.3-beta1" compares numerically equal to "1.2.3" (stable wins ties).
 local function parse_semver(v)
     v = (v or ""):match("^v?(.+)$") or ""
+    v = v:match("^([%d%.]+)") or ""  -- strip -prerelease / +build suffixes
     local maj, min, pat = v:match("^(%d+)%.(%d+)%.?(%d*)$")
     return tonumber(maj) or 0, tonumber(min) or 0, tonumber(pat) or 0
 end
@@ -227,17 +230,39 @@ local function do_network_check()
     local tag, dl_url
 
     if channel == "beta" then
-        local body = https_get(GITHUB_RELEASES_URL .. "?per_page=10")
-        if not body then return false end
-        -- Find the first entry marked as a pre-release.
-        for obj in body:gmatch('%b{}') do
-            if obj:find('"prerelease"%s*:%s*true') then
-                tag = json_str(obj, "tag_name")
-                if tag then
-                    dl_url = extract_asset_url(obj)
-                    break
+        -- Fetch latest stable and latest prerelease; use whichever is newer.
+        -- Stable wins when versions are equal.
+        local stable_tag, stable_url
+        local stable_body = https_get(GITHUB_API_URL)
+        if stable_body then
+            stable_tag = json_str(stable_body, "tag_name")
+            stable_url = extract_asset_url(stable_body)
+        end
+
+        local beta_tag, beta_url
+        local list_body = https_get(GITHUB_RELEASES_URL .. "?per_page=10")
+        if list_body then
+            for obj in list_body:gmatch('%b{}') do
+                if obj:find('"prerelease"%s*:%s*true') then
+                    beta_tag = json_str(obj, "tag_name")
+                    if beta_tag then
+                        beta_url = extract_asset_url(obj)
+                        break
+                    end
                 end
             end
+        end
+
+        -- Prefer beta only when strictly newer than stable.
+        if beta_tag and semver_gt(beta_tag, stable_tag or "0.0.0") then
+            tag    = beta_tag
+            dl_url = beta_url
+        elseif stable_tag then
+            tag    = stable_tag
+            dl_url = stable_url
+        else
+            tag    = beta_tag
+            dl_url = beta_url
         end
     else
         local body = https_get(GITHUB_API_URL)

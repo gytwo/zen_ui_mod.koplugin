@@ -35,6 +35,19 @@ function M.build(ctx)
     })
 
     table.insert(items, {
+        text = _("Zen OPDS"),
+        help_text = _("Enable Zen UI enhancements to the OPDS browser: cover art, list view, hold menu, and navigation improvements."),
+        checked_func = function()
+            return config.features.zen_opds ~= false
+        end,
+        callback = function()
+            config.features.zen_opds = not (config.features.zen_opds ~= false)
+            plugin:saveConfig()
+            settings_apply.prompt_restart()
+        end,
+    })
+
+    table.insert(items, {
         text = _("Partial pages refresh"),
         checked_func = function()
             return config.features.partial_page_repaint == true

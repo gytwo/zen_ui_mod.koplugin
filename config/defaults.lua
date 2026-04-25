@@ -51,6 +51,7 @@ local defaults = {
         dict_quick_lookup    = true,
         custom_icons_enabled = false,
         lockdown_mode        = false,
+        zen_opds             = true,
     },
     navbar = {
         show_tabs = {

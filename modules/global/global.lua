@@ -64,7 +64,7 @@ function M.init(logger, plugin)
     end
 
     local opds_fn = load_patch("opds")
-    if opds_fn then
+    if opds_fn and plugin.config.features.zen_opds ~= false then
         run_patch(logger, plugin, "opds", opds_fn)
     end
 

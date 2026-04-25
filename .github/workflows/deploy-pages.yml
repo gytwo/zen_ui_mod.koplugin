@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - '*.md'
+      - '_config.yml'
+      - '_includes/**'
       - 'images/**'
       - 'icons/**'
   workflow_dispatch:
@@ -16,31 +18,32 @@ permissions:
   id-token: write
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage site files
+        run: |
+          mkdir -p _stage/_includes
+          cp *.md _stage/
+          cp _config.yml _stage/
+          cp _includes/head-custom.html _stage/_includes/
+          cp -r images _stage/
+          cp -r icons _stage/
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./_stage
+          destination: ./_site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
   deploy:
     runs-on: ubuntu-latest
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Create deploy directory
-        run: |
-          mkdir -p _deploy/_includes
-          cp *.md _deploy/
-          cp _config.yml _deploy/
-          cp _includes/head-custom.html _deploy/_includes/
-          cp -r images _deploy/
-          cp -r icons _deploy/
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '_deploy'
-
-      - name: Deploy to GitHub Pages
+      - uses: actions/deploy-pages@v4
         id: deployment
-        uses: actions/deploy-pages@v4

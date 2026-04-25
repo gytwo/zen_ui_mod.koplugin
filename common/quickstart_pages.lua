@@ -413,7 +413,7 @@ function M.build_install_pages(ctx)
     -- Load footer presets once
     local footer_presets
     pcall(function()
-        footer_presets = require("modules/reader/patches/reader-footer-presets")
+        footer_presets = require("modules/reader/patches/reader_footer_presets")
     end)
 
     -- -----------------------------------------------------------------------

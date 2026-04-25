@@ -222,7 +222,7 @@ function M.build(ctx)
                     separator = true,
                 })
             end
-            local footer_presets = require("modules/reader/patches/reader-footer-presets")
+            local footer_presets = require("modules/reader/patches/reader_footer_presets")
             for _i, preset in ipairs(footer_presets) do
                 table.insert(presets_items, {
                     text = _(preset.name),

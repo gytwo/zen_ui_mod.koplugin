@@ -67,6 +67,24 @@ A minimal status bar in the reader and a more simple yet more detailed one in th
 
 <img src="./images/quickstart/onboarding/reader.png" width="500" alt="Reader">
 
+### Automated Lighting Schedules
+Three independent scheduling systems replace KOReader's limited auto night mode:
+
+- **Night Mode Schedule** — Automatically turn night mode on/off at specified times each day
+- **Brightness Schedule** — Schedule brightness levels for night/day
+- **Warmth Schedule** — Schedule screen warmth for night/day
+
+Each schedule works individually or together. This granular approach gives you far more control letting you tailor the lighting exactly to your preferences.
+
+### OPDS Plugin Theming
+The OPDS plugin respects all your Zen UI library styling settings — creating a unified visual experience across both your local library and online catalogs.
+
+- Mosaic, cover grid, and list view modes from your library settings
+- Rounded corners on covers, if enabled
+- Default catalog with 1 click access from quicksettings
+
+Browse your favorite OPDS sources with the same clean, consistent interface you've customized for your local collection.
+
 ## Unified Settings 
 - Pulled the most important settings from various locations into a single, more streamlined settings tab
 - Settings are grouped by feature area (File Browser, Navbar, Quick Settings, Status Bar, Reader).

@@ -7,13 +7,13 @@
 
 <h1 align="center">Zen UI</h1>
 
-A clean and minimal UI for [KOReader](https://github.com/koreader/koreader). Zen UI removes visual clutter and replaces it with a streamlined, intuitive, and distraction-free e-reader experience.
+<p align="center">A clean, minimal UI for KOReader. </p>
 
 ## Philosophy
 
-Zen UI is built on one idea: **less is more.** Every feature either removes noise or adds something genuinely useful. All settings are conveniently organized in one place. The minimal UI loads fast, stays out of the way, and aims to make your reading more enjoyable.  
+Zen UI is built around a simple idea: less is more. Everything in Zen UI was meticulously designed either to remove clutter or add clear value. The interface stays fast, light, and focused on making reading more enjoyable.
 
-Throughout development, three things were non-negotiable: **performance**, **stability**, and **battery life**. Patches are applied only when their feature is enabled. On e-ink devices where every refresh costs power and every frame counts, that matters.
+Throughout development, three things were non-negotiable: **performance**, **stability**, and **ease of use**. Every feature was tuned for battery efficiency and fluid responsiveness.
 
 ## Speed & Performance
 
@@ -21,53 +21,58 @@ Zen UI is built to be lightweight and efficient. Tested with libraries containin
 
 ## Features
 
-### Zen Mode
+### Quick Settings Panel
+A swipe-down menu accessible anywhere containing all the controls you frequently use — brightness, warmth, WiFi, night mode, sleep, rotation, and more. Fully configurable.
 
-Strips down the default KOReader interfaces to their bare essentials.
+<img src="./images/quickstart/onboarding/quicksettings.png" width="500" alt="Quick Settings">
 
-<img src="./images/quickstart/onboarding/zen_mode.png" width="175" alt="Zen Mode">
+### Library
+<div style="display: flex; gap: 10px; justify-content: center;">
+      <img src="./images/quickstart/onboarding/library_covers_full.png" width="350" height="auto" alt="Library Covers">
+      <img src="./images/quickstart/onboarding/library_list_full.png" width="350" height="auto" alt="Library List">
+</div>
+
+- Clean mosaic and list view options maximizing the size of your book covers with many options
+- Book cover gallery for folder thumbnails
+- Configurable sorting, items per page, and landscape/portrait layout
+- Zen pagination bar: A subtle, minimal page progress indicator
+- A streamlined context menu in the file browser. Tap and hold to quickly access details, fullscreen cover art, read status and more.
+
+<div style="display: flex; gap: 10px; justify-content: center;">
+<img src="./images/quickstart/onboarding/context_menu.png" width="350" height="auto" alt="Context Menu">
+<img src="./images/quickstart/onboarding/library_context.png" width="350" height="auto" alt="Library Context">
+</div>
 
 ### Bottom Navigation Bar
 A clean, tab-based navigation bar at the bottom of the file browser. Configurable tabs (Library, Manga, Favorites, Authors, History, Collections, and more), with optional labels, custom icons, and sortable layout.
 
 <img src="./images/quickstart/onboarding/navbar.png" width="500" alt="Navigation Bar">
 
-### Quick Settings Panel
-A swipe-down panel accessible everywhere for the controls you actually use — brightness, warmth, WiFi, night mode, sleep, rotation, and more. Fully configurable: reorder, show/hide individual buttons.
+### Zen Mode
 
-<img src="./images/quickstart/onboarding/quicksettings.png" width="500" alt="Quick Settings">
+Strips down the default KOReader interfaces to their bare essentials. - Hides all the default menus from KOReader leaving only a single unified Zen UI settings tab.
+
+<img src="./images/quickstart/onboarding/zen_mode.png" width="175" alt="Zen Mode">
+
 
 ### Custom Status Bars
-A minimal status bar in the reader and a more extensive one in the Filebrowser. Shows only what you want: time, battery, progress, disk space, RAM — all optional and individually toggled.
+A minimal status bar in the reader and a more simple yet more detailed one in the Filebrowser. Show only what you want: time, battery, disk space, custom text — all optional and individually toggled.
 
 <img src="./images/quickstart/onboarding/status_bar.png" width="500" alt="Status Bar">
 
-### File Browser Improvements
-- Cover images as folder thumbnails
-- Clean mosaic and list view options with configurable density
-- Hide the "up folder" entry for a cleaner look
-- Remove underlines from file list items
-- Configurable sort order, items per page, and landscape/portrait layout
-- Zen pagination bar: A subtle, minimal page progress indicator — no numbers, no noise.
-- A streamlined context menu in the file browser with quick access to read status, favorites, move, rename, and delete (optional).
-
-<img src="./images/quickstart/onboarding/library_covers_full.png" width="500" alt="Library Covers">
-<img src="./images/quickstart/onboarding/library_list_full.png" width="500" alt="Library List">
-
-<img src="./images/quickstart/onboarding/context_menu.png" width="500" alt="Context Menu">
-<img src="./images/quickstart/onboarding/library_context.png" width="500" alt="Library Context">
-
 ### Reader Improvements
-- An unobtrusive clock overlay inside the reader. Toggle 12/24-hour format independently of the system setting.
-- Disable bottom menu, prevent unwanted changes to font size, margin etc
+- Custom page browser (similar to Kindle's) for scrubbing through pages, searching the book, quickly changing the font size.
+- Disable bottom menu, prevent unwanted changes to font size, 
+- Margin gaurd preventing accidentally gestures while holding the edge of the device by it's touchscreen.
+- Preset footer progress bars. Pick from a hadful of predesigned reader progress bars or create and save your own. Switch presets with a single tap.
 
 <img src="./images/quickstart/onboarding/reader.png" width="500" alt="Reader">
 
-### Built-in Updater
-Check for and install new Zen UI releases directly from the settings menu, without leaving KOReader.
-
-## Unified Settings Tab 
+## Unified Settings 
 - Pulled the most important settings from various locations into a single, more streamlined settings tab
+- Settings are grouped by feature area (File Browser, Navbar, Quick Settings, Status Bar, Reader).
+- Most features can be toggled independently, some reasonable defaults have been selected.
+- Update Zen UI directly from settings without ever leaving KOReader or plugging in to a computer.
 
 <img src="./images/quickstart/onboarding/zen_ui_settings.png" width="500" alt="Zen UI Settings">
 
@@ -90,10 +95,6 @@ Check for and install new Zen UI releases directly from the settings menu, witho
 5. Open **Zen UI Settings** from the file browser menu or the top menu to configure features.
 
 > The final path should look like: `.../plugins/zen_ui.koplugin/main.lua`  
-
-## Settings
-
-Settings are grouped by feature area (File Browser, Navbar, Quick Settings, Status Bar, Reader). Most features can be toggled independently, some reasonable defaults have been selected. Changes that require a restart will prompt you automatically.
 
 ## Localization
 
@@ -136,7 +137,7 @@ Bug reports, feature requests, translations, and code contributions are all welc
 Please follow these guidelines:
 
 - **One feature per PR** - Keep pull requests focused on a single feature or fix
-- **Review AI-generated code** - If using AI tools, all code must be thoroughly reviewed and tested before submitting
+- **Review AI-generated code** - If using AI tools, all code must be thoroughly reviewed and tested before submitting (this should happen anyway but even moreso for AI generated code)
 - **Maintain consistency** - New code must align with the project's existing style, theme, and overall user experience
 
 ## Security

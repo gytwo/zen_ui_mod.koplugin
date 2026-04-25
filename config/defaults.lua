@@ -86,14 +86,13 @@ local defaults = {
         show_top_border = true,
     },
     quick_settings = {
-        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "settings", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
         show_buttons = {
             wifi = true,
             night = true,
             rotate = true,
             zen = true,
             lockdown = false,
-            settings = true,
             usb = false,
             search = false,
             quickrss = false,

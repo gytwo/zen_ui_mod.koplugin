@@ -1039,3 +1039,148 @@ msgstr "cea mai bună săptămână"
 
 msgid "best month"
 msgstr "cea mai bună lună"
+
+msgid "Welcome to Zen UI"
+msgstr "Bun venit în Zen UI"
+
+msgid "A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue."
+msgstr "O interfață minimală, curată și simplă pentru e-reader-ul tău.\n\nGlisați sau atingeți Înainte pentru a continua."
+
+msgid "File Browser"
+msgstr "Browser fișiere"
+
+msgid "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu."
+msgstr "Bibliotecă curată și minimalistă cu vizualizare mozaic de coperte și vizualizare listă, mai puțin aglomerată și cu meniu contextual simplificat."
+
+msgid "Context Menu"
+msgstr "Meniu contextual"
+
+msgid "Tap and hold any book or folder in your library to reveal details."
+msgstr "Apăsați lung pe orice carte sau dosar din biblioteca dvs. pentru a vedea detalii."
+
+msgid "Authors & Series"
+msgstr "Autori și serii"
+
+msgid "Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar."
+msgstr "Răsfoiți întreaga bibliotecă organizată pe autori sau serii.\nAccesați aceste vizualizări oricând din bara de navigare."
+
+msgid "Library View"
+msgstr "Vizualizare bibliotecă"
+
+msgid "Mosaic — large cover thumbnails"
+msgstr "Mozaic — miniaturi mari ale copertelor"
+
+msgid "List — detailed titles and metadata"
+msgstr "Listă — titluri detaliate și metadate"
+
+msgid "Navigation Bar"
+msgstr "Bară de navigare"
+
+msgid "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own"
+msgstr "O bară simplă cu file în partea de jos a bibliotecii dvs.\nComplet personalizabilă după cum doriți."
+
+msgid "Navbar Tabs"
+msgstr "File bare de navigare"
+
+msgid "Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings."
+msgstr "Alegeți ce file apar în bara de navigare.\nPuteți rearanja sau ajusta oricând în Setări."
+
+msgid "Quick Settings"
+msgstr "Setări rapide"
+
+msgid "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more."
+msgstr "Glisați în jos pentru a accesa setările rapide: luminozitate, Wi-Fi, mod noapte, mod zen și altele."
+
+msgid "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings."
+msgstr "Activați modul Zen pentru a reduce KOReader la esențial.\n\nEliminați dezordinea vizuală pentru o experiență de lectură concentrată, fără distracții. Ieșiți oricând din Setări."
+
+msgid "Status Bar"
+msgstr "Bară de stare"
+
+msgid "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc."
+msgstr "Bară de stare minimalistă în vizualizarea bibliotecii.\nPersonalizabilă: afișați doar ceea ce aveți nevoie: oră, baterie etc."
+
+msgid "Sleep Screen"
+msgstr "Ecran de repaus"
+
+msgid "What should your device show when it goes to sleep?"
+msgstr "Ce ar trebui să afișeze dispozitivul dvs. când intră în repaus?"
+
+msgid "Keep existing settings"
+msgstr "Păstrați setările existente"
+
+msgid "Book cover — black background"
+msgstr "Copertă — fundal negru"
+
+msgid "Zen icon — white background"
+msgstr "Icoană Zen — fundal alb"
+
+msgid "Time Format"
+msgstr "Format oră"
+
+msgid "Which time format do you prefer?"
+msgstr "Ce format de oră preferați?"
+
+msgid "12-hour  (3:30 PM)"
+msgstr "12 ore  (3:30 PM)"
+
+msgid "24-hour  (15:30)"
+msgstr "24 ore  (15:30)"
+
+msgid "An unobtrusive reader view with customizable top clock and bottom progress bar."
+msgstr "Vizualizare de citire discretă cu ceas personalizabil sus și bară de progres jos."
+
+msgid "Zen UI defaults"
+msgstr "Setări implicite Zen UI"
+
+msgid "Reader Progress"
+msgstr "Progres de lectură"
+
+msgid "Choose a preset for your reading progress bar."
+msgstr "Alegeți o presetare pentru bara de progres de lectură."
+
+msgid "Chapter Time + %"
+msgstr "Timp capitol + %"
+
+msgid "Pages and %"
+msgstr "Pagini și %"
+
+msgid "Pages + Chapter Time + %"
+msgstr "Pagini + Timp capitol + %"
+
+msgid "Centered Pages"
+msgstr "Pagini centrate"
+
+msgid "Page Browser"
+msgstr "Browser pagini"
+
+msgid "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more."
+msgstr "Glisați în sus din partea de jos în timp ce citiți pentru a deschide Browser-ul de pagini.\n\nRăsfoiți paginile sau săriți capitole, navigați în cuprins, gestionați marcajele, ajustați fonturile și altele."
+
+msgid "Settings & Updates"
+msgstr "Setări și actualizări"
+
+msgid "All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader."
+msgstr "Toate setările într-o singură filă unificată.\nVerificați și instalați actualizările Zen UI direct de pe e-reader-ul dvs."
+
+msgid "You're All Set"
+msgstr "Ești gata"
+
+msgid "The best interface is the one you forget is there.\nNow go get lost in a good book."
+msgstr "Cea mai bună interfață este cea pe care o uiți că există.\nAcum mergeți să vă pierdeți într-o carte bună."
+
+msgid "Home Folder"
+msgstr "Dosar principal"
+
+msgid "The place for all your books %1"
+msgstr "Locul pentru toate cărțile dvs. %1"
+
+msgid "Create this folder and use as home"
+msgstr "Creați acest dosar și utilizați-l ca dosar principal"
+
+msgid "Choose a different folder"
+msgstr "Alegeți un alt dosar"
+
+msgid "Skip"
+msgstr "Omiteți"
+

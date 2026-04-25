@@ -39,6 +39,8 @@ function M.build(ctx)
         { key = "sleep",       text = _("Sleep")          },
     }
 
+    table.sort(quick_button_items, function(a, b) return a.text < b.text end)
+
     local quick_button_label_by_id = {}
     for _, quick_item in ipairs(quick_button_items) do
         quick_button_label_by_id[quick_item.key] = quick_item.text
@@ -83,9 +85,20 @@ function M.build(ctx)
                 title = _("Arrange quick settings buttons"),
                 item_table = sort_items,
                 callback = function()
-                    for i, item in ipairs(sort_items) do
-                        config.quick_settings.button_order[i] = item.orig_item
+                    -- Replace the table to avoid leaving stale trailing entries
+                    local new_order = {}
+                    local in_sort = {}
+                    for _, item in ipairs(sort_items) do
+                        table.insert(new_order, item.orig_item)
+                        in_sort[item.orig_item] = true
                     end
+                    -- Preserve any orphaned entries not shown in the sort widget
+                    for _, id in ipairs(config.quick_settings.button_order) do
+                        if not in_sort[id] then
+                            table.insert(new_order, id)
+                        end
+                    end
+                    config.quick_settings.button_order = new_order
                     save_and_apply_quick_settings()
                 end,
             })

@@ -100,13 +100,19 @@ local function apply_quick_settings()
         if type(config.button_order) ~= "table" then
             config.button_order = utils.deepcopy(config_default.button_order)
         else
-            -- Ensure all known buttons are in the order list
-            local known = {}
+            -- Deduplicate existing entries, then append any new buttons from the default order
+            local seen = {}
+            local deduped = {}
             for _, id in ipairs(config.button_order) do
-                known[id] = true
+                if not seen[id] then
+                    seen[id] = true
+                    table.insert(deduped, id)
+                end
             end
+            config.button_order = deduped
             for _, id in ipairs(config_default.button_order) do
-                if not known[id] then
+                if not seen[id] then
+                    seen[id] = true
                     table.insert(config.button_order, id)
                 end
             end

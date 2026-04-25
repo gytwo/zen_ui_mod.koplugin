@@ -1039,3 +1039,148 @@ msgstr "miglior settimana"
 
 msgid "best month"
 msgstr "miglior mese"
+
+msgid "Welcome to Zen UI"
+msgstr "Benvenuto in Zen UI"
+
+msgid "A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue."
+msgstr "Un'interfaccia minimale, pulita e semplice per il tuo e-reader.\n\nScorri o tocca Avanti per continuare."
+
+msgid "File Browser"
+msgstr "Sfoglia file"
+
+msgid "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu."
+msgstr "Libreria pulita e minimale con mosaico di copertine e vista elenco, meno ingombro e un menu contestuale semplificato."
+
+msgid "Context Menu"
+msgstr "Menu contestuale"
+
+msgid "Tap and hold any book or folder in your library to reveal details."
+msgstr "Tieni premuto su un libro o una cartella nella tua libreria per visualizzare i dettagli."
+
+msgid "Authors & Series"
+msgstr "Autori e serie"
+
+msgid "Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar."
+msgstr "Sfoglia la tua libreria organizzata per autore o serie.\nAccedi a queste viste in qualsiasi momento dalla barra di navigazione."
+
+msgid "Library View"
+msgstr "Vista libreria"
+
+msgid "Mosaic — large cover thumbnails"
+msgstr "Mosaico — miniature grandi delle copertine"
+
+msgid "List — detailed titles and metadata"
+msgstr "Elenco — titoli dettagliati e metadati"
+
+msgid "Navigation Bar"
+msgstr "Barra di navigazione"
+
+msgid "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own"
+msgstr "Una semplice barra con schede nella parte inferiore della libreria.\nCompletamente personalizzabile a modo tuo."
+
+msgid "Navbar Tabs"
+msgstr "Schede di navigazione"
+
+msgid "Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings."
+msgstr "Scegli quali schede appaiono nella tua barra di navigazione.\nPuoi riorganizzarle o regolarle in qualsiasi momento in Impostazioni."
+
+msgid "Quick Settings"
+msgstr "Impostazioni rapide"
+
+msgid "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more."
+msgstr "Scorri verso il basso per accedere alle impostazioni rapide come luminosità, Wi-Fi, modalità notte, modalità zen e altro."
+
+msgid "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings."
+msgstr "Attiva la modalità Zen per ridurre KOReader all'essenziale.\n\nRimuovi il disordine visivo per un'esperienza di lettura focalizzata e senza distrazioni. Esci in qualsiasi momento da Impostazioni."
+
+msgid "Status Bar"
+msgstr "Barra di stato"
+
+msgid "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc."
+msgstr "Barra di stato minimale nella vista libreria.\nPersonalizzabile: mostra solo ciò di cui hai bisogno: ora, batteria, ecc."
+
+msgid "Sleep Screen"
+msgstr "Schermata di sospensione"
+
+msgid "What should your device show when it goes to sleep?"
+msgstr "Cosa dovrebbe mostrare il tuo dispositivo durante il riposo?"
+
+msgid "Keep existing settings"
+msgstr "Mantieni le impostazioni attuali"
+
+msgid "Book cover — black background"
+msgstr "Copertina — sfondo nero"
+
+msgid "Zen icon — white background"
+msgstr "Icona Zen — sfondo bianco"
+
+msgid "Time Format"
+msgstr "Formato ora"
+
+msgid "Which time format do you prefer?"
+msgstr "Quale formato ora preferisci?"
+
+msgid "12-hour  (3:30 PM)"
+msgstr "12 ore  (3:30 PM)"
+
+msgid "24-hour  (15:30)"
+msgstr "24 ore  (15:30)"
+
+msgid "An unobtrusive reader view with customizable top clock and bottom progress bar."
+msgstr "Vista di lettura discreta con orologio in alto e barra di avanzamento in basso personalizzabili."
+
+msgid "Zen UI defaults"
+msgstr "Impostazioni predefinite di Zen UI"
+
+msgid "Reader Progress"
+msgstr "Avanzamento di lettura"
+
+msgid "Choose a preset for your reading progress bar."
+msgstr "Scegli un preset per la barra di avanzamento della lettura."
+
+msgid "Chapter Time + %"
+msgstr "Tempo capitolo + %"
+
+msgid "Pages and %"
+msgstr "Pagine e %"
+
+msgid "Pages + Chapter Time + %"
+msgstr "Pagine + Tempo capitolo + %"
+
+msgid "Centered Pages"
+msgstr "Pagine centrate"
+
+msgid "Page Browser"
+msgstr "Sfoglia pagine"
+
+msgid "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more."
+msgstr "Scorri verso l'alto dal basso mentre leggi per aprire il Navigatore di pagine.\n\nScorri tra le pagine o salta capitoli, sfoglia il sommario, gestisci i segnalibri, regola i caratteri e altro."
+
+msgid "Settings & Updates"
+msgstr "Impostazioni e aggiornamenti"
+
+msgid "All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader."
+msgstr "Tutte le impostazioni in un unico tab.\nCerca e installa gli aggiornamenti di Zen UI direttamente dal tuo e-reader."
+
+msgid "You're All Set"
+msgstr "Sei pronto"
+
+msgid "The best interface is the one you forget is there.\nNow go get lost in a good book."
+msgstr "La migliore interfaccia è quella che dimentichi di avere.\nOra vai a perderti in un buon libro."
+
+msgid "Home Folder"
+msgstr "Cartella home"
+
+msgid "The place for all your books %1"
+msgstr "Il posto per tutti i tuoi libri %1"
+
+msgid "Create this folder and use as home"
+msgstr "Crea questa cartella e usala come home"
+
+msgid "Choose a different folder"
+msgstr "Scegli un'altra cartella"
+
+msgid "Skip"
+msgstr "Salta"
+

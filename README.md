@@ -1,5 +1,8 @@
 <div align="center">
-      <img width="300" src="./icons/zen_ui.svg" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./icons/zen_ui_light.svg" />
+    <img width="300" src="./icons/zen_ui.svg" alt="Zen UI logo" />
+  </picture>
 </div>
 
 <br>
@@ -59,7 +62,7 @@ Creates a more locked-down sandbox for distraction-free reading. Lockdown Mode i
 - Optionally magnify the UI for a larger, simpler view 
 - Keeps the experience simple, and reading-first
 
-<img src="./icons/quick_lockdown.svg" width="175" alt="Lockdown Mode">
+<img src="./images/quickstart/onboarding/lockdown_mode.png" width="175" alt="Lockdown Mode">
 
 
 ### Custom Status Bars
@@ -110,8 +113,9 @@ Browse your favorite OPDS sources with the same clean, consistent interface you'
 1. Go to the [Releases](https://github.com/AnthonyGress/zen_ui.koplugin/releases) page and download `zen_ui.koplugin.zip` from the latest release.
 2. Unzip the archive. You should have a **folder** named `zen_ui.koplugin`.
 3. Copy the `zen_ui.koplugin` **folder** into the KOReader plugins directory for your device: See table below
-> Make sure you are copying the unzipped **folder** and **not the .zip** file itself
-4. Restart KOReader. Zen UI will load automatically.
+      - Make sure you are copying the unzipped **folder** and **not the .zip** file itself
+4. Restart KOReader. Zen UI will load automatically
+      - If you don't see Zen UI load, manually enable the plugin in Tools > More tools, Plugin management > Zen UI
 > The final path should look like: `.../plugins/zen_ui.koplugin/main.lua`  
 
 

@@ -8,6 +8,9 @@
 
 local M = {}
 
+local _ = require("gettext")
+local T = require("ffi/util").template
+
 local _plugin_root = (function()
     local src = debug.getinfo(1, "S").source or ""
     if src:sub(1, 1) ~= "@" then return "" end
@@ -521,39 +524,39 @@ function M.build_install_pages(ctx)
     local pages = {
         -- 1. Welcome (static)
         {
-            title       = "Welcome to Zen UI",
+            title       = _("Welcome to Zen UI"),
             icon        = "zen_ui",
-            description = "A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue.",
+            description = _("A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue."),
         },
 
         -- 2. File Browser (static)
         {
-            title       = "File Browser",
+            title       = _("File Browser"),
             image       = img("onboarding/library_covers.png"),
-            description = "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu.",
+            description = _("Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu."),
         },
            -- 5. Context Menu (static)
 
         {
-            title       = "Context Menu",
+            title       = _("Context Menu"),
             image       = img("onboarding/context_menu.png"),
-            description = "Tap and hold any book or folder in your library to reveal details.",
+            description = _("Tap and hold any book or folder in your library to reveal details."),
         },
 
         -- 3. Authors & Series (static)
         {
-            title       = "Authors & Series",
+            title       = _("Authors & Series"),
             image       = img("onboarding/authors.png"),
-            description = "Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar.",
+            description = _("Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar."),
         },
 
         -- 4. Library View (INTERACTIVE — radio)
         {
-            title       = "Library View",
+            title       = _("Library View"),
             choice_type = "radio",
             choices     = {
-                { id = "mosaic", text = "Mosaic — large cover thumbnails",     image = img("onboarding/library_covers.png"), checked = true  },
-                { id = "list",   text = "List — detailed titles and metadata", image = img("onboarding/library_list.png"),   checked = false },
+                { id = "mosaic", text = _("Mosaic — large cover thumbnails"),     image = img("onboarding/library_covers.png"), checked = true  },
+                { id = "list",   text = _("List — detailed titles and metadata"), image = img("onboarding/library_list.png"),   checked = false },
             },
             on_apply = function(sel)
                 if     sel["mosaic"] then apply_display_mode("mosaic_image")
@@ -564,27 +567,27 @@ function M.build_install_pages(ctx)
 
         -- 6. Navigation Bar (static)
         {
-            title       = "Navigation Bar",
+            title       = _("Navigation Bar"),
             image       = img("onboarding/navbar.png"),
-            description = "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own",
+            description = _("A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own"),
         },
 
         -- 7. Navbar Tabs (INTERACTIVE — checkbox)
         {
-            title          = "Navbar Tabs",
-            description    = "Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings.",
+            title          = _("Navbar Tabs"),
+            description    = _("Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings."),
             choice_type    = "checkbox",
             max_selections = 7,
             choices        = {
-                { id = "continue",    text = "Continue",    checked = show_tabs["continue"]    == true },
-                { id = "history",     text = "History",     checked = show_tabs["history"]     == true },
-                { id = "favorites",   text = "Favorites",   checked = show_tabs["favorites"]   == true },
-                { id = "collections", text = "Collections", checked = show_tabs["collections"] == true },
-                { id = "authors",     text = "Authors",     checked = show_tabs["authors"]     == true },
-                { id = "series",      text = "Series",      checked = show_tabs["series"]      == true },
-                { id = "to_be_read",  text = "To Be Read",  checked = show_tabs["to_be_read"]  == true },
-                { id = "search",      text = "Search",      checked = show_tabs["search"]      == true },
-                { id = "stats",       text = "Stats",       checked = show_tabs["stats"]       == true },
+                { id = "continue",    text = _("Continue"),    checked = show_tabs["continue"]    == true },
+                { id = "history",     text = _("History"),     checked = show_tabs["history"]     == true },
+                { id = "favorites",   text = _("Favorites"),   checked = show_tabs["favorites"]   == true },
+                { id = "collections", text = _("Collections"), checked = show_tabs["collections"] == true },
+                { id = "authors",     text = _("Authors"),     checked = show_tabs["authors"]     == true },
+                { id = "series",      text = _("Series"),      checked = show_tabs["series"]      == true },
+                { id = "to_be_read",  text = _("To Be Read"),  checked = show_tabs["to_be_read"]  == true },
+                { id = "search",      text = _("Search"),      checked = show_tabs["search"]      == true },
+                { id = "stats",       text = _("Stats"),       checked = show_tabs["stats"]       == true },
             },
             on_apply = function(sel)
                 if type(config.navbar) ~= "table" then config.navbar = {} end
@@ -600,34 +603,34 @@ function M.build_install_pages(ctx)
 
         -- 8. Quick Settings (static)
         {
-            title       = "Quick Settings",
+            title       = _("Quick Settings"),
             image       = img("onboarding/quicksettings.png"),
-            description = "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more.",
+            description = _("Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more."),
         },
 
         -- 9. Zen Mode (static)
         {
-            title       = "Zen Mode",
+            title       = _("Zen Mode"),
             image       = img("onboarding/zen_mode.png"),
-            description = "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings.",
+            description = _("Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings."),
         },
 
         -- 10. Status Bars (static)
         {
-            title       = "Status Bar",
+            title       = _("Status Bar"),
             image       = img("onboarding/status_bar.png"),
-            description = "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc.",
+            description = _("Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc."),
         },
 
         -- 11. Sleep Screen (INTERACTIVE — radio)
         {
-            title       = "Sleep Screen",
-            description = "What should your device show when it goes to sleep?",
+            title       = _("Sleep Screen"),
+            description = _("What should your device show when it goes to sleep?"),
             choice_type = "radio",
             choices     = {
-                { id = "keep",          text = "Keep existing settings",         checked = true  },
-                { id = "cover_black",   text = "Book cover — black background", checked = false },
-                { id = "zen_white",     text = "Zen icon — white background",   checked = false },
+                { id = "keep",          text = _("Keep existing settings"),         checked = true  },
+                { id = "cover_black",   text = _("Book cover — black background"), checked = false },
+                { id = "zen_white",     text = _("Zen icon — white background"),   checked = false },
             },
             on_apply = function(sel)
                 if sel["keep"] then return end
@@ -648,12 +651,12 @@ function M.build_install_pages(ctx)
 
         -- 12. Time Format (INTERACTIVE — radio)
         {
-            title       = "Time Format",
-            description = "Which time format do you prefer?",
+            title       = _("Time Format"),
+            description = _("Which time format do you prefer?"),
             choice_type = "radio",
             choices     = {
-                { id = "12h", text = "12-hour  (3:30 PM)", checked = is_12h      },
-                { id = "24h", text = "24-hour  (15:30)",   checked = not is_12h  },
+                { id = "12h", text = _("12-hour  (3:30 PM)"), checked = is_12h      },
+                { id = "24h", text = _("24-hour  (15:30)"),   checked = not is_12h  },
             },
             on_apply = function(sel)
                 if sel["12h"] then
@@ -672,13 +675,13 @@ function M.build_install_pages(ctx)
 
         -- 13. Reader (INTERACTIVE — radio)
         {
-            title       = "Reader",
+            title       = _("Reader"),
             image       = img("onboarding/reader.png"),
-            description = "An unobtrusive reader view with customizable top clock and bottom progress bar.",
+            description = _("An unobtrusive reader view with customizable top clock and bottom progress bar."),
             choice_type = "radio",
             choices     = {
-                { id = "keep", text = "Keep existing settings", checked = true  },
-                { id = "zen",  text = "Zen UI defaults", checked = false },
+                { id = "keep", text = _("Keep existing settings"), checked = true  },
+                { id = "zen",  text = _("Zen UI defaults"), checked = false },
             },
             on_apply = function(sel)
                 if sel["keep"] then return end
@@ -699,15 +702,15 @@ function M.build_install_pages(ctx)
 
         -- 15. Reader Progress (INTERACTIVE — radio)
         {
-            title       = "Reader Progress",
-            description = "Choose a preset for your reading progress bar.",
+            title       = _("Reader Progress"),
+            description = _("Choose a preset for your reading progress bar."),
             choice_type = "radio",
             choices     = {
-                { id = "keep",     text = "Keep existing settings",                                                       checked = true  },
-                { id = "kindle",   text = "Chapter Time + %",      image = img("onboarding/kindle_like.png"),        checked = false },
-                { id = "pages",    text = "Pages and %",      image = img("onboarding/pages_percent.png"),      checked = false },
-                { id = "full",     text = "Pages + Chapter Time + %", image = img("onboarding/pages_time_percent.png"), checked = false },
-                { id = "centered", text = "Centered Pages",   image = img("onboarding/centered_pages.png"),     checked = false },
+                { id = "keep",     text = _("Keep existing settings"),                                                       checked = true  },
+                { id = "kindle",   text = _("Chapter Time + %"),      image = img("onboarding/kindle_like.png"),        checked = false },
+                { id = "pages",    text = _("Pages and %"),      image = img("onboarding/pages_percent.png"),      checked = false },
+                { id = "full",     text = _("Pages + Chapter Time + %"), image = img("onboarding/pages_time_percent.png"), checked = false },
+                { id = "centered", text = _("Centered Pages"),   image = img("onboarding/centered_pages.png"),     checked = false },
             },
             on_apply = function(sel)
                 if sel["keep"] then return end
@@ -724,24 +727,24 @@ function M.build_install_pages(ctx)
 
                 -- 14. Page Browser (static)
         {
-            title       = "Page Browser",
+            title       = _("Page Browser"),
             image       = img("onboarding/page_browser.png"),
-            description = "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more.",
+            description = _("Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more."),
         },
 
         -- 16. Settings & Updates (static)
         {
-            title       = "Settings & Updates",
+            title       = _("Settings & Updates"),
             image       = img("onboarding/zen_ui_settings.png"),
-            description = "All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader.",
+            description = _("All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader."),
         },
 
         -- 17. Finale
         {
-            title       = "You're All Set",
+            title       = _("You're All Set"),
             icon        = "zen_ui",
             finale      = true,
-            description = "The best interface is the one you forget is there.\nNow go get lost in a good book.",
+            description = _("The best interface is the one you forget is there.\nNow go get lost in a good book."),
         },
     }
 
@@ -762,13 +765,13 @@ function M.build_install_pages(ctx)
             local books_dir = base_storage .. "/books"
             -- Insert at second-to-last position (before finale).
             table.insert(pages, #pages, {
-                title       = "Home Folder",
-                description = "The place for all your books " .. books_dir,
+                title       = _("Home Folder"),
+                description = T(_("The place for all your books %1"), books_dir),
                 choice_type = "radio",
                 choices     = {
-                    { id = "books",  text = "Create this folder and use as home", checked = true  },
-                    { id = "choose", text = "Choose a different folder",           checked = false },
-                    { id = "skip",   text = "Skip",                                checked = false },
+                    { id = "books",  text = _("Create this folder and use as home"), checked = true  },
+                    { id = "choose", text = _("Choose a different folder"),           checked = false },
+                    { id = "skip",   text = _("Skip"),                                checked = false },
                 },
                 on_apply = function(sel)
                     if sel["skip"] then return end
@@ -821,11 +824,11 @@ function M.build_install_pages(ctx)
         local home_bb    = buildHomeIconBB(avail_w)
         for _, c in ipairs(covers) do c.bb:free() end
         for _, page in ipairs(pages) do
-            if page.title == "File Browser" and browser_bb then
+            if page.title == _("File Browser") and browser_bb then
                 page.image_bb, page.image = browser_bb, nil
-            elseif page.title == "Zen Mode" and zen_bb then
+            elseif page.title == _("Zen Mode") and zen_bb then
                 page.image_bb, page.image = zen_bb, nil
-            elseif page.title == "Home Folder" and home_bb then
+            elseif page.title == _("Home Folder") and home_bb then
                 page.image_bb, page.image = home_bb, nil
             end
             if page.choices then

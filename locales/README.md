@@ -6,21 +6,21 @@ The `en.po` file is the source catalog (~254 strings). All other locale files
 are translated from it. Strings with an empty `msgstr ""` fall back to English
 at runtime — KOReader handles this automatically.
 
-## Translation Progress
+## Translations
 
-| Locale | Language | Status |
-|--------|----------|--------|
-| `en` | English | ✅ Complete (source) |
-| `it` | Italian | ✅ Complete |
-| `es` | Spanish | ✅ Complete |
-| `fr` | French | ✅ Complete |
-| `nl` | Dutch | ✅ Complete |
-| `pt_BR` | Brazilian Portuguese | ✅ Complete |
-| `pt_PT` | European Portuguese | ✅ Complete |
-| `ro` | Romanian | ✅ Complete |
-| `ru` | Russian | ✅ Complete |
-| `zh_CN` | Simplified Chinese | ✅ Complete |
-| `zh_TW` | Traditional Chinese | ✅ Complete |
+| Locale | Language |
+|--------|----------|
+| `en` | English |
+| `it` | Italian |
+| `es` | Spanish |
+| `fr` | French |
+| `nl` | Dutch |
+| `pt_BR` | Brazilian Portuguese |
+| `pt_PT` | European Portuguese |
+| `ro` | Romanian |
+| `ru` | Russian |
+| `zh_CN` | Simplified Chinese |
+| `zh_TW` | Traditional Chinese |
 
 ## Contributing
 

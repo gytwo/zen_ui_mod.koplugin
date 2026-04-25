@@ -11,13 +11,13 @@
 
 ## Philosophy
 
-Zen UI is built around a simple idea: **less is more.** Everything in Zen UI was meticulously designed either to remove clutter or add clear value. The interface stays fast, light, and focused on making reading more enjoyable.
+Zen UI is built around the simple idea that **less is more.** Everything in Zen UI was designed either to remove clutter or add clear value. The interface stays fast, light, and focused on making reading more enjoyable.
 
-Throughout development, three things were non-negotiable: **performance**, **stability**, and **ease of use**. Every feature was tuned for battery efficiency and fluid responsiveness.
+Throughout development, three things were non-negotiable: **performance**, **stability**, and **ease of use**. Every feature was tuned for battery efficiency and responsiveness. 
 
 ## Speed & Performance
 
-Zen UI is built to be lightweight and efficient. Tested with libraries containing thousands of books there are no dramatic changes in speed, responsiveness, or resource usage. Patches are strategically injected and only loaded when needed. Zen UI was designed from the ground up to make your e-reading experience fluid and enjoyable. Whether you're browsing a small personal library or managing a massive collection, Zen UI maintains consistent performance without taxing your device's battery or memory.
+Zen UI is built to be lightweight and efficient. With libraries containing thousands of books, there are no dramatic changes in speed, responsiveness, or resource usage. Patches are strategically injected and only loaded when needed. Zen UI maintains consistent performance without taxing your device's battery or memory, regardless of the size of your library.
 
 ## Features
 
@@ -35,15 +35,13 @@ A swipe-down menu accessible anywhere containing all the controls you frequently
 - Clean mosaic and list view options maximizing the size of your book covers with many options
 - Book cover gallery for folder thumbnails
 - Configurable sorting, items per page, and landscape/portrait layout
-- Zen pagination bar: A subtle, minimal page progress indicator
 - A streamlined context menu in the file browser. Tap and hold to quickly access details, fullscreen cover art, read status and more.
-
 
 <img src="./images/quickstart/onboarding/context_menu.png" width="350" height="auto" alt="Context Menu">
 <img src="./images/quickstart/onboarding/library_context.png" width="350" height="auto" alt="Library Context">
 
 ### Bottom Navigation Bar
-A clean, tab-based navigation bar at the bottom of the file browser. Configurable tabs (Library, Manga, Favorites, Authors, History, Collections, and more), with optional labels, custom icons, and sortable layout.
+A clean, tab-based navigation bar at the bottom of the library. Configurable tabs (Library, Manga, Favorites, Authors, History, Collections, and more), with optional labels, custom icons, and sortable layout.
 
 <img src="./images/quickstart/onboarding/navbar.png" width="500" alt="Navigation Bar">
 
@@ -53,17 +51,27 @@ Strips down the default KOReader interfaces to their bare essentials. - Hides al
 
 <img src="./images/quickstart/onboarding/zen_mode.png" width="175" alt="Zen Mode">
 
+### Lockdown Mode
+
+Creates a more locked-down sandbox for distraction-free reading. Lockdown Mode is designed to keep the device focused on the core flow: browse books and read books. This mode is great for very old or very young readers who shouldn't be burdened by any settings or unnecessary options.
+
+- Restricts access to settings and configuration changes
+- Optionally magnify the UI for a larger, simpler view 
+- Keeps the experience simple, and reading-first
+
+<img src="./icons/quick_lockdown.svg" width="175" alt="Lockdown Mode">
+
 
 ### Custom Status Bars
-A minimal status bar in the reader and a more simple yet more detailed one in the Filebrowser. Show only what you want: time, battery, disk space, custom text — all optional and individually toggled.
+A minimal status bar in the reader and a more detailed one in the library. Show only what you want: time, battery, disk space, custom text — all optional and individually toggled.
 
 <img src="./images/quickstart/onboarding/status_bar.png" width="500" alt="Status Bar">
 
 ### Reader Improvements
 - Custom page browser (similar to Kindle's) for scrubbing through pages, searching the book, quickly changing the font size.
-- Disable bottom menu, prevent unwanted changes to font size, 
+- Disable bottom menu, prevent unwanted changes to font size.
 - Margin gaurd preventing accidentally gestures while holding the edge of the device by it's touchscreen.
-- Preset footer progress bars. Pick from a hadful of predesigned reader progress bars or create and save your own. Switch presets with a single tap.
+- Pick from a hadful of predesigned reader progress bars or create and save your own. Switch presets with a single tap.
 
 <img src="./images/quickstart/onboarding/reader.png" width="500" alt="Reader">
 
@@ -74,24 +82,28 @@ Three independent scheduling systems replace KOReader's limited auto night mode:
 - **Brightness Schedule** — Schedule brightness levels for night/day
 - **Warmth Schedule** — Schedule screen warmth for night/day
 
-Each schedule works individually or together. This granular approach gives you far more control letting you tailor the lighting exactly to your preferences.
+Each schedule works individually or together. This granular approach lets you tailor the lighting exactly to your preferences.
 
 ### OPDS Plugin Theming
 The OPDS plugin respects all your Zen UI library styling settings — creating a unified visual experience across both your local library and online catalogs.
 
 - Mosaic, cover grid, and list view modes from your library settings
 - Rounded corners on covers, if enabled
-- Default catalog with 1 click access from quicksettings
+- Default catalog with 1 click access from quick settings
 
 Browse your favorite OPDS sources with the same clean, consistent interface you've customized for your local collection.
 
 ## Unified Settings 
-- Pulled the most important settings from various locations into a single, more streamlined settings tab
-- Settings are grouped by feature area (File Browser, Navbar, Quick Settings, Status Bar, Reader).
+- Pulled the most important settings into a single, more streamlined settings tab
+- Settings are grouped by feature area (Library, Navbar, Quick Settings, Status Bar, Reader).
 - Most features can be toggled independently, some reasonable defaults have been selected.
 - Update Zen UI directly from settings without ever leaving KOReader or plugging in to a computer.
 
 <img src="./images/quickstart/onboarding/zen_ui_settings.png" width="500" alt="Zen UI Settings">
+
+## Prerequistes
+
+- KOReader must be installed first in order to use Zen UI. [Install KOReader](https://github.com/koreader/koreader#installation)
 
 ## Installation
 
@@ -100,7 +112,6 @@ Browse your favorite OPDS sources with the same clean, consistent interface you'
 3. Copy the `zen_ui.koplugin` **folder** into the KOReader plugins directory for your device: See table below
 > Make sure you are copying the unzipped **folder** and **not the .zip** file itself
 4. Restart KOReader. Zen UI will load automatically.
-5. Open **Zen UI Settings** from the file browser menu or the top menu to configure features.
 > The final path should look like: `.../plugins/zen_ui.koplugin/main.lua`  
 
 
@@ -130,7 +141,7 @@ Zen UI is currently translated into:
 | `zh_CN` | Simplified Chinese |
 | `zh_TW` | Traditional Chinese |
 
-These translations may not be fully correct or complete. If you find any issues or corrections that you would like to see made, please feel free to contribute.
+If you find any issues or corrections to the translations, please feel free to contribute.
 
 To contribute a translation or fix an existing one, see [locales/README.md](locales/README.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -139,7 +150,7 @@ To contribute a translation or fix an existing one, see [locales/README.md](loca
 Zen UI is original work, but it wouldn't exist without the broader KOReader community. Several open source projects provided components, inspiration, reference implementations, or code that was adapted and built upon:
 
 - **[joshuacant/ProjectTitle](https://github.com/joshuacant/ProjectTitle)** — The plugin that started it all for me. This was my first experience with KOReader plugins and an alternative UI.
-- **[qewer33/koreader-patches](https://github.com/qewer33/koreader-patches)** — The bottom navbar and quicksettings components. Additional patch approaches and ideas, particularly around UI customization.
+- **[qewer33/koreader-patches](https://github.com/qewer33/koreader-patches)** — The bottom navbar and quick settings components. Additional patch approaches and ideas, particularly around UI customization.
 - **[sebdelsol/KOReader.patches](https://github.com/sebdelsol/KOReader.patches)** — Patches and UI techniques that informed several of Zen UI's features.
 - **[doctorhetfield-cmd/simpleui.koplugin](https://github.com/doctorhetfield-cmd/simpleui.koplugin)** — A fellow KOReader UI plugin that served as an inspiration as well as a model for how to apply language translations throughout the plugin.
 - **[kristianpennacchia/zzz-readermenuredesign.koplugin](https://github.com/kristianpennacchia/zzz-readermenuredesign.koplugin)** — Inspiration for the reader search menu redesign

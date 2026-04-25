@@ -30,9 +30,9 @@ jobs:
       - name: Create deploy directory
         run: |
           mkdir -p _deploy
-          cp *.md _deploy/ 2>/dev/null || true
-          cp -r images _deploy/ 2>/dev/null || true
-          cp -r icons _deploy/ 2>/dev/null || true
+          cp *.md _deploy/
+          cp -r images _deploy/
+          cp -r icons _deploy/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

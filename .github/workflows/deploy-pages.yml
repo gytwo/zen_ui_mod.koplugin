@@ -29,8 +29,10 @@ jobs:
 
       - name: Create deploy directory
         run: |
-          mkdir -p _deploy
+          mkdir -p _deploy/_includes
           cp *.md _deploy/
+          cp _config.yml _deploy/
+          cp _includes/head-custom.html _deploy/_includes/
           cp -r images _deploy/
           cp -r icons _deploy/
 

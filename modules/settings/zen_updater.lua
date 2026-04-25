@@ -431,6 +431,13 @@ function M.run_update(plugin)
                 -- Clear the notification so it doesn't re-appear after restart.
                 clear_update_state()
 
+                -- Signal to ZenUI:init() that it should show the update splash.
+                local gs2 = get_gs()
+                if gs2 then
+                    gs2:saveSetting("zen_ui_just_updated", M._latest_ver or "")
+                    pcall(gs2.flush, gs2)
+                end
+
                 UIManager:close(progress)
                 UIManager:show(InfoMessage:new{
                     text = _("Zen UI updated. Restarting…"),

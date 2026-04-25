@@ -823,7 +823,7 @@ function M.build_install_pages(ctx)
         local zen_bb     = buildZenButtonBB(avail_w)
         local home_bb    = buildHomeIconBB(avail_w)
         for _, c in ipairs(covers) do c.bb:free() end
-        for _, page in ipairs(pages) do
+        for _i, page in ipairs(pages) do
             if page.title == _("File Browser") and browser_bb then
                 page.image_bb, page.image = browser_bb, nil
             elseif page.title == _("Zen Mode") and zen_bb then
@@ -832,7 +832,7 @@ function M.build_install_pages(ctx)
                 page.image_bb, page.image = home_bb, nil
             end
             if page.choices then
-                for _, choice in ipairs(page.choices) do
+                for _i, choice in ipairs(page.choices) do
                     if choice.id == "mosaic" and mosaic_bb then
                         choice.image_bb, choice.image = mosaic_bb, nil
                     elseif choice.id == "list" and list_bb then

@@ -537,11 +537,15 @@ local function apply_browser_folder_cover()
         function BooleanSetting(text, name, default)
             local self = { text = text }
             self.get = function()
+                if not BookInfoManager then return default and false or nil end
                 local setting = BookInfoManager:getSetting(name)
                 if default then return not setting end -- false is stored as nil, so we need or own logic for boolean default
                 return setting
             end
-            self.toggle = function() return BookInfoManager:toggleSetting(name) end
+            self.toggle = function()
+                if not BookInfoManager then return end
+                return BookInfoManager:toggleSetting(name)
+            end
             return self
         end
 

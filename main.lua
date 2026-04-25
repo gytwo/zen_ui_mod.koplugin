@@ -35,7 +35,7 @@ if _plugin_root then
     local ok_font, Font = pcall(require, "ui/font")
     local ok_fl, FontList = pcall(require, "fontlist")
     if ok_font and Font and Font.fallbacks and ok_fl and FontList then
-        FontList:getFontList() -- ensure fontlist is populated before we inject
+        FontList:getFontList()
         table.insert(FontList.fontlist, _plugin_root .. "/fonts/SymbolsNerdFont-Regular.ttf")
         table.insert(Font.fallbacks, "SymbolsNerdFont-Regular.ttf")
     end
@@ -178,6 +178,12 @@ function ZenUI:init()
     -- -----------------------------------------------------------------------
     do
         local function get_plugin_version()
+            if _plugin_root then
+                local ok, meta = pcall(dofile, _plugin_root .. "/_meta.lua")
+                if ok and type(meta) == "table" and type(meta.version) == "string" then
+                    return meta.version
+                end
+            end
             local ok, meta = pcall(require, "_meta")
             return (ok and type(meta) == "table" and type(meta.version) == "string")
                 and meta.version or "0.0.0"
@@ -186,20 +192,40 @@ function ZenUI:init()
         local current_ver = get_plugin_version()
         local shown_ver   = self.config._meta.quickstart_shown_for_version
 
+        -- One-shot flag written by zen_updater before restart; takes priority
+        -- over version comparison (handles pre-quickstart installs too).
+        local just_updated_ver = G_reader_settings:readSetting("zen_ui_just_updated")
+        local from_updater = type(just_updated_ver) == "string" and just_updated_ver ~= ""
+        if from_updater then
+            G_reader_settings:delSetting("zen_ui_just_updated")
+            pcall(G_reader_settings.flush, G_reader_settings)
+        end
+
         local pages_to_show
-        local ok_pages, pages_mod = pcall(require, "common/quickstart_pages")
-        if ok_pages then
-            if shown_ver == false then
+        local is_update = from_updater
+            or (type(shown_ver) == "string" and shown_ver ~= current_ver)
+
+        logger.info("ZenUI quickstart check: current_ver=", current_ver,
+            "shown_ver=", tostring(shown_ver),
+            "just_updated_ver=", tostring(just_updated_ver),
+            "from_updater=", from_updater,
+            "is_update=", is_update)
+        if shown_ver == false then
+            local ok_pages, pages_mod = pcall(require, "common/quickstart_pages")
+            if ok_pages then
                 pages_to_show = pages_mod.build_install_pages({
                     plugin = self,
                     config = self.config,
                 })
-            elseif type(shown_ver) == "string" and shown_ver ~= current_ver then
+            end
+        elseif is_update then
+            local ok_pages, pages_mod = pcall(require, "common/quickstart_pages")
+            if ok_pages then
                 pages_to_show = pages_mod.UPDATE_PAGES[current_ver]
             end
         end
 
-        if pages_to_show and #pages_to_show > 0 then
+        if shown_ver == false and pages_to_show and #pages_to_show > 0 then
             -- Persist before showing so a force-quit doesn't replay the screen.
             self.config._meta.quickstart_shown_for_version = current_ver
             self:saveConfig()
@@ -249,6 +275,39 @@ function ZenUI:init()
                                 end
                             end
                         end)
+                    end,
+                })
+            end)
+        elseif is_update then
+            -- Post-update: always show the ZenScreen splash, then chain UPDATE_PAGES if present.
+            self.config._meta.quickstart_shown_for_version = current_ver
+            self:saveConfig()
+            logger.info("ZenUI update splash: scheduling for version", current_ver, "pages_to_show=", pages_to_show and #pages_to_show or 0)
+            require("ui/uimanager"):scheduleIn(0.5, function()
+                logger.info("ZenUI update splash: timer fired, requiring zen_screen")
+                local ok_zs, ZenScreen = pcall(require, "common/zen_screen")
+                if not ok_zs then
+                    logger.warn("ZenUI update splash: failed to load zen_screen:", ZenScreen)
+                    return
+                end
+                logger.info("ZenUI update splash: showing ZenScreen")
+                local T = require("ffi/util").template
+                require("ui/uimanager"):show(ZenScreen:new{
+                    title    = _("Zen UI"),
+                    subtitle = T(_("Updated to %1"), "v" .. current_ver),
+                    on_close = function()
+                        logger.info("ZenUI update splash: closed, pages_to_show=", pages_to_show and #pages_to_show or 0)
+                        if pages_to_show and #pages_to_show > 0 then
+                            local ok_qs, QuickstartScreen = pcall(require, "common/quickstart_screen")
+                            if not ok_qs then
+                                logger.warn("ZenUI update splash: failed to load quickstart_screen:", QuickstartScreen)
+                                return
+                            end
+                            logger.info("ZenUI update splash: showing QuickstartScreen")
+                            require("ui/uimanager"):show(QuickstartScreen:new{
+                                pages = pages_to_show,
+                            })
+                        end
                     end,
                 })
             end)

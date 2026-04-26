@@ -389,11 +389,27 @@ local function apply_page_browser()
                 show_dialog()
             end
 
-            -- Left to right: TOC, Bookmark, Font, Search
-            table.insert(self.title_bar, make_right_btn("appbar.search",     right_x - slot_w,     open_search))
-            table.insert(self.title_bar, make_right_btn("appbar.textsize",   right_x - slot_w * 2, open_font_menu))
-            table.insert(self.title_bar, make_right_btn("bookmark",          right_x - slot_w * 3, open_bookmarks))
-            table.insert(self.title_bar, make_right_btn("appbar.navigation", right_x - slot_w * 4, open_toc, _toc_icon_path))
+            -- Vocab Builder: show button only if plugin is active and icon resolves.
+            -- package.loaded["db"] is set when vocabbuilder.koplugin is running
+            -- (same check used by dict_quick_lookup.lua).
+            local _vocab_icon_path = package.loaded["db"]
+                and _icons_dir and utils.resolveIcon(_icons_dir, "tab_vocab")
+
+            local function open_vocab()
+                pbw_ref:onClose()
+                pbw_ref.ui:handleEvent(Event:new("ShowVocabBuilder"))
+            end
+
+            -- Left to right: TOC, [Vocab], Bookmark, Font, Search
+            -- When vocab builder is active, TOC shifts one slot further left.
+            local toc_slot = _vocab_icon_path and 5 or 4
+            table.insert(self.title_bar, make_right_btn("appbar.search",     right_x - slot_w,         open_search))
+            table.insert(self.title_bar, make_right_btn("appbar.textsize",   right_x - slot_w * 2,     open_font_menu))
+            table.insert(self.title_bar, make_right_btn("bookmark",          right_x - slot_w * 3,     open_bookmarks))
+            if _vocab_icon_path then
+                table.insert(self.title_bar, make_right_btn(nil, right_x - slot_w * 4, open_vocab, _vocab_icon_path))
+            end
+            table.insert(self.title_bar, make_right_btn("appbar.navigation", right_x - slot_w * toc_slot, open_toc, _toc_icon_path))
 
             -- Restore last-used layout; default to single page if no preference saved.
             local _saved_layout = G_reader_settings

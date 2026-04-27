@@ -560,8 +560,8 @@ function M.build_install_pages(ctx)
             title       = _("Library View"),
             choice_type = "radio",
             choices     = {
-                { id = "mosaic", text = _("Mosaic — large cover thumbnails"),     image = img("onboarding/library_covers.png"), checked = true  },
-                { id = "list",   text = _("List — detailed titles and metadata"), image = img("onboarding/library_list.png"),   checked = false },
+                { id = "mosaic", text = _("Mosaic - large cover thumbnails"),     image = img("onboarding/library_covers.png"), checked = true  },
+                { id = "list",   text = _("List - detailed titles and metadata"), image = img("onboarding/library_list.png"),   checked = false },
             },
             on_apply = function(sel)
                 if     sel["mosaic"] then apply_display_mode("mosaic_image")
@@ -634,8 +634,8 @@ function M.build_install_pages(ctx)
             choice_type = "radio",
             choices     = {
                 { id = "keep",          text = _("Keep existing settings"),         checked = true  },
-                { id = "cover_black",   text = _("Book cover — black background"), checked = false },
-                { id = "zen_white",     text = _("Zen icon — white background"),   checked = false },
+                { id = "cover_black",   text = _("Book cover - black background"), checked = false },
+                { id = "zen_white",     text = _("Zen icon - white background"),   checked = false },
             },
             on_apply = function(sel)
                 if sel["keep"] then return end

@@ -115,7 +115,7 @@ Browse your favorite OPDS sources with the same clean, consistent interface you'
 3. Copy the `zen_ui.koplugin` **folder** into the KOReader plugins directory for your device: See table below
       - Make sure you are copying the unzipped **folder** and **not the .zip** file itself
 4. Restart KOReader. Zen UI will load automatically
-      - If you don't see Zen UI load, manually enable the plugin in Tools > More tools, Plugin management > Zen UI
+      - If you don't see Zen UI load, manually enable the plugin in Tools > More tools > Plugin management > Zen UI
 > The final path should look like: `.../plugins/zen_ui.koplugin/main.lua`  
 
 

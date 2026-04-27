@@ -433,7 +433,7 @@ function M.build_update_available_item(plugin)
     local ver_label = M._latest_ver and ("v" .. M._latest_ver) or _("latest")
     return {
         _zen_update_banner = true,  -- marker so root_items.callback can remove it
-        text          = _("\u{F01B} Update available: ") .. ver_label,
+        text          = "\u{F01B} " .. _("Update available: ") .. ver_label,
         keep_menu_open = true,
         callback      = function()
             M.run_update(plugin)
@@ -449,7 +449,7 @@ function M.build_update_now_item(plugin)
         text_func = function()
             if M._has_update then
                 local ver_label = M._latest_ver and ("v" .. M._latest_ver) or _("latest")
-                return _("\u{F01B} Update available: ") .. ver_label
+                return "\u{F01B} " .. _("Update available: ") .. ver_label
             end
             return _("Check for updates")
         end,

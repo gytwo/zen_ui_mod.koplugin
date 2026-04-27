@@ -361,7 +361,7 @@ local function apply_context_menu()
                 local buttons = {}
                 if sort_cb then
                     table.insert(buttons, {{
-                        text     = "\u{F04BF}  " .. _("Sort  \u{25B8}"),
+                        text     = "\u{F04BF}  " .. _("Sort") .. "  \u{25B8}",
                         align    = "left",
                         callback = function()
                             UIManager:close(self_fc.file_dialog)
@@ -371,7 +371,7 @@ local function apply_context_menu()
                 end
                 if display_cb then
                     table.insert(buttons, {{
-                        text     = "\u{F06D0}  " .. _("Display  \u{25B8}"),
+                        text     = "\u{F06D0}  " .. _("Display") .. "  \u{25B8}",
                         align    = "left",
                         callback = function()
                             UIManager:close(self_fc.file_dialog)
@@ -1226,7 +1226,7 @@ local function apply_context_menu()
                 -- Read status submenu
                 table.insert(buttons, {
                     {
-                        text     = "\u{F0B64}  " .. _("Read status  ▶"),
+                        text     = "\u{F0B64}  " .. _("Read status") .. "  ▶",
                         align    = "left",
                         callback = function()
                             close_dialog()
@@ -1298,7 +1298,7 @@ local function apply_context_menu()
                     if g_sort then
                         table.insert(buttons, {
                             {
-                                text     = "\u{F04BF}  " .. _("Sort library  ▶"),
+                                text     = "\u{F04BF}  " .. _("Sort library") .. "  ▶",
                                 align    = "left",
                                 callback = function()
                                     close_dialog()
@@ -1327,7 +1327,7 @@ local function apply_context_menu()
                                     end
                                     -- Order submenu
                                     table.insert(sort_buttons, {{
-                                        text     = "\u{F04BF}  " .. _("Order  ▶"),
+                                        text     = "\u{F04BF}  " .. _("Order") .. "  ▶",
                                         align    = "left",
                                         callback = function()
                                             UIManager:close(sort_dialog)
@@ -1363,7 +1363,7 @@ local function apply_context_menu()
 
                         table.insert(buttons, {
                             {
-                                text     = "\u{F04BF}  " .. _("Sort folder  ▶"),
+                                text     = "\u{F04BF}  " .. _("Sort folder") .. "  ▶",
                                 align    = "left",
                                 callback = function()
                                     close_dialog()
@@ -1386,7 +1386,7 @@ local function apply_context_menu()
                                     end
                                     -- Order submenu
                                     table.insert(sort_buttons, {{
-                                        text     = "\u{F04BF}  " .. _("Order  ▶"),
+                                        text     = "\u{F04BF}  " .. _("Order") .. "  ▶",
                                         align    = "left",
                                         callback = function()
                                             UIManager:close(sort_dialog)
@@ -1473,7 +1473,7 @@ local function apply_context_menu()
 
                 table.insert(buttons, {
                     {
-                        text     = "\u{F06D0}  " .. _("Display  ▶"),
+                        text     = "\u{F06D0}  " .. _("Display") .. "  ▶",
                         align    = "left",
                         callback = showViewSubmenu,
                     },
@@ -1482,7 +1482,7 @@ local function apply_context_menu()
 
             table.insert(buttons, {
                 {
-                    text     = "\u{F090C}  " .. _("Edit  ▶"),
+                    text     = "\u{F090C}  " .. _("Edit") .. "  ▶",
                     align    = "left",
                     callback = showEditSubmenu,
                 },

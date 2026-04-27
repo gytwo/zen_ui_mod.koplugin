@@ -6,23 +6,55 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language: nl\n"
 
-msgid "⬆ Update available: "
-msgstr "⬆ Update beschikbaar: "
+
+
+msgid "%1 (%2)"
+msgstr "%1 (%2)"
 
 msgid "%1 et al."
 msgstr "%1 et al."
 
+msgid "%1 mins left in chapter"
+msgstr "%1 min resterend in hoofdstuk"
+
 msgid "%d%% Read"
 msgstr "%d%% gelezen"
+
+msgid "1 author"
+msgstr "1 auteur"
 
 msgid "1 book"
 msgstr "1 boek"
 
+msgid "1 min left in chapter"
+msgstr "1 min resterend in hoofdstuk"
+
+msgid "1 series"
+msgstr "1 reeks"
+
+msgid "12-hour  (3:30 PM)"
+msgstr "12 uur  (3:30 PM)"
+
 msgid "12-hour time"
 msgstr "12-uurs notatie"
 
+msgid "24-hour  (15:30)"
+msgstr "24 uur  (15:30)"
+
+msgid "< 1 min left in chapter"
+msgstr "< 1 min resterend in hoofdstuk"
+
+msgid "A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue."
+msgstr "Een minimale, strakke en eenvoudige interface voor je e-reader.\n\nVeeg of tik op Volgende om door te gaan."
+
+msgid "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own"
+msgstr "Een eenvoudige tabbladenbalk onderaan je bibliotheek.\nVolledig aanpasbaar naar jouw wens."
+
 msgid "About"
 msgstr "Over"
+
+msgid "Active tab color"
+msgstr "Kleur actief tabblad"
 
 msgid "Active tab color: "
 msgstr "Kleur actief tabblad: "
@@ -36,20 +68,41 @@ msgstr "Stijl actief tabblad"
 msgid "Active tab underline"
 msgstr "Onderstreping actief tabblad"
 
+msgid "Add catalog"
+msgstr "Catalogus toevoegen"
+
 msgid "Add to favorites"
 msgstr "Toevoegen aan favorieten"
 
+msgid "Advanced"
+msgstr "Geavanceerd"
+
+msgid "Alexandre Dumas"
+msgstr "Alexandre Dumas"
+
+msgid "All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader."
+msgstr "Alle instellingen in één gecombineerd tabblad.\nZoek en installeer Zen UI-updates rechtstreeks op je e-reader."
+
+msgid "All Time"
+msgstr "Totaaltijd"
+
+msgid "Allow custom icons"
+msgstr "Aangepaste pictogrammen toestaan"
+
 msgid "Allow delete in context menu"
 msgstr "Verwijderen toestaan in contextmenu"
-
-msgid "Always open on this tab"
-msgstr "Altijd openen op dit tabblad"
 
 msgid "Amber"
 msgstr "Amber"
 
 msgid "An item with that name already exists."
 msgstr "Er bestaat al een item met die naam."
+
+msgid "An unobtrusive reader view with customizable top clock and bottom progress bar."
+msgstr "Een onopvallende leesweergave met aanpasbare klok bovenaan en voortgangsbalk onderaan."
+
+msgid "Apply"
+msgstr "Toepassen"
 
 msgid "Are you sure you want to exit KOReader?"
 msgstr "Weet u zeker dat u KOReader wilt afsluiten?"
@@ -60,11 +113,17 @@ msgstr "Weet u zeker dat u KOReader wilt sluiten?"
 msgid "Are you sure you want to restart KOReader?"
 msgstr "Weet u zeker dat u KOReader wilt herstarten?"
 
+msgid "Arrange"
+msgstr "Ordenen"
+
 msgid "Arrange buttons"
 msgstr "Knoppen ordenen"
 
-msgid "Arrange items"
-msgstr "Items ordenen"
+msgid "Arrange center items"
+msgstr "Middelste items ordenen"
+
+msgid "Arrange left items"
+msgstr "Linker items ordenen"
 
 msgid "Arrange navbar tabs"
 msgstr "Navigatiebalk-tabbladen ordenen"
@@ -72,17 +131,53 @@ msgstr "Navigatiebalk-tabbladen ordenen"
 msgid "Arrange quick settings buttons"
 msgstr "Snelle instellingen-knoppen ordenen"
 
-msgid "Arrange status bar items"
-msgstr "Statusbalk-items ordenen"
+msgid "Arrange right items"
+msgstr "Rechter items ordenen"
 
 msgid "Arrange tabs"
 msgstr "Tabbladen ordenen"
 
+msgid "Ascending"
+msgstr "Oplopend"
+
 msgid "Authors"
 msgstr "Auteurs"
 
+msgid "authors"
+msgstr "auteurs"
+
+msgid "Authors & Series"
+msgstr "Auteurs en reeksen"
+
+msgid "Automatic suspend"
+msgstr "Automatische slaapstand"
+
+msgid "avg pages/day"
+msgstr "gem. pagina's/dag"
+
+msgid "avg time/book"
+msgstr "gem. tijd/boek"
+
+msgid "avg time/day"
+msgstr "gem. tijd/dag"
+
+msgid "Bar"
+msgstr "Balk"
+
 msgid "Battery"
 msgstr "Batterij"
+
+msgid "best day"
+msgstr "beste dag"
+
+msgid "best month"
+msgstr "beste maand"
+
+msgid "best week"
+msgstr "beste week"
+
+msgid "Beta"
+msgstr "Beta"
 
 msgid "Blue"
 msgstr "Blauw"
@@ -99,6 +194,15 @@ msgstr "Vette tekst"
 msgid "Book"
 msgstr "Boek"
 
+msgid "Book added to download list"
+msgstr "Boek toegevoegd aan downloadlijst"
+
+msgid "Book cover - black background"
+msgstr "Boekomslag — zwarte achtergrond"
+
+msgid "Book cover - black background"
+msgstr "Boekomslag — zwarte achtergrond"
+
 msgid "Book Status"
 msgstr "Boekstatus"
 
@@ -108,14 +212,29 @@ msgstr "boeken"
 msgid "Books"
 msgstr "Boeken"
 
+msgid "books finished"
+msgstr "boeken klaar"
+
 msgid "Books tab label"
 msgstr "Label tabblad Boeken"
 
 msgid "Books tab label: "
 msgstr "Label tabblad Boeken: "
 
+msgid "Bottom"
+msgstr "Onderkant"
+
 msgid "Bottom status bar"
 msgstr "Onderste statusbalk"
+
+msgid "Brightness"
+msgstr "Helderheid"
+
+msgid "Brightness schedule"
+msgstr "Helderheidsplanning"
+
+msgid "Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar."
+msgstr "Blader door je bibliotheek georganiseerd op auteur of reeks.\nToegang tot deze weergaven op elk moment via de navigatiebalk."
 
 msgid "Bullet"
 msgstr "Opsommingsteken"
@@ -129,20 +248,56 @@ msgstr "Calibre"
 msgid "Cancel"
 msgstr "Annuleren"
 
-msgid "Cannot determine the plugin installation path."
-msgstr "Kan het installatiepad van de plugin niet bepalen."
-
 msgid "Cannot open last document"
 msgstr "Kan het laatste document niet openen"
 
 msgid "Center"
 msgstr "Midden"
 
+msgid "Center items"
+msgstr "Middelste items"
+
+msgid "Centered Pages"
+msgstr "Gecentreerde pagina's"
+
+msgid "Change folder"
+msgstr "Map wijzigen"
+
+msgid "Change Row"
+msgstr "Rij wijzigen"
+
+msgid "Chapter Time + %"
+msgstr "Hoofdstuktijd + %"
+
 msgid "Check for updates"
 msgstr "Controleren op updates"
 
+msgid "Checking for updates…"
+msgstr "Controleren op updates…"
+
+msgid "Choose a different folder"
+msgstr "Een andere map kiezen"
+
+msgid "Choose a preset for your reading progress bar."
+msgstr "Kies een voorinstelling voor je leesvoortgangsbalk."
+
+msgid "Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings."
+msgstr "Kies welke tabbladen in je navigatiebalk verschijnen.\nJe kunt ze op elk moment in Instellingen opnieuw rangschikken of aanpassen."
+
 msgid "Classic (filename only)"
 msgstr "Klassiek (alleen bestandsnaam)"
+
+msgid "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu."
+msgstr "Strakke, minimale bibliotheek met mozaïekweergave van omslagen en lijstweergave, minder rommel en een gestroomlijnd contextmenu."
+
+msgid "Clear"
+msgstr "Wissen"
+
+msgid "Clear all gestures"
+msgstr "Alle gebaren wissen"
+
+msgid "Close"
+msgstr "Sluiten"
 
 msgid "Cloud"
 msgstr "Cloud"
@@ -162,11 +317,33 @@ msgstr "Gekleurde statuspictogrammen"
 msgid "Columns"
 msgstr "Kolommen"
 
+msgid "Connect folders"
+msgstr "Mappen koppelen"
+
+msgid "Context Menu"
+msgstr "Contextmenu"
+
 msgid "Continue"
 msgstr "Doorgaan"
 
+msgctxt "File"
+msgid "Copy"
+msgstr "Kopiëren"
+
+msgid "CoverBrowser plugin is not enabled, some features will not work correctly."
+msgstr "De CoverBrowser-plugin is niet ingeschakeld, sommige functies werken niet correct."
+
+msgid "Covers"
+msgstr "Omslagen"
+
+msgid "Create this folder and use as home"
+msgstr "Maak map aan en gebruik als startmap"
+
 msgid "Crop folder custom image"
 msgstr "Aangepaste mapafbeelding bijsnijden"
+
+msgid "Current home folder:"
+msgstr "Huidige startmap:"
 
 msgid "Custom"
 msgstr "Aangepast"
@@ -176,7 +353,6 @@ msgstr "Aangepaste RGB"
 
 msgid "Custom separator"
 msgstr "Aangepast scheidingsteken"
-
 
 msgid "Custom text"
 msgstr "Aangepaste tekst"
@@ -196,17 +372,56 @@ msgstr "Streepje"
 msgid "date modified"
 msgstr "datum gewijzigd"
 
+msgid "Day brightness"
+msgstr "Dagheldheid"
+
+msgid "Day brightness time"
+msgstr "Daghelderheidstijd"
+
+msgid "Day brightness time: "
+msgstr "Daghelderheidstijd: "
+
+msgid "Day brightness: "
+msgstr "Dagheldheid: "
+
+msgid "day streak"
+msgstr "dagenreeks"
+
+msgid "Day warmth"
+msgstr "Dagwarmte"
+
+msgid "Day warmth time"
+msgstr "Dagwarmte tijd"
+
+msgid "Day warmth time: "
+msgstr "Dagwarmte tijd: "
+
+msgid "Day warmth: "
+msgstr "Dagwarmte: "
+
+msgid "Debug logging"
+msgstr "Debug-logboek"
+
 msgid "default"
 msgstr "standaard"
 
 msgid "Delete"
 msgstr "Verwijderen"
 
+msgid "Delete OPDS catalog?"
+msgstr "OPDS-catalogus verwijderen?"
+
+msgid "Delete preset?"
+msgstr "Voorinstelling verwijderen?"
+
+msgid "Descending"
+msgstr "Aflopend"
+
 msgid "Description"
 msgstr "Beschrijving"
 
-msgid "Developer"
-msgstr "Ontwikkelaar"
+msgid "Description:"
+msgstr "Beschrijving:"
 
 msgid "Detailed list with cover images and filenames"
 msgstr "Gedetailleerde lijst met omslagen en bestandsnamen"
@@ -220,49 +435,100 @@ msgstr "Gedetailleerde lijst met metagegevens, zonder afbeeldingen"
 msgid "Device: "
 msgstr "Apparaat: "
 
+msgid "Dictionary lookup"
+msgstr "Woordenboek opzoeken"
+
+msgid "Disable bottom menu swipe"
+msgstr "Onderste menuveegbeweging uitschakelen"
+
+msgid "Disable context menu"
+msgstr "Contextmenu uitschakelen"
+
+msgid "Disable multi-word selection"
+msgstr "Multi-woordselectie uitschakelen"
+
+msgid "Disable settings panel"
+msgstr "Instellingenpaneel uitschakelen"
+
+msgid "Disable word search on hold"
+msgstr "Woordzoeken bij vasthouden uitschakelen"
+
 msgid "Disk space"
 msgstr "Schijfruimte"
+
+msgid "Display"
+msgstr "Weergave"
 
 msgid "Display mode"
 msgstr "Weergavemodus"
 
+msgid "Done"
+msgstr "Gereed"
+
+msgid "Dots"
+msgstr "Punten"
+
+msgid "Download"
+msgstr "Downloaden"
+
 msgid "Download failed: "
 msgstr "Download mislukt: "
 
-msgid "Downloading Zen UI update…"
-msgstr "Zen UI-update downloaden…"
+msgid "Downloaded"
+msgstr "Gedownload"
 
-msgid "Edit  ▶"
-msgstr "Bewerken  ▶"
+msgid "Edit"
+msgstr "Bewerken"
 
-msgid "Enable bottom menu"
-msgstr "Ondermenu inschakelen"
+msgid "Enable"
+msgstr "Inschakelen"
 
-msgid "Enable bottom nav bar"
-msgstr "Onderste navigatiebalk inschakelen"
+msgid "Enable bottom swipe"
+msgstr "Onderste veegbeweging inschakelen"
 
-msgid "Zen highlight menu"
-msgstr ""
+msgid "Enable brightness schedule"
+msgstr "Helderheidsplanning inschakelen"
 
 msgid "Enable custom status bar"
 msgstr "Aangepaste statusbalk inschakelen"
 
-msgid "Enable quick settings panel"
-msgstr "Snelle instellingen inschakelen"
+msgid "Enable KOReader verbose debug logging. Logs are written to koreader.log. Takes effect immediately."
+msgstr "KOReader uitgebreide debug-logregistratie inschakelen. Logbestanden worden naar koreader.log geschreven. Werkt direct."
+
+msgid "Enable night mode schedule"
+msgstr "Nachtmodus planning inschakelen"
+
+msgid "Enable page browser"
+msgstr "Paginabrowser inschakelen"
 
 msgid "Enable reader clock"
 msgstr "Lezerklok inschakelen"
 
+msgid "Enable warmth schedule"
+msgstr "Warmteplanning inschakelen"
+
+msgid "Enable Zen UI enhancements to the OPDS browser: cover art, list view, hold menu, and navigation improvements."
+msgstr "Zen UI-verbeteringen voor de OPDS-browser inschakelen: omslagafbeeldingen, lijstweergave, houdmenu en navigatieverbeteringen."
+
 msgid "Exit"
 msgstr "Afsluiten"
 
-msgid "Failed to unpack the update. You can install it manually."
-msgstr "Kan de update niet uitpakken. U kunt deze handmatig installeren."
+msgid "Extract and cache book metadata and cover images for books in the current directory. Requires CoverBrowser plugin."
+msgstr "Metagegevens en omslagen van boeken in de huidige map extraheren en cachen. Vereist de CoverBrowser-plugin."
+
+msgid "Extract metadata"
+msgstr "Metagegevens extraheren"
+
+msgid "Failed to remove existing plugin."
+msgstr "Verwijderen van bestaande plugin mislukt."
+
+msgid "Failed to unpack update."
+msgstr "Uitpakken van update mislukt."
 
 msgid "Favorites"
 msgstr "Favorieten"
 
-msgid "File browser"
+msgid "File Browser"
 msgstr "Bestandsbrowser"
 
 msgid "File search"
@@ -271,14 +537,14 @@ msgstr "Bestanden zoeken"
 msgid "Filebrowser"
 msgstr "Bestandsbeheer"
 
-msgid "FileBrowser"
-msgstr "Bestandsbeheer"
-
 msgid "Filebrowser plugin is not installed."
 msgstr "De Filebrowser-plugin is niet geïnstalleerd."
 
 msgid "Finished"
 msgstr "Klaar"
+
+msgid "finished"
+msgstr "klaar"
 
 msgid "Firmware: "
 msgstr "Firmware: "
@@ -289,8 +555,17 @@ msgstr "Map"
 msgid "Folder name centered"
 msgstr "Mapnaam gecentreerd"
 
+msgid "Folder name opaque background"
+msgstr "Ondoorzichtige achtergrond mapnaam"
+
+msgid "Folder name position"
+msgstr "Positie mapnaam"
+
 msgid "Folder presets"
 msgstr "Mapvoorinstellingen"
+
+msgid "Folders"
+msgstr "Mappen"
 
 msgid "Folders and files mixed"
 msgstr "Mappen en bestanden gemengd"
@@ -307,23 +582,38 @@ msgstr "Lettergrootte:"
 msgid "Font:"
 msgstr "Lettertype:"
 
+msgid "Force sync"
+msgstr "Geforceerd synchroniseren"
+
+msgid "Force sync all catalogs"
+msgstr "Alle catalogi geforceerd synchroniseren"
+
 msgid "Format: R,G,B (0-255)"
 msgstr "Formaat: R,G,B (0-255)"
 
-msgid "Brightness"
-msgstr "Helderheid"
+msgid "Gallery view"
+msgstr "Galerieweergave"
+
+msgid "Get Started"
+msgstr "Aan de slag"
+
+msgid "Global"
+msgstr "Globaal"
 
 msgid "Green"
 msgstr "Groen"
 
-msgid "Hide up folders"
-msgstr "Bovenliggende map verbergen"
+msgid "Hide finished books"
+msgstr "Voltooide boeken verbergen"
 
 msgid "Hide list borders"
 msgstr "Lijstranden verbergen"
 
+msgid "Hide up folder"
+msgstr "Bovenliggende map verbergen"
+
 msgid "Highlight / Lookup"
-msgstr ""
+msgstr "Markeren / Opzoeken"
 
 msgid "History"
 msgstr "Geschiedenis"
@@ -331,14 +621,26 @@ msgstr "Geschiedenis"
 msgid "Home"
 msgstr "Startpagina"
 
-msgid "Items"
-msgstr "Items"
+msgid "Home Folder"
+msgstr "Startmap"
+
+msgid "Home folder"
+msgstr "Startmap"
+
+msgid "Hour"
+msgstr "Uur"
+
+msgid "Install dictionary"
+msgstr "Woordenboek installeren"
 
 msgid "items per page"
 msgstr "items per pagina"
 
 msgid "Items per page"
 msgstr "Items per pagina"
+
+msgid "Keep existing settings"
+msgstr "Huidige instellingen behouden"
 
 msgid "Keywords"
 msgstr "Trefwoorden"
@@ -364,11 +666,41 @@ msgstr "nieuwste"
 msgid "Left"
 msgstr "Links"
 
+msgid "Left items"
+msgstr "Linker items"
+
 msgid "Library"
 msgstr "Bibliotheek"
 
+msgid "Library View"
+msgstr "Bibliotheekweergave"
+
+msgid "List (basic)"
+msgstr "Lijst (eenvoudig)"
+
+msgid "List (detailed)"
+msgstr "Lijst (gedetailleerd)"
+
+msgid "List - detailed titles and metadata"
+msgstr "Lijst — gedetailleerde titels en metadata"
+
+msgid "List - detailed titles and metadata"
+msgstr "Lijst — gedetailleerde titels en metadata"
+
 msgid "List: "
 msgstr "Lijst: "
+
+msgid "Lock home folder"
+msgstr "Startmap vergrendelen"
+
+msgid "Lockdown"
+msgstr "Vergrendeling"
+
+msgid "Lockdown mode"
+msgstr "Vergrendelmodus"
+
+msgid "Magnify UI"
+msgstr "Vergroot interface"
 
 msgid "Manga"
 msgstr "Manga"
@@ -379,14 +711,23 @@ msgstr "Mangamap niet gevonden: "
 msgid "Manga tab action: "
 msgstr "Actie manga-tabblad: "
 
-msgid "Max"
-msgstr "Max"
+msgid "Manual"
+msgstr "Handmatig"
 
 msgid "Menu"
 msgstr "Menu"
 
 msgid "Middle dot"
 msgstr "Middelpunt"
+
+msgid "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc."
+msgstr "Minimale statusbalk in de bibliotheekweergave.\nAanpasbaar: toon alleen wat je nodig hebt: tijd, batterij, enz."
+
+msgid "Minute"
+msgstr "Minuut"
+
+msgid "Mosaic"
+msgstr "Mozaiëk"
 
 msgid "Mosaic and detailed list settings"
 msgstr "Instellingen mozaïek en gedetailleerde lijst"
@@ -396,6 +737,12 @@ msgstr "Mozaïek met omslagen"
 
 msgid "Mosaic with text"
 msgstr "Mozaïek met tekst"
+
+msgid "Mosaic - large cover thumbnails"
+msgstr "Mozaïek — grote omslagminiaturen"
+
+msgid "Mosaic - large cover thumbnails"
+msgstr "Mozaiëk — grote omslagminiaturen"
 
 msgid "Move"
 msgstr "Verplaatsen"
@@ -415,8 +762,17 @@ msgstr "naam (natuurlijke sortering)"
 msgid "Navbar"
 msgstr "Navigatiebalk"
 
+msgid "Navbar Tabs"
+msgstr "Navigatietabbladen"
+
+msgid "Navigation Bar"
+msgstr "Navigatiebalk"
+
 msgid "New"
 msgstr "New"
+
+msgid "New collection"
+msgstr "Nieuwe collectie"
 
 msgid "New folder"
 msgstr "Nieuwe map"
@@ -439,74 +795,11 @@ msgstr "Volgende pagina"
 msgid "Night"
 msgstr "Nacht"
 
-msgid "Night mode schedule"
-msgstr "Nachtmodus planning"
+msgid "Night brightness"
+msgstr "Nachtheldheid"
 
-msgid "Enable night mode schedule"
-msgstr "Nachtmodus planning inschakelen"
-
-msgid "Night mode on: "
-msgstr "Nachtmodus aan: "
-
-msgid "Night mode off: "
-msgstr "Nachtmodus uit: "
-
-msgid "Night mode on time"
-msgstr "Inschakeltijd nachtmodus"
-
-msgid "Night mode off time"
-msgstr "Uitschakeltijd nachtmodus"
-
-msgid "Hour"
-msgstr "Uur"
-
-msgid "Minute"
-msgstr "Minuut"
-
-msgid "Global"
-msgstr "Globaal"
-
-msgid "Warmth schedule"
-msgstr "Warmteplanning"
-
-msgid "Enable warmth schedule"
-msgstr "Warmteplanning inschakelen"
-
-msgid "Day warmth time: "
-msgstr "Dagwarmte tijd: "
-
-msgid "Day warmth: "
-msgstr "Dagwarmte: "
-
-msgid "Night warmth time: "
-msgstr "Nachtwarmte tijd: "
-
-msgid "Night warmth: "
-msgstr "Nachtwarmte: "
-
-msgid "Day warmth time"
-msgstr "Dagwarmte tijd"
-
-msgid "Night warmth time"
-msgstr "Nachtwarmte tijd"
-
-msgid "Day warmth"
-msgstr "Dagwarmte"
-
-msgid "Night warmth"
-msgstr "Nachtwarmte"
-
-msgid "Brightness schedule"
-msgstr "Helderheidsplanning"
-
-msgid "Enable brightness schedule"
-msgstr "Helderheidsplanning inschakelen"
-
-msgid "Day brightness time: "
-msgstr "Daghelderheidstijd: "
-
-msgid "Day brightness: "
-msgstr "Dagheldheid: "
+msgid "Night brightness time"
+msgstr "Nachthelderheidstijd"
 
 msgid "Night brightness time: "
 msgstr "Nachthelderheidstijd: "
@@ -514,26 +807,35 @@ msgstr "Nachthelderheidstijd: "
 msgid "Night brightness: "
 msgstr "Nachtheldheid: "
 
-msgid "Day brightness time"
-msgstr "Daghelderheidstijd"
-
-msgid "Night brightness time"
-msgstr "Nachthelderheidstijd"
-
-msgid "Day brightness"
-msgstr "Dagheldheid"
-
-msgid "Night brightness"
-msgstr "Nachtheldheid"
-
 msgid "Night mode"
 msgstr "Nachtmodus"
 
-msgid "No download URL found. Check your network connection and try again."
-msgstr "Geen download-URL gevonden. Controleer uw netwerkverbinding en probeer opnieuw."
+msgid "Night mode off time"
+msgstr "Uitschakeltijd nachtmodus"
 
-msgid "No git checkout detected for Zen UI. Use your normal plugin installation/update workflow."
-msgstr "Geen git-checkout gevonden voor Zen UI. Gebruik uw normale installatie-/updateprocedure."
+msgid "Night mode off: "
+msgstr "Nachtmodus uit: "
+
+msgid "Night mode on time"
+msgstr "Inschakeltijd nachtmodus"
+
+msgid "Night mode on: "
+msgstr "Nachtmodus aan: "
+
+msgid "Night mode schedule"
+msgstr "Nachtmodus planning"
+
+msgid "Night warmth"
+msgstr "Nachtwarmte"
+
+msgid "Night warmth time"
+msgstr "Nachtwarmte tijd"
+
+msgid "Night warmth time: "
+msgstr "Nachtwarmte tijd: "
+
+msgid "Night warmth: "
+msgstr "Nachtwarmte: "
 
 msgid "No books found"
 msgstr "Geen boeken gevonden"
@@ -544,6 +846,9 @@ msgstr "Geen leesmotor voor dit bestand of ongeldig bestand."
 msgid "No separator"
 msgstr "Geen scheidingsteken"
 
+msgid "No update asset found."
+msgstr "Geen updatebestand gevonden."
+
 msgid "Notion"
 msgstr "Notion"
 
@@ -553,8 +858,8 @@ msgstr "NotionSync"
 msgid "Off"
 msgstr "Uit"
 
-msgid "To Be Read"
-msgstr "Te lezen"
+msgid "OK"
+msgstr "OK"
 
 msgid "OPDS"
 msgstr "OPDS"
@@ -574,8 +879,41 @@ msgstr "Rakuyomi openen"
 msgid "Opening"
 msgstr "Openen"
 
+msgid "Order"
+msgstr "Volgorde"
+
+msgctxt "page_count"
+msgid "p."
+msgstr "p."
+
+msgid "Page Browser"
+msgstr "Paginabrowser"
+
+msgid "Page stream"
+msgstr "Paginastroom"
+
+msgid "pages"
+msgstr "pagina's"
+
+msgctxt "page_count_long"
+msgid "pages"
+msgstr "pag."
+
+msgid "Pages + Chapter Time + %"
+msgstr "Pagina's + Hoofdstuktijd + %"
+
+msgid "Pages and %"
+msgstr "Pagina's en %"
+
+msgid "pages today"
+msgstr "pagina's vandaag"
+
 msgid "Partial pages refresh"
 msgstr "Gedeeltelijke paginaverversing"
+
+msgctxt "File"
+msgid "Paste"
+msgstr "Plakken"
 
 msgid "percent - unopened - finished last"
 msgstr "percentage - niet geopend - als laatste klaar"
@@ -585,6 +923,12 @@ msgstr "percentage - niet geopend als eerste"
 
 msgid "percent - unopened last"
 msgstr "percentage - niet geopend als laatste"
+
+msgid "Personal Records"
+msgstr "Persoonlijke records"
+
+msgid "Plugin management"
+msgstr "Pluginbeheer"
 
 msgid "Portrait list mode"
 msgstr "Staande lijstmodus"
@@ -598,6 +942,9 @@ msgstr "Staand mozaïek: "
 msgid "Position"
 msgstr "Positie"
 
+msgid "Preset name"
+msgstr "Naam voorinstelling"
+
 msgid "Presets"
 msgstr "Voorinstellingen"
 
@@ -607,9 +954,8 @@ msgstr "Vorige"
 msgid "Previous page"
 msgstr "Vorige pagina"
 
-msgid "Quick settings"
+msgid "Quick Settings"
 msgstr "Snelle instellingen"
-
 
 msgid "QuickRSS"
 msgstr "QuickRSS"
@@ -632,11 +978,14 @@ msgstr "De Rakuyomi-plugin is niet geïnstalleerd."
 msgid "RAM usage"
 msgstr "RAM-gebruik"
 
+msgid "Read now"
+msgstr "Nu lezen"
+
 msgid "Read status"
 msgstr "Leesstatus"
 
-msgid "Read status  ▶"
-msgstr "Leesstatus  ▶"
+msgid "read today"
+msgstr "vandaag gelezen"
 
 msgid "Reader"
 msgstr "Lezer"
@@ -647,8 +996,17 @@ msgstr "Lezerklok"
 msgid "Reader clock font"
 msgstr "Lettertype lezerklok"
 
+msgid "Reader Progress"
+msgstr "Leesvoortgang"
+
 msgid "Reading"
 msgstr "Aan het lezen"
+
+msgid "reading"
+msgstr "aan het lezen"
+
+msgid "Rebooting…"
+msgstr "Opnieuw opstarten…"
 
 msgid "Recently read"
 msgstr "Recent gelezen"
@@ -659,11 +1017,26 @@ msgstr "Rood"
 msgid "Refresh navbar"
 msgstr "Navigatiebalk vernieuwen"
 
+msgid "Regular Oxford English"
+msgstr "Regular Oxford English"
+
+msgid "Regular Oxford English (203 MB)"
+msgstr "Regular Oxford English (203 MB)"
+
+msgid "Remove"
+msgstr "Verwijderen"
+
+msgid "Remove default"
+msgstr "Standaard verwijderen"
+
 msgid "Remove from favorites"
 msgstr "Verwijderen uit favorieten"
 
 msgid "Rename"
 msgstr "Hernoemen"
+
+msgid "Require hold to toggle buttons"
+msgstr "Lang indrukken vereist om knoppen te schakelen"
 
 msgid "Restart"
 msgstr "Herstarten"
@@ -674,6 +1047,12 @@ msgstr "Boek herstarten"
 msgid "Restart now"
 msgstr "Nu herstarten"
 
+msgid "Restore library view on return"
+msgstr "Bibliotheekweergave herstellen bij terugkeer"
+
+msgid "Resume from page"
+msgstr "Hervatten vanaf pagina"
+
 msgid "Reverse sorting"
 msgstr "Omgekeerde sortering"
 
@@ -683,8 +1062,14 @@ msgstr "Recensie"
 msgid "Right"
 msgstr "Rechts"
 
+msgid "Right items"
+msgstr "Rechter items"
+
 msgid "Rotate"
 msgstr "Roteren"
+
+msgid "Rounded cover corners"
+msgstr "Afgeronde hoeken van omslagen"
 
 msgid "Rows"
 msgstr "Rijen"
@@ -692,8 +1077,26 @@ msgstr "Rijen"
 msgid "Run Zen UI update now?\n\nIf this plugin is a git checkout, Zen UI will run a fast-forward pull and then ask for restart."
 msgstr "Zen UI-update nu uitvoeren?\n\nAls deze plugin een git-checkout is, voert Zen UI een fast-forward pull uit en vraagt daarna om herstart."
 
+msgid "Save"
+msgstr "Opslaan"
+
+msgid "Save current settings as preset"
+msgstr "Huidige instellingen opslaan als voorinstelling"
+
+msgid "Scroll bar style"
+msgstr "Stijl schuifbalk"
+
 msgid "Search"
 msgstr "Zoeken"
+
+msgid "Search Book"
+msgstr "Boek zoeken"
+
+msgid "Search Library"
+msgstr "Bibliotheek doorzoeken"
+
+msgid "Search results"
+msgstr "Zoekresultaten"
 
 msgid "Select"
 msgstr "Selecteren"
@@ -704,89 +1107,125 @@ msgstr "Scheidingsteken: "
 msgid "Series"
 msgstr "Reeks"
 
+msgid "series"
+msgstr "reeksen"
+
+msgid "Series number"
+msgstr "Reeksnummer"
+
 msgid "Set"
 msgstr "Instellen"
 
-msgid "Show battery"
-msgstr "Batterij weergeven"
+msgid "Set all gestures to pass-through? Top-right corner in reader will be kept as Toggle bookmark."
+msgstr "Alle gebaren instellen op doorvoer? De rechterbovenhoek in de lezer blijft als Bladwijzer omschakelen."
+
+msgid "Set as default"
+msgstr "Als standaard instellen"
+
+msgid "Set file types to sync"
+msgstr "Bestandstypen instellen voor synchronisatie"
+
+msgid "Set home folder"
+msgstr "Startmap instellen"
+
+msgid "Set max number of files to sync"
+msgstr "Maximum aantal te synchroniseren bestanden instellen"
+
+msgid "Set sync folder"
+msgstr "Synchronisatiemap instellen"
+
+msgid "Settings & Updates"
+msgstr "Instellingen en updates"
+
+msgid "Setup Guide"
+msgstr "Installatiegids"
+
+msgid "Short Oxford English"
+msgstr "Short Oxford English"
+
+msgid "Short Oxford English (26 MB)"
+msgstr "Short Oxford English (26 MB)"
 
 msgid "Show bottom border"
 msgstr "Onderste rand weergeven"
 
-msgid "Show disk space"
-msgstr "Schijfruimte weergeven"
+msgid "Show brightness slider"
+msgstr "Schuifregelaar helderheid weergeven"
+
+msgid "Show favorite badge"
+msgstr "Favorietbadge weergeven"
+
+msgid "Show folder covers as gallery"
+msgstr "Mapomslagen als galerij weergeven"
 
 msgid "Show folder name"
 msgstr "Mapnaam weergeven"
 
+msgid "Show folder name on cover"
+msgstr "Mapnaam op omslag weergeven"
+
+msgid "Show hidden files"
+msgstr "Verborgen bestanden weergeven"
+
 msgid "Show item count on folder covers"
 msgstr "Aantal items op mapcovers weergeven"
 
-msgid "Show brightness"
-msgstr "Helderheid weergeven"
+msgid "Show item underline"
+msgstr "Itemonderstreping weergeven"
 
-msgid "Show brightness slider"
-msgstr "Schuifregelaar helderheid weergeven"
-
-msgid "Show hidden files outside home folder"
-msgstr "Verborgen bestanden buiten thuismap weergeven"
-
-msgid "Show hidden and unsupported files outside home folder"
-msgstr "Verborgen en niet-ondersteunde bestanden buiten thuismap weergeven"
-
-msgid "Show in standalone views"
-msgstr "Weergeven in zelfstandige weergaven"
+msgid "Show KOReader progress bar"
+msgstr "KOReader-voortgangsbalk weergeven"
 
 msgid "Show labels"
 msgstr "Labels weergeven"
 
-msgid "Show progress % on mosaic covers"
-msgstr "Voortgang % op mozaïekomslagen weergeven"
-
 msgid "Show new banner"
 msgstr "Show new banner"
+
+msgid "Show other items"
+msgstr "Overige items weergeven"
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr "Andere snelle KOReader-opzoekopties naast Zen-knoppen weergeven."
 
 msgid "Show page count"
 msgstr "Paginatelling weergeven"
 
+msgid "Show progress % on mosaic covers"
+msgstr "Voortgang % op mozaïekomslagen weergeven"
+
 msgid "Show series number on covers"
 msgstr "Serienummer weergeven op omslagen"
-
-msgid "Rounded cover corners"
-msgstr "Afgeronde hoeken van omslagen"
-
-msgid "Show RAM usage"
-msgstr "RAM-gebruik weergeven"
-
-msgid "Show time"
-msgstr "Tijd weergeven"
 
 msgid "Show top border"
 msgstr "Bovenste rand weergeven"
 
-msgid "Show top gap"
-msgstr "Bovenste ruimte weergeven"
-
-msgid "Show other items"
-msgstr ""
-
-msgid "Show other KOReader quick lookup options alongside Zen buttons."
-msgstr ""
-
-msgid "Show Wikipedia"
-msgstr ""
-
 msgid "Show warmth slider"
 msgstr "Warmteschuifregelaar weergeven"
 
-msgid "Show WiFi"
-msgstr "WiFi weergeven"
+msgid "Show Wikipedia"
+msgstr "Wikipedia weergeven"
 
 msgid "size"
 msgstr "grootte"
 
+msgid "Skip"
+msgstr "Overslaan"
+
 msgid "Sleep"
 msgstr "Slaapstand"
+
+msgid "Sleep Screen"
+msgstr "Slaapscherm"
+
+msgid "Sort"
+msgstr "Sorteren"
+
+msgid "Sort authors"
+msgstr "Auteurs sorteren"
+
+msgid "Sort books by"
+msgstr "Boeken sorteren op"
 
 msgid "Sort by"
 msgstr "Sorteren op"
@@ -794,36 +1233,128 @@ msgstr "Sorteren op"
 msgid "Sort by: "
 msgstr "Sorteren op: "
 
+msgid "Sort collection by"
+msgstr "Collectie sorteren op"
+
+msgid "Sort folder"
+msgstr "Map sorteren"
+
+msgid "Sort folder by"
+msgstr "Map sorteren op"
+
+msgid "Sort library"
+msgstr "Bibliotheek sorteren"
+
+msgid "Sort library by"
+msgstr "Bibliotheek sorteren op"
+
+msgid "Sort order"
+msgstr "Sorteervolgorde"
+
+msgid "Sort series"
+msgstr "Reeksen sorteren"
+
 msgid "Space only"
 msgstr "Alleen spatie"
 
 msgid "Space only (small)"
 msgstr "Alleen spatie (klein)"
 
+msgid "Stable"
+msgstr "Stable"
+
 msgid "Statistics"
+msgstr "Statistieken"
+
+msgid "Stats"
 msgstr "Statistieken"
 
 msgid "Status bar"
 msgstr "Statusbalk"
 
+msgid "Status Bar"
+msgstr "Statusbalk"
+
 msgid "Streak"
 msgstr "Reeks"
+
+msgid "Stream from page"
+msgstr "Streamen vanaf pagina"
+
+msgid "Styling"
+msgstr "Stijl"
+
+msgid "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more."
+msgstr "Veeg naar beneden voor snelle instellingen zoals helderheid, Wi-Fi, nachtmodus, zen-modus en meer."
+
+msgid "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more."
+msgstr "Veeg omhoog vanaf de onderkant tijdens het lezen om de Paginabrowser te openen.\n\nBlaader door pagina's of sla hoofdstukken over, bekijk de inhoudsopgave, beheer bladwijzers, pas lettertypen aan en meer."
+
+msgid "Sync"
+msgstr "Synchroniseren"
+
+msgid "Sync all catalogs"
+msgstr "Alle catalogi synchroniseren"
 
 msgid "Tabs"
 msgstr "Tabbladen"
 
-msgid "The update will be downloaded and installed. KOReader will then restart."
-msgstr "De update wordt gedownload en geïnstalleerd. KOReader herstart daarna."
+msgid "Tap and hold any book or folder in your library to reveal details."
+msgstr "Houd een boek of map in je bibliotheek aangetikt om details te tonen."
+
+msgid "The best interface is the one you forget is there.\nNow go get lost in a good book."
+msgstr "De beste interface is de interface die je vergeet dat er is.\nGa nu op in een goed boek."
+
+msgid "The place for all your books %1"
+msgstr "De map voor al je boeken %1"
 
 msgid "This change requires a restart to take effect."
 msgstr "Deze wijziging vereist een herstart om van kracht te worden."
 
+msgid "This is a large file and may take a few minutes. Please wait."
+msgstr "Dit is een groot bestand en kan enkele minuten duren. Even geduld."
+
+msgid "This may take a few minutes. Please wait."
+msgstr "Dit kan enkele minuten duren. Even geduld."
+
+msgid "This Month"
+msgstr "Deze maand"
+
+msgid "This Week"
+msgstr "Deze week"
+
+msgid "This Year"
+msgstr "Dit jaar"
+
+msgid "Time"
+msgstr "Tijd"
+
+msgid "Time Format"
+msgstr "Tijdnotatie"
 
 msgid "Title"
 msgstr "Titel"
 
-msgid "Toggle"
-msgstr "Schakelen"
+msgid "To Be Read"
+msgstr "Te lezen"
+
+msgid "Today"
+msgstr "Vandaag"
+
+msgid "total books"
+msgstr "totaal boeken"
+
+msgid "total pages read"
+msgstr "totaal pagina's gelezen"
+
+msgid "total read time"
+msgstr "totale leestijd"
+
+msgid "total time"
+msgstr "totale tijd"
+
+msgid "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings."
+msgstr "Zet de Zen-modus aan om KOReader terug te brengen tot het essentiële.\n\nVerwijder visuele rommel voor een gefocuste, afleidingsvrije lezerservaring. Sluit af via Instellingen."
 
 msgid "type"
 msgstr "type"
@@ -831,47 +1362,50 @@ msgstr "type"
 msgid "Underline above icon"
 msgstr "Onderstreping boven pictogram"
 
+msgid "Uniform covers"
+msgstr "Uniforme omslagen"
+
 msgid "unknown error"
 msgstr "onbekende fout"
 
 msgid "Unread"
 msgstr "Ongelezen"
 
-msgid "Update"
-msgstr "Bijwerken"
+msgid "Update available: "
+msgstr "Update beschikbaar: "
 
-msgid "Update available — install "
-msgstr "Update beschikbaar — installeren "
+msgid "Update channel"
+msgstr "Updatekanaal"
+
+msgid "Update now"
+msgstr "Nu bijwerken"
 
 msgid "Update Status"
 msgstr "Status bijwerken"
 
-msgid "Update Zen UI"
-msgstr "Zen UI bijwerken"
+msgid "Updated to %1"
+msgstr "Bijgewerkt naar %1"
 
-msgid "Update Zen UI now?"
-msgstr "Zen UI nu bijwerken?"
-
-msgid "Update Zen UI to "
-msgstr "Zen UI bijwerken naar "
+msgid "Updating…"
+msgstr "Bijwerken…"
 
 msgid "USB"
 msgstr "USB"
 
-msgid "Use 24-hour time"
-msgstr "24-uurs notatie gebruiken"
+msgid "Use current folder"
+msgstr "Huidige map gebruiken"
 
 msgid "Use default font"
 msgstr "Standaard lettertype gebruiken"
-
-msgid "Use current folder"
-msgstr "Huidige map gebruiken"
 
 msgid "Use home folder"
 msgstr "Startmap gebruiken"
 
 msgid "Use last folder"
 msgstr "Laatste map gebruiken"
+
+msgid "Verbose time to chapter end"
+msgstr "Gedetailleerde tijd tot einde hoofdstuk"
 
 msgid "Vertical bar"
 msgstr "Verticale balk"
@@ -882,11 +1416,26 @@ msgstr "Zichtbaarheid"
 msgid "Warmth"
 msgstr "Warmte"
 
+msgid "Warmth schedule"
+msgstr "Warmteplanning"
+
+msgid "Welcome to Zen UI"
+msgstr "Welkom bij Zen UI"
+
+msgid "What should your device show when it goes to sleep?"
+msgstr "Wat moet je apparaat tonen wanneer het in slaapstand gaat?"
+
+msgid "When enabled, icons placed in KOReader's user icons folder override the bundled Zen UI icons. Falls back to Zen UI icons, then KOReader built-ins."
+msgstr "Wanneer ingeschakeld, overschrijven pictogrammen in de KOReader-gebruikerspictogrammenmap de meegeleverde Zen UI-pictogrammen. Valt terug op Zen UI-pictogrammen, daarna op KOReader-ingebouwde pictogrammen."
+
+msgid "Which time format do you prefer?"
+msgstr "Welk tijdformaat heeft je voorkeur?"
+
 msgid "Wi-Fi"
 msgstr "Wi-Fi"
 
-msgid "WiFi"
-msgstr "WiFi"
+msgid "You're All Set"
+msgstr "Klaar om te gaan"
 
 msgid "Z-Lib"
 msgstr "Z-Lib"
@@ -897,290 +1446,36 @@ msgstr "Z-Library"
 msgid "Zen"
 msgstr "Zen"
 
-msgid "Lockdown"
-msgstr ""
+msgid "Zen highlight menu"
+msgstr "Zen markeermenu"
 
-msgid "Lockdown mode"
-msgstr ""
+msgid "Zen icon - white background"
+msgstr "Zen-pictogram — witte achtergrond"
 
-msgid "Enable lockdown mode"
-msgstr ""
-
-msgid "Magnify UI"
-msgstr "Vergroot interface"
-
-msgid "Disable context menu"
-msgstr ""
-
-msgid "Require hold to toggle buttons"
-msgstr ""
-
-msgid "Disable settings panel"
-msgstr ""
-
-msgid "Disable bottom menu swipe"
-msgstr ""
-
-msgid "Disable multi-word selection"
-msgstr ""
-
-msgid "Disable word search on hold"
-msgstr ""
+msgid "Zen icon - white background"
+msgstr "Zen-pictogram — witte achtergrond"
 
 msgid "Zen Mode"
 msgstr "Zen-modus"
 
+msgid "Zen mode"
+msgstr "Zen-modus"
+
+msgid "Zen OPDS"
+msgstr "Zen OPDS"
 
 msgid "Zen quick lookup"
-msgstr ""
+msgstr "Zen snel opzoeken"
 
 msgid "Zen UI"
 msgstr "Zen UI"
 
-msgid "Zen UI is up to date."
-msgstr "Zen UI is up-to-date."
-
-msgid "Zen UI Pages + %"
-msgstr ""
-
-msgid "Zen UI Pages + Time + %"
-msgstr ""
-
-msgid "Zen UI Settings"
-msgstr "Zen UI-instellingen"
-
-msgid "Zen UI update completed. Restart KOReader now?"
-msgstr "Zen UI-update voltooid. KOReader nu herstarten?"
-
-msgid "Zen UI update failed. Check logs and retry."
-msgstr "Zen UI-update mislukt. Controleer de logs en probeer opnieuw."
-
-msgid "Zen UI updated successfully. Restart KOReader now?"
-msgstr "Zen UI succesvol bijgewerkt. KOReader nu herstarten?"
-
-msgid "Zen UI: "
-msgstr "Zen UI: "
-
-msgctxt "File"
-msgid "Copy"
-msgstr "Kopiëren"
-
-msgctxt "File"
-msgid "Paste"
-msgstr "Plakken"
-
-msgid "< 1 min left in chapter"
-msgstr "< 1 min resterend in hoofdstuk"
-
-msgid "1 min left in chapter"
-msgstr "1 min resterend in hoofdstuk"
-
-msgid "%1 mins left in chapter"
-msgstr "%1 min resterend in hoofdstuk"
-
-msgid "Verbose time to chapter end"
-msgstr "Gedetailleerde tijd tot einde hoofdstuk"
-
-msgid "Reader footer settings"
-msgstr "Lezer voettekst instellingen"
-
-msgid "Sort folder  ▶"
-msgstr "Map sorteren  ▶"
-
-msgid "Sort folder by"
-msgstr "Map sorteren op"
-
-msgid "Clear"
-msgstr "Wissen"
-
-msgctxt "page_count"
-msgid "p."
-msgstr "p."
-
-msgctxt "page_count_long"
-msgid "pages"
-msgstr "pag."
-
-msgid "Enable page browser"
-msgstr ""
-
-msgid "Contents"
-msgstr ""
-
-msgid "Font"
-msgstr ""
-
-msgid "Page %d of %d"
-msgstr ""
-
-msgid "All Time"
-msgstr "Totaaltijd"
-
-msgid "Personal Records"
-msgstr "Persoonlijke records"
-
-msgid "total read time"
-msgstr "totale leestijd"
-
-msgid "total pages read"
-msgstr "totaal pagina's gelezen"
-
-msgid "books read"
-msgstr "boeken gelezen"
-
-msgid "avg time/book"
-msgstr "gem. tijd/boek"
-
-msgid "best day"
-msgstr "beste dag"
-
-msgid "best week"
-msgstr "beste week"
-
-msgid "best month"
-msgstr "beste maand"
-
-msgid "Welcome to Zen UI"
-msgstr "Welkom bij Zen UI"
-
-msgid "A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue."
-msgstr "Een minimale, strakke en eenvoudige interface voor je e-reader.\n\nVeeg of tik op Volgende om door te gaan."
-
-msgid "File Browser"
-msgstr "Bestandsbrowser"
-
-msgid "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu."
-msgstr "Strakke, minimale bibliotheek met mozaïekweergave van omslagen en lijstweergave, minder rommel en een gestroomlijnd contextmenu."
-
-msgid "Context Menu"
-msgstr "Contextmenu"
-
-msgid "Tap and hold any book or folder in your library to reveal details."
-msgstr "Houd een boek of map in je bibliotheek aangetikt om details te tonen."
-
-msgid "Authors & Series"
-msgstr "Auteurs en reeksen"
-
-msgid "Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar."
-msgstr "Blader door je bibliotheek georganiseerd op auteur of reeks.\nToegang tot deze weergaven op elk moment via de navigatiebalk."
-
-msgid "Library View"
-msgstr "Bibliotheekweergave"
-
-msgid "Mosaic — large cover thumbnails"
-msgstr "Mozaïek — grote omslagminiaturen"
-
-msgid "List — detailed titles and metadata"
-msgstr "Lijst — gedetailleerde titels en metadata"
-
-msgid "Navigation Bar"
-msgstr "Navigatiebalk"
-
-msgid "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own"
-msgstr "Een eenvoudige tabbladenbalk onderaan je bibliotheek.\nVolledig aanpasbaar naar jouw wens."
-
-msgid "Navbar Tabs"
-msgstr "Navigatietabbladen"
-
-msgid "Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings."
-msgstr "Kies welke tabbladen in je navigatiebalk verschijnen.\nJe kunt ze op elk moment in Instellingen opnieuw rangschikken of aanpassen."
-
-msgid "Quick Settings"
-msgstr "Snelle instellingen"
-
-msgid "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more."
-msgstr "Veeg naar beneden voor snelle instellingen zoals helderheid, Wi-Fi, nachtmodus, zen-modus en meer."
-
-msgid "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings."
-msgstr "Zet de Zen-modus aan om KOReader terug te brengen tot het essentiële.\n\nVerwijder visuele rommel voor een gefocuste, afleidingsvrije lezerservaring. Sluit af via Instellingen."
-
-msgid "Status Bar"
-msgstr "Statusbalk"
-
-msgid "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc."
-msgstr "Minimale statusbalk in de bibliotheekweergave.\nAanpasbaar: toon alleen wat je nodig hebt: tijd, batterij, enz."
-
-msgid "Sleep Screen"
-msgstr "Slaapscherm"
-
-msgid "What should your device show when it goes to sleep?"
-msgstr "Wat moet je apparaat tonen wanneer het in slaapstand gaat?"
-
-msgid "Keep existing settings"
-msgstr "Huidige instellingen behouden"
-
-msgid "Book cover — black background"
-msgstr "Boekomslag — zwarte achtergrond"
-
-msgid "Zen icon — white background"
-msgstr "Zen-pictogram — witte achtergrond"
-
-msgid "Time Format"
-msgstr "Tijdnotatie"
-
-msgid "Which time format do you prefer?"
-msgstr "Welk tijdformaat heeft je voorkeur?"
-
-msgid "12-hour  (3:30 PM)"
-msgstr "12 uur  (3:30 PM)"
-
-msgid "24-hour  (15:30)"
-msgstr "24 uur  (15:30)"
-
-msgid "An unobtrusive reader view with customizable top clock and bottom progress bar."
-msgstr "Een onopvallende leesweergave met aanpasbare klok bovenaan en voortgangsbalk onderaan."
-
 msgid "Zen UI defaults"
 msgstr "Zen UI-standaardinstellingen"
 
-msgid "Reader Progress"
-msgstr "Leesvoortgang"
+msgid "Zen UI is up to date."
+msgstr "Zen UI is up-to-date."
 
-msgid "Choose a preset for your reading progress bar."
-msgstr "Kies een voorinstelling voor je leesvoortgangsbalk."
-
-msgid "Chapter Time + %"
-msgstr "Hoofdstuktijd + %"
-
-msgid "Pages and %"
-msgstr "Pagina's en %"
-
-msgid "Pages + Chapter Time + %"
-msgstr "Pagina's + Hoofdstuktijd + %"
-
-msgid "Centered Pages"
-msgstr "Gecentreerde pagina's"
-
-msgid "Page Browser"
-msgstr "Paginabrowser"
-
-msgid "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more."
-msgstr "Veeg omhoog vanaf de onderkant tijdens het lezen om de Paginabrowser te openen.\n\nBlaader door pagina's of sla hoofdstukken over, bekijk de inhoudsopgave, beheer bladwijzers, pas lettertypen aan en meer."
-
-msgid "Settings & Updates"
-msgstr "Instellingen en updates"
-
-msgid "All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader."
-msgstr "Alle instellingen in één gecombineerd tabblad.\nZoek en installeer Zen UI-updates rechtstreeks op je e-reader."
-
-msgid "You're All Set"
-msgstr "Klaar om te gaan"
-
-msgid "The best interface is the one you forget is there.\nNow go get lost in a good book."
-msgstr "De beste interface is de interface die je vergeet dat er is.\nGa nu op in een goed boek."
-
-msgid "Home Folder"
-msgstr "Startmap"
-
-msgid "The place for all your books %1"
-msgstr "De map voor al je boeken %1"
-
-msgid "Create this folder and use as home"
-msgstr "Maak map aan en gebruik als startmap"
-
-msgid "Choose a different folder"
-msgstr "Een andere map kiezen"
-
-msgid "Skip"
-msgstr "Overslaan"
+msgid "Zen UI: "
+msgstr "Zen UI: "
 

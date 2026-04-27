@@ -659,7 +659,7 @@ local function apply_collections()
             }})
             -- Order submenu
             table.insert(sort_buttons, {{
-                text     = "\u{F04BF}  " .. _("Order  ▶"),
+                text     = "\u{F04BF}  " .. _("Order") .. "  ▶",
                 align    = "left",
                 callback = function()
                     UIManager_cm:close(sort_dialog)
@@ -738,7 +738,7 @@ local function apply_collections()
             local button_dialog
             local buttons = {
                 {{
-                    text     = "\u{F04BF}  " .. _("Sort  \u{25B8}"),
+                    text     = "\u{F04BF}  " .. _("Sort") .. "  \u{25B8}",
                     align    = "left",
                     callback = function() showSortSubmenu(function() UIManager_cm:close(button_dialog) end) end,
                 }},
@@ -838,7 +838,7 @@ local function apply_collections()
                 end,
             }},
             {{
-                text     = "\u{F06D0}  " .. _("Display  \u{25B8}"),
+                text     = "\u{F06D0}  " .. _("Display") .. "  \u{25B8}",
                 align    = "left",
                 callback = showDisplaySubmenu,
             }},

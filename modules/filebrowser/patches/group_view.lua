@@ -975,7 +975,7 @@ local function showDetailSortDialog(group_name, tab_id, menu, files)
 
     -- Order submenu
     table.insert(sort_buttons, {{
-        text     = "\u{F0DC}  " .. _("Order  ▶"),
+        text     = "\u{F0DC}  " .. _("Order") .. "  ▶",
         align    = "left",
         callback = function()
             local order_dialog

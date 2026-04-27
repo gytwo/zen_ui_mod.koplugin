@@ -6,23 +6,55 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language: zh_TW\n"
 
-msgid "⬆ Update available: "
-msgstr "⬆ 有可用更新: "
+
+
+msgid "%1 (%2)"
+msgstr "%1 (%2)"
 
 msgid "%1 et al."
 msgstr "%1 等"
 
+msgid "%1 mins left in chapter"
+msgstr "本章剩餘 %1 分鐘"
+
 msgid "%d%% Read"
 msgstr "已讀 %d%%"
+
+msgid "1 author"
+msgstr "1 位作者"
 
 msgid "1 book"
 msgstr "1 本書"
 
+msgid "1 min left in chapter"
+msgstr "本章剩餘 1 分鐘"
+
+msgid "1 series"
+msgstr "1 個系列"
+
+msgid "12-hour  (3:30 PM)"
+msgstr "12小時  (下午3:30)"
+
 msgid "12-hour time"
 msgstr "12 小時制"
 
+msgid "24-hour  (15:30)"
+msgstr "24小時  (15:30)"
+
+msgid "< 1 min left in chapter"
+msgstr "本章剩餘 < 1 分鐘"
+
+msgid "A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue."
+msgstr "為您的電子閱讀器打造的極簡、整潔介面。\n\n向左滑動或點選「下一步」繼續。"
+
+msgid "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own"
+msgstr "圖書館底部的簡潔標籤列。\n完全可自訂，隨您所好。"
+
 msgid "About"
 msgstr "關於"
+
+msgid "Active tab color"
+msgstr "活動標籤顏色"
 
 msgid "Active tab color: "
 msgstr "活動標籤顏色: "
@@ -36,20 +68,41 @@ msgstr "活動標籤樣式"
 msgid "Active tab underline"
 msgstr "活動標籤底線"
 
+msgid "Add catalog"
+msgstr "新增目錄"
+
 msgid "Add to favorites"
 msgstr "加入我的最愛"
 
+msgid "Advanced"
+msgstr "進階"
+
+msgid "Alexandre Dumas"
+msgstr "Alexandre Dumas"
+
+msgid "All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader."
+msgstr "所有設定集中在一個統一標籤頁。\n直接在電子閱讀器上檢查並安裝 Zen UI 更新。"
+
+msgid "All Time"
+msgstr "歷史總計"
+
+msgid "Allow custom icons"
+msgstr "允許自訂圖示"
+
 msgid "Allow delete in context menu"
 msgstr "允許在右鍵選單中刪除"
-
-msgid "Always open on this tab"
-msgstr "一律在此標籤頁開啟"
 
 msgid "Amber"
 msgstr "琥珀色"
 
 msgid "An item with that name already exists."
 msgstr "已存在同名項目。"
+
+msgid "An unobtrusive reader view with customizable top clock and bottom progress bar."
+msgstr "簡潔的閱讀視圖，可自訂頂部時鐘和底部進度條。"
+
+msgid "Apply"
+msgstr "套用"
 
 msgid "Are you sure you want to exit KOReader?"
 msgstr "確定要結束 KOReader 嗎？"
@@ -60,11 +113,17 @@ msgstr "確定要關閉 KOReader 嗎？"
 msgid "Are you sure you want to restart KOReader?"
 msgstr "確定要重新啟動 KOReader 嗎？"
 
+msgid "Arrange"
+msgstr "排列"
+
 msgid "Arrange buttons"
 msgstr "排列按鈕"
 
-msgid "Arrange items"
-msgstr "排列項目"
+msgid "Arrange center items"
+msgstr "排列中間項目"
+
+msgid "Arrange left items"
+msgstr "排列左側項目"
 
 msgid "Arrange navbar tabs"
 msgstr "排列導覽列標籤"
@@ -72,17 +131,53 @@ msgstr "排列導覽列標籤"
 msgid "Arrange quick settings buttons"
 msgstr "排列快速設定按鈕"
 
-msgid "Arrange status bar items"
-msgstr "排列狀態列項目"
+msgid "Arrange right items"
+msgstr "排列右側項目"
 
 msgid "Arrange tabs"
 msgstr "排列標籤"
 
+msgid "Ascending"
+msgstr "升冪"
+
 msgid "Authors"
 msgstr "作者"
 
+msgid "authors"
+msgstr "位作者"
+
+msgid "Authors & Series"
+msgstr "作者與系列"
+
+msgid "Automatic suspend"
+msgstr "自動暫停"
+
+msgid "avg pages/day"
+msgstr "平均頁數/天"
+
+msgid "avg time/book"
+msgstr "平均時長/本"
+
+msgid "avg time/day"
+msgstr "平均時長/天"
+
+msgid "Bar"
+msgstr "條形"
+
 msgid "Battery"
 msgstr "電池"
+
+msgid "best day"
+msgstr "單日最佳"
+
+msgid "best month"
+msgstr "單月最佳"
+
+msgid "best week"
+msgstr "單週最佳"
+
+msgid "Beta"
+msgstr "Beta"
 
 msgid "Blue"
 msgstr "藍色"
@@ -99,6 +194,15 @@ msgstr "粗體文字"
 msgid "Book"
 msgstr "書籍"
 
+msgid "Book added to download list"
+msgstr "書籍已加入下載清單"
+
+msgid "Book cover - black background"
+msgstr "書籍封面 — 黑色背景"
+
+msgid "Book cover - black background"
+msgstr "書籍封面 — 黑色背景"
+
 msgid "Book Status"
 msgstr "書籍狀態"
 
@@ -108,14 +212,29 @@ msgstr "本書"
 msgid "Books"
 msgstr "書庫"
 
+msgid "books finished"
+msgstr "本已讀完"
+
 msgid "Books tab label"
 msgstr "書庫標籤名稱"
 
 msgid "Books tab label: "
 msgstr "書庫標籤名稱: "
 
+msgid "Bottom"
+msgstr "底部"
+
 msgid "Bottom status bar"
 msgstr "底部狀態列"
+
+msgid "Brightness"
+msgstr "亮度"
+
+msgid "Brightness schedule"
+msgstr "亮度排程"
+
+msgid "Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar."
+msgstr "按作者或系列瀏覽整個圖書館。\n隨時從導航列存取這些視圖。"
 
 msgid "Bullet"
 msgstr "圓點"
@@ -129,20 +248,56 @@ msgstr "Calibre"
 msgid "Cancel"
 msgstr "取消"
 
-msgid "Cannot determine the plugin installation path."
-msgstr "無法確定外掛安裝路徑。"
-
 msgid "Cannot open last document"
 msgstr "無法開啟上次的文件"
 
 msgid "Center"
 msgstr "置中"
 
+msgid "Center items"
+msgstr "中間項目"
+
+msgid "Centered Pages"
+msgstr "置中頁數"
+
+msgid "Change folder"
+msgstr "變更資料夾"
+
+msgid "Change Row"
+msgstr "變更列"
+
+msgid "Chapter Time + %"
+msgstr "章節時間 + %"
+
 msgid "Check for updates"
 msgstr "檢查更新"
 
+msgid "Checking for updates…"
+msgstr "正在檢查更新…"
+
+msgid "Choose a different folder"
+msgstr "選擇其他資料夾"
+
+msgid "Choose a preset for your reading progress bar."
+msgstr "為您的閱讀進度條選擇預設。"
+
+msgid "Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings."
+msgstr "選擇導航列顯示的標籤頁。\n您可以隨時在設定中重新排列或調整。"
+
 msgid "Classic (filename only)"
 msgstr "經典模式（僅檔名）"
+
+msgid "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu."
+msgstr "整潔的極簡圖書館，支援網格封面和清單視圖，減少雜亂，右鍵選單更簡潔。"
+
+msgid "Clear"
+msgstr "清除"
+
+msgid "Clear all gestures"
+msgstr "清除所有手勢"
+
+msgid "Close"
+msgstr "關閉"
 
 msgid "Cloud"
 msgstr "雲端"
@@ -162,11 +317,33 @@ msgstr "彩色狀態圖示"
 msgid "Columns"
 msgstr "欄數"
 
+msgid "Connect folders"
+msgstr "連結資料夾"
+
+msgid "Context Menu"
+msgstr "內容選單"
+
 msgid "Continue"
 msgstr "繼續"
 
+msgctxt "File"
+msgid "Copy"
+msgstr "複製"
+
+msgid "CoverBrowser plugin is not enabled, some features will not work correctly."
+msgstr "CoverBrowser 外掛程式未啟用，部分功能無法正常運作。"
+
+msgid "Covers"
+msgstr "封面"
+
+msgid "Create this folder and use as home"
+msgstr "建立此資料夾並設為主資料夾"
+
 msgid "Crop folder custom image"
 msgstr "裁剪資料夾自訂圖片"
+
+msgid "Current home folder:"
+msgstr "目前主資料夾："
 
 msgid "Custom"
 msgstr "自訂"
@@ -176,7 +353,6 @@ msgstr "自訂 RGB"
 
 msgid "Custom separator"
 msgstr "自訂分隔符號"
-
 
 msgid "Custom text"
 msgstr "自訂文字"
@@ -196,16 +372,57 @@ msgstr "破折號"
 msgid "date modified"
 msgstr "修改日期"
 
+msgid "Day brightness"
+msgstr "白天亮度"
+
+msgid "Day brightness time"
+msgstr "白天亮度時間"
+
+msgid "Day brightness time: "
+msgstr "白天亮度時間: "
+
+msgid "Day brightness: "
+msgstr "白天亮度: "
+
+msgid "day streak"
+msgstr "天連續"
+
+msgid "Day warmth"
+msgstr "白天色溫"
+
+msgid "Day warmth time"
+msgstr "白天色溫時間"
+
+msgid "Day warmth time: "
+msgstr "白天色溫時間: "
+
+msgid "Day warmth: "
+msgstr "白天色溫: "
+
+msgid "Debug logging"
+msgstr "除錯記錄"
+
 msgid "default"
 msgstr "預設"
 
 msgid "Delete"
 msgstr "刪除"
 
+msgid "Delete OPDS catalog?"
+msgstr "刪除 OPDS 目錄？"
+
+msgid "Delete preset?"
+msgstr "刪除預設？"
+
+msgid "Descending"
+msgstr "降冪"
+
 msgid "Description"
 msgstr "簡介"
-msgid "Developer"
-msgstr "開發者"
+
+msgid "Description:"
+msgstr "描述："
+
 msgid "Detailed list with cover images and filenames"
 msgstr "含封面與檔名的詳細清單"
 
@@ -218,49 +435,100 @@ msgstr "含中繼資料的詳細清單（無圖片）"
 msgid "Device: "
 msgstr "裝置: "
 
+msgid "Dictionary lookup"
+msgstr "字典查詢"
+
+msgid "Disable bottom menu swipe"
+msgstr "停用底部選單上滑"
+
+msgid "Disable context menu"
+msgstr "停用右鍵選單"
+
+msgid "Disable multi-word selection"
+msgstr "停用多詞選取"
+
+msgid "Disable settings panel"
+msgstr "停用設定面板"
+
+msgid "Disable word search on hold"
+msgstr "停用長按字詞搜尋"
+
 msgid "Disk space"
 msgstr "磁碟空間"
+
+msgid "Display"
+msgstr "顯示"
 
 msgid "Display mode"
 msgstr "顯示模式"
 
+msgid "Done"
+msgstr "完成"
+
+msgid "Dots"
+msgstr "圓點"
+
+msgid "Download"
+msgstr "下載"
+
 msgid "Download failed: "
 msgstr "下載失敗: "
 
-msgid "Downloading Zen UI update…"
-msgstr "正在下載 Zen UI 更新…"
+msgid "Downloaded"
+msgstr "已下載"
 
-msgid "Edit  ▶"
-msgstr "編輯  ▶"
+msgid "Edit"
+msgstr "編輯"
 
-msgid "Enable bottom menu"
-msgstr "啟用底部選單"
+msgid "Enable"
+msgstr "啟用"
 
-msgid "Enable bottom nav bar"
-msgstr "啟用底部導覽列"
+msgid "Enable bottom swipe"
+msgstr "啟用底部上滑"
 
-msgid "Zen highlight menu"
-msgstr ""
+msgid "Enable brightness schedule"
+msgstr "啟用亮度排程"
 
 msgid "Enable custom status bar"
 msgstr "啟用自訂狀態列"
 
-msgid "Enable quick settings panel"
-msgstr "啟用快速設定面板"
+msgid "Enable KOReader verbose debug logging. Logs are written to koreader.log. Takes effect immediately."
+msgstr "啟用 KOReader 詳細除錯記錄。記錄寫入 koreader.log，立即生效。"
+
+msgid "Enable night mode schedule"
+msgstr "啟用夜間模式排程"
+
+msgid "Enable page browser"
+msgstr "啟用頁面瀏覽器"
 
 msgid "Enable reader clock"
 msgstr "啟用閱讀器時鐘"
 
+msgid "Enable warmth schedule"
+msgstr "啟用色溫排程"
+
+msgid "Enable Zen UI enhancements to the OPDS browser: cover art, list view, hold menu, and navigation improvements."
+msgstr "啟用 Zen UI 對 OPDS 瀏覽器的增強：封面圖、清單視圖、長按選單及導覽改進。"
+
 msgid "Exit"
 msgstr "結束"
 
-msgid "Failed to unpack the update. You can install it manually."
-msgstr "解壓縮更新失敗。您可以手動安裝。"
+msgid "Extract and cache book metadata and cover images for books in the current directory. Requires CoverBrowser plugin."
+msgstr "提取並快取目前目錄下書籍的元資料和封面圖。需要 CoverBrowser 外掛程式。"
+
+msgid "Extract metadata"
+msgstr "提取元資料"
+
+msgid "Failed to remove existing plugin."
+msgstr "刪除現有外掛程式失敗。"
+
+msgid "Failed to unpack update."
+msgstr "解壓縮更新包失敗。"
 
 msgid "Favorites"
 msgstr "我的最愛"
 
-msgid "File browser"
+msgid "File Browser"
 msgstr "檔案瀏覽器"
 
 msgid "File search"
@@ -269,13 +537,13 @@ msgstr "檔案搜尋"
 msgid "Filebrowser"
 msgstr "檔案管理員"
 
-msgid "FileBrowser"
-msgstr "檔案管理員"
-
 msgid "Filebrowser plugin is not installed."
 msgstr "Filebrowser 外掛未安裝。"
 
 msgid "Finished"
+msgstr "已讀完"
+
+msgid "finished"
 msgstr "已讀完"
 
 msgid "Firmware: "
@@ -287,8 +555,17 @@ msgstr "資料夾"
 msgid "Folder name centered"
 msgstr "資料夾名稱置中"
 
+msgid "Folder name opaque background"
+msgstr "資料夾名稱不透明背景"
+
+msgid "Folder name position"
+msgstr "資料夾名稱位置"
+
 msgid "Folder presets"
 msgstr "資料夾預設"
+
+msgid "Folders"
+msgstr "資料夾"
 
 msgid "Folders and files mixed"
 msgstr "資料夾與檔案混合"
@@ -305,23 +582,38 @@ msgstr "字型大小："
 msgid "Font:"
 msgstr "字型："
 
+msgid "Force sync"
+msgstr "強制同步"
+
+msgid "Force sync all catalogs"
+msgstr "強制同步所有目錄"
+
 msgid "Format: R,G,B (0-255)"
 msgstr "格式: R,G,B (0-255)"
 
-msgid "Brightness"
-msgstr "亮度"
+msgid "Gallery view"
+msgstr "圖庫視圖"
+
+msgid "Get Started"
+msgstr "開始使用"
+
+msgid "Global"
+msgstr "全域"
 
 msgid "Green"
 msgstr "綠色"
 
-msgid "Hide up folders"
-msgstr "隱藏上層資料夾"
+msgid "Hide finished books"
+msgstr "隱藏已讀完書籍"
 
 msgid "Hide list borders"
 msgstr "隱藏列表邊框"
 
+msgid "Hide up folder"
+msgstr "隱藏上層資料夾"
+
 msgid "Highlight / Lookup"
-msgstr ""
+msgstr "醒目標示 / 查詢"
 
 msgid "History"
 msgstr "歷史記錄"
@@ -329,14 +621,26 @@ msgstr "歷史記錄"
 msgid "Home"
 msgstr "首頁"
 
-msgid "Items"
-msgstr "項目"
+msgid "Home Folder"
+msgstr "主資料夾"
+
+msgid "Home folder"
+msgstr "主資料夾"
+
+msgid "Hour"
+msgstr "時"
+
+msgid "Install dictionary"
+msgstr "安裝字典"
 
 msgid "items per page"
 msgstr "每頁項目數"
 
 msgid "Items per page"
 msgstr "每頁項目數"
+
+msgid "Keep existing settings"
+msgstr "保留現有設定"
 
 msgid "Keywords"
 msgstr "關鍵字"
@@ -362,11 +666,41 @@ msgstr "最新版本"
 msgid "Left"
 msgstr "左"
 
+msgid "Left items"
+msgstr "左側項目"
+
 msgid "Library"
 msgstr "書庫"
 
+msgid "Library View"
+msgstr "圖書館視圖"
+
+msgid "List (basic)"
+msgstr "清單（基礎）"
+
+msgid "List (detailed)"
+msgstr "清單（詳細）"
+
+msgid "List - detailed titles and metadata"
+msgstr "列表 — 詳細標題和元資料"
+
+msgid "List - detailed titles and metadata"
+msgstr "清單 — 詳細標題和元資料"
+
 msgid "List: "
 msgstr "清單: "
+
+msgid "Lock home folder"
+msgstr "鎖定主資料夾"
+
+msgid "Lockdown"
+msgstr "鎖定模式"
+
+msgid "Lockdown mode"
+msgstr "鎖定模式"
+
+msgid "Magnify UI"
+msgstr "放大介面"
 
 msgid "Manga"
 msgstr "漫畫"
@@ -377,14 +711,23 @@ msgstr "未找到漫畫資料夾: "
 msgid "Manga tab action: "
 msgstr "漫畫標籤動作: "
 
-msgid "Max"
-msgstr "最大"
+msgid "Manual"
+msgstr "手動"
 
 msgid "Menu"
 msgstr "選單"
 
 msgid "Middle dot"
 msgstr "中間點"
+
+msgid "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc."
+msgstr "圖書館視圖中的極簡狀態列。\n可自訂——只顯示您需要的內容：時間、電量等。"
+
+msgid "Minute"
+msgstr "分"
+
+msgid "Mosaic"
+msgstr "網格"
 
 msgid "Mosaic and detailed list settings"
 msgstr "馬賽克與詳細清單設定"
@@ -394,6 +737,12 @@ msgstr "封面馬賽克"
 
 msgid "Mosaic with text"
 msgstr "文字馬賽克"
+
+msgid "Mosaic - large cover thumbnails"
+msgstr "網格 — 大封面縮圖"
+
+msgid "Mosaic - large cover thumbnails"
+msgstr "網格 — 大封面縮圖"
 
 msgid "Move"
 msgstr "移動"
@@ -413,8 +762,17 @@ msgstr "名稱（自然排序）"
 msgid "Navbar"
 msgstr "導覽列"
 
+msgid "Navbar Tabs"
+msgstr "導航標籤"
+
+msgid "Navigation Bar"
+msgstr "導航列"
+
 msgid "New"
 msgstr "New"
+
+msgid "New collection"
+msgstr "新增收藏集"
 
 msgid "New folder"
 msgstr "新增資料夾"
@@ -437,74 +795,11 @@ msgstr "下一頁"
 msgid "Night"
 msgstr "夜間"
 
-msgid "Night mode schedule"
-msgstr "夜間模式排程"
+msgid "Night brightness"
+msgstr "夜間亮度"
 
-msgid "Enable night mode schedule"
-msgstr "啟用夜間模式排程"
-
-msgid "Night mode on: "
-msgstr "夜間模式開啟: "
-
-msgid "Night mode off: "
-msgstr "夜間模式關閉: "
-
-msgid "Night mode on time"
-msgstr "夜間模式開啟時間"
-
-msgid "Night mode off time"
-msgstr "夜間模式關閉時間"
-
-msgid "Hour"
-msgstr "時"
-
-msgid "Minute"
-msgstr "分"
-
-msgid "Global"
-msgstr "全域"
-
-msgid "Warmth schedule"
-msgstr "色溫排程"
-
-msgid "Enable warmth schedule"
-msgstr "啟用色溫排程"
-
-msgid "Day warmth time: "
-msgstr "白天色溫時間: "
-
-msgid "Day warmth: "
-msgstr "白天色溫: "
-
-msgid "Night warmth time: "
-msgstr "夜間色溫時間: "
-
-msgid "Night warmth: "
-msgstr "夜間色溫: "
-
-msgid "Day warmth time"
-msgstr "白天色溫時間"
-
-msgid "Night warmth time"
-msgstr "夜間色溫時間"
-
-msgid "Day warmth"
-msgstr "白天色溫"
-
-msgid "Night warmth"
-msgstr "夜間色溫"
-
-msgid "Brightness schedule"
-msgstr "亮度排程"
-
-msgid "Enable brightness schedule"
-msgstr "啟用亮度排程"
-
-msgid "Day brightness time: "
-msgstr "白天亮度時間: "
-
-msgid "Day brightness: "
-msgstr "白天亮度: "
+msgid "Night brightness time"
+msgstr "夜間亮度時間"
 
 msgid "Night brightness time: "
 msgstr "夜間亮度時間: "
@@ -512,26 +807,35 @@ msgstr "夜間亮度時間: "
 msgid "Night brightness: "
 msgstr "夜間亮度: "
 
-msgid "Day brightness time"
-msgstr "白天亮度時間"
-
-msgid "Night brightness time"
-msgstr "夜間亮度時間"
-
-msgid "Day brightness"
-msgstr "白天亮度"
-
-msgid "Night brightness"
-msgstr "夜間亮度"
-
 msgid "Night mode"
 msgstr "夜間模式"
 
-msgid "No download URL found. Check your network connection and try again."
-msgstr "未找到下載連結。請檢查網路連線後重試。"
+msgid "Night mode off time"
+msgstr "夜間模式關閉時間"
 
-msgid "No git checkout detected for Zen UI. Use your normal plugin installation/update workflow."
-msgstr "未偵測到 Zen UI 的 git checkout。請使用一般外掛安裝/更新流程。"
+msgid "Night mode off: "
+msgstr "夜間模式關閉: "
+
+msgid "Night mode on time"
+msgstr "夜間模式開啟時間"
+
+msgid "Night mode on: "
+msgstr "夜間模式開啟: "
+
+msgid "Night mode schedule"
+msgstr "夜間模式排程"
+
+msgid "Night warmth"
+msgstr "夜間色溫"
+
+msgid "Night warmth time"
+msgstr "夜間色溫時間"
+
+msgid "Night warmth time: "
+msgstr "夜間色溫時間: "
+
+msgid "Night warmth: "
+msgstr "夜間色溫: "
 
 msgid "No books found"
 msgstr "未找到書籍"
@@ -542,6 +846,9 @@ msgstr "此檔案沒有可用的閱讀引擎或檔案無效。"
 msgid "No separator"
 msgstr "無分隔符號"
 
+msgid "No update asset found."
+msgstr "找不到更新資源。"
+
 msgid "Notion"
 msgstr "Notion"
 
@@ -551,8 +858,8 @@ msgstr "NotionSync"
 msgid "Off"
 msgstr "關閉"
 
-msgid "To Be Read"
-msgstr "待讀"
+msgid "OK"
+msgstr "確定"
 
 msgid "OPDS"
 msgstr "OPDS"
@@ -572,8 +879,41 @@ msgstr "開啟 Rakuyomi"
 msgid "Opening"
 msgstr "正在開啟"
 
+msgid "Order"
+msgstr "順序"
+
+msgctxt "page_count"
+msgid "p."
+msgstr "頁"
+
+msgid "Page Browser"
+msgstr "頁面瀏覽器"
+
+msgid "Page stream"
+msgstr "頁面串流"
+
+msgid "pages"
+msgstr "頁"
+
+msgctxt "page_count_long"
+msgid "pages"
+msgstr "頁"
+
+msgid "Pages + Chapter Time + %"
+msgstr "頁數 + 章節時間 + %"
+
+msgid "Pages and %"
+msgstr "頁數和 %"
+
+msgid "pages today"
+msgstr "今日頁數"
+
 msgid "Partial pages refresh"
 msgstr "局部頁面重新整理"
+
+msgctxt "File"
+msgid "Paste"
+msgstr "貼上"
 
 msgid "percent - unopened - finished last"
 msgstr "進度 - 未開啟 - 已完成排最後"
@@ -583,6 +923,12 @@ msgstr "進度 - 未開啟排最前"
 
 msgid "percent - unopened last"
 msgstr "進度 - 未開啟排最後"
+
+msgid "Personal Records"
+msgstr "個人紀錄"
+
+msgid "Plugin management"
+msgstr "外掛程式管理"
 
 msgid "Portrait list mode"
 msgstr "直向清單模式"
@@ -596,6 +942,9 @@ msgstr "直向馬賽克: "
 msgid "Position"
 msgstr "位置"
 
+msgid "Preset name"
+msgstr "預設名稱"
+
 msgid "Presets"
 msgstr "預設"
 
@@ -605,9 +954,8 @@ msgstr "上一個"
 msgid "Previous page"
 msgstr "上一頁"
 
-msgid "Quick settings"
+msgid "Quick Settings"
 msgstr "快速設定"
-
 
 msgid "QuickRSS"
 msgstr "QuickRSS"
@@ -630,11 +978,14 @@ msgstr "Rakuyomi 外掛未安裝。"
 msgid "RAM usage"
 msgstr "記憶體使用量"
 
+msgid "Read now"
+msgstr "立即閱讀"
+
 msgid "Read status"
 msgstr "閱讀狀態"
 
-msgid "Read status  ▶"
-msgstr "閱讀狀態  ▶"
+msgid "read today"
+msgstr "今日已讀"
 
 msgid "Reader"
 msgstr "閱讀器"
@@ -645,8 +996,17 @@ msgstr "閱讀器時鐘"
 msgid "Reader clock font"
 msgstr "閱讀器時鐘字型"
 
+msgid "Reader Progress"
+msgstr "閱讀進度"
+
 msgid "Reading"
 msgstr "閱讀中"
+
+msgid "reading"
+msgstr "閱讀中"
+
+msgid "Rebooting…"
+msgstr "正在重新啟動…"
 
 msgid "Recently read"
 msgstr "最近閱讀"
@@ -657,11 +1017,26 @@ msgstr "紅色"
 msgid "Refresh navbar"
 msgstr "重新整理導覽列"
 
+msgid "Regular Oxford English"
+msgstr "Regular Oxford English"
+
+msgid "Regular Oxford English (203 MB)"
+msgstr "Regular Oxford English (203 MB)"
+
+msgid "Remove"
+msgstr "移除"
+
+msgid "Remove default"
+msgstr "移除預設"
+
 msgid "Remove from favorites"
 msgstr "從我的最愛移除"
 
 msgid "Rename"
 msgstr "重新命名"
+
+msgid "Require hold to toggle buttons"
+msgstr "需要長按才能切換按鈕"
 
 msgid "Restart"
 msgstr "重新啟動"
@@ -672,6 +1047,12 @@ msgstr "重新開始閱讀"
 msgid "Restart now"
 msgstr "立即重新啟動"
 
+msgid "Restore library view on return"
+msgstr "返回時還原圖書館視圖"
+
+msgid "Resume from page"
+msgstr "從頁面繼續"
+
 msgid "Reverse sorting"
 msgstr "反向排序"
 
@@ -681,8 +1062,14 @@ msgstr "書評"
 msgid "Right"
 msgstr "右"
 
+msgid "Right items"
+msgstr "右側項目"
+
 msgid "Rotate"
 msgstr "旋轉"
+
+msgid "Rounded cover corners"
+msgstr "封面圓角"
 
 msgid "Rows"
 msgstr "列數"
@@ -690,8 +1077,26 @@ msgstr "列數"
 msgid "Run Zen UI update now?\n\nIf this plugin is a git checkout, Zen UI will run a fast-forward pull and then ask for restart."
 msgstr "現在執行 Zen UI 更新？\n\n若此外掛為 git checkout，Zen UI 將執行 fast-forward pull 並請求重新啟動。"
 
+msgid "Save"
+msgstr "儲存"
+
+msgid "Save current settings as preset"
+msgstr "將目前設定儲存為預設"
+
+msgid "Scroll bar style"
+msgstr "捲軸樣式"
+
 msgid "Search"
 msgstr "搜尋"
+
+msgid "Search Book"
+msgstr "搜尋書籍"
+
+msgid "Search Library"
+msgstr "搜尋圖書館"
+
+msgid "Search results"
+msgstr "搜尋結果"
 
 msgid "Select"
 msgstr "選取"
@@ -702,89 +1107,125 @@ msgstr "分隔符號: "
 msgid "Series"
 msgstr "系列"
 
+msgid "series"
+msgstr "個系列"
+
+msgid "Series number"
+msgstr "系列編號"
+
 msgid "Set"
 msgstr "設定"
 
-msgid "Show battery"
-msgstr "顯示電池"
+msgid "Set all gestures to pass-through? Top-right corner in reader will be kept as Toggle bookmark."
+msgstr "將所有手勢設為透傳？閱讀器右上角將保留為切換書籤。"
+
+msgid "Set as default"
+msgstr "設為預設"
+
+msgid "Set file types to sync"
+msgstr "設定要同步的檔案類型"
+
+msgid "Set home folder"
+msgstr "設定主資料夾"
+
+msgid "Set max number of files to sync"
+msgstr "設定最大同步檔案數"
+
+msgid "Set sync folder"
+msgstr "設定同步資料夾"
+
+msgid "Settings & Updates"
+msgstr "設定與更新"
+
+msgid "Setup Guide"
+msgstr "設定指南"
+
+msgid "Short Oxford English"
+msgstr "Short Oxford English"
+
+msgid "Short Oxford English (26 MB)"
+msgstr "Short Oxford English (26 MB)"
 
 msgid "Show bottom border"
 msgstr "顯示底部邊框"
 
-msgid "Show disk space"
-msgstr "顯示磁碟空間"
+msgid "Show brightness slider"
+msgstr "顯示亮度滑桿"
+
+msgid "Show favorite badge"
+msgstr "顯示收藏徽章"
+
+msgid "Show folder covers as gallery"
+msgstr "以圖庫形式顯示資料夾封面"
 
 msgid "Show folder name"
 msgstr "顯示資料夾名稱"
 
+msgid "Show folder name on cover"
+msgstr "在封面上顯示資料夾名稱"
+
+msgid "Show hidden files"
+msgstr "顯示隱藏檔案"
+
 msgid "Show item count on folder covers"
 msgstr "在資料夾封面上顯示項目數量"
 
-msgid "Show brightness"
-msgstr "顯示亮度"
+msgid "Show item underline"
+msgstr "顯示項目底線"
 
-msgid "Show brightness slider"
-msgstr "顯示亮度滑桿"
-
-msgid "Show hidden files outside home folder"
-msgstr "在主資料夾外顯示隱藏檔案"
-
-msgid "Show hidden and unsupported files outside home folder"
-msgstr "在主資料夾外顯示隱藏和不支援的檔案"
-
-msgid "Show in standalone views"
-msgstr "在獨立檢視中顯示"
+msgid "Show KOReader progress bar"
+msgstr "顯示 KOReader 進度條"
 
 msgid "Show labels"
 msgstr "顯示標籤"
 
-msgid "Show progress % on mosaic covers"
-msgstr "在封面馬賽克上顯示進度%"
-
 msgid "Show new banner"
 msgstr "Show new banner"
+
+msgid "Show other items"
+msgstr "顯示其他項目"
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr "在 Zen 按鈕旁顯示其他 KOReader 快速查詢選項。"
 
 msgid "Show page count"
 msgstr "顯示頁數"
 
+msgid "Show progress % on mosaic covers"
+msgstr "在封面馬賽克上顯示進度%"
+
 msgid "Show series number on covers"
 msgstr "在封面上顯示系列編號"
-
-msgid "Rounded cover corners"
-msgstr "封面圓角"
-
-msgid "Show RAM usage"
-msgstr "顯示記憶體使用量"
-
-msgid "Show time"
-msgstr "顯示時間"
 
 msgid "Show top border"
 msgstr "顯示頂部邊框"
 
-msgid "Show top gap"
-msgstr "顯示頂部間距"
-
-msgid "Show other items"
-msgstr ""
-
-msgid "Show other KOReader quick lookup options alongside Zen buttons."
-msgstr ""
-
-msgid "Show Wikipedia"
-msgstr ""
-
 msgid "Show warmth slider"
 msgstr "顯示色溫滑桿"
 
-msgid "Show WiFi"
-msgstr "顯示 WiFi"
+msgid "Show Wikipedia"
+msgstr "顯示維基百科"
 
 msgid "size"
 msgstr "大小"
 
+msgid "Skip"
+msgstr "略過"
+
 msgid "Sleep"
 msgstr "睡眠"
+
+msgid "Sleep Screen"
+msgstr "休眠畫面"
+
+msgid "Sort"
+msgstr "排序"
+
+msgid "Sort authors"
+msgstr "按作者排序"
+
+msgid "Sort books by"
+msgstr "書籍排序方式"
 
 msgid "Sort by"
 msgstr "排序方式"
@@ -792,36 +1233,128 @@ msgstr "排序方式"
 msgid "Sort by: "
 msgstr "排序方式: "
 
+msgid "Sort collection by"
+msgstr "收藏集排序方式"
+
+msgid "Sort folder"
+msgstr "排序資料夾"
+
+msgid "Sort folder by"
+msgstr "資料夾排序方式"
+
+msgid "Sort library"
+msgstr "排序圖書館"
+
+msgid "Sort library by"
+msgstr "圖書館排序方式"
+
+msgid "Sort order"
+msgstr "排序順序"
+
+msgid "Sort series"
+msgstr "按系列排序"
+
 msgid "Space only"
 msgstr "僅空格"
 
 msgid "Space only (small)"
 msgstr "僅空格（小）"
 
+msgid "Stable"
+msgstr "Stable"
+
 msgid "Statistics"
+msgstr "統計"
+
+msgid "Stats"
 msgstr "統計"
 
 msgid "Status bar"
 msgstr "狀態列"
 
+msgid "Status Bar"
+msgstr "狀態列"
+
 msgid "Streak"
 msgstr "連續閱讀"
+
+msgid "Stream from page"
+msgstr "從頁面串流"
+
+msgid "Styling"
+msgstr "樣式"
+
+msgid "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more."
+msgstr "向下滑動可存取快速設定，如亮度、Wi-Fi、夜間模式、禪模式等。"
+
+msgid "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more."
+msgstr "閱讀時從底部向上滑動以開啟頁面瀏覽器。\n\n快速翻閱或跳過章節，瀏覽目錄，管理書籤，調整字型等更多功能。"
+
+msgid "Sync"
+msgstr "同步"
+
+msgid "Sync all catalogs"
+msgstr "同步所有目錄"
 
 msgid "Tabs"
 msgstr "標籤"
 
-msgid "The update will be downloaded and installed. KOReader will then restart."
-msgstr "更新將被下載並安裝。KOReader 隨後將重新啟動。"
+msgid "Tap and hold any book or folder in your library to reveal details."
+msgstr "長按圖書館中的任意書籍或資料夾以查看詳情。"
+
+msgid "The best interface is the one you forget is there.\nNow go get lost in a good book."
+msgstr "最好的介面是讓您忘記它的存在的介面。\n現在去沉浸於一本好書吧。"
+
+msgid "The place for all your books %1"
+msgstr "您所有書籍的存放位置 %1"
 
 msgid "This change requires a restart to take effect."
 msgstr "此更改需要重新啟動才能生效。"
 
+msgid "This is a large file and may take a few minutes. Please wait."
+msgstr "這是一個大型檔案，可能需要幾分鐘。請稍候。"
+
+msgid "This may take a few minutes. Please wait."
+msgstr "可能需要幾分鐘。請稍候。"
+
+msgid "This Month"
+msgstr "本月"
+
+msgid "This Week"
+msgstr "本週"
+
+msgid "This Year"
+msgstr "今年"
+
+msgid "Time"
+msgstr "時間"
+
+msgid "Time Format"
+msgstr "時間格式"
 
 msgid "Title"
 msgstr "標題"
 
-msgid "Toggle"
-msgstr "切換"
+msgid "To Be Read"
+msgstr "待讀"
+
+msgid "Today"
+msgstr "今天"
+
+msgid "total books"
+msgstr "書籍總數"
+
+msgid "total pages read"
+msgstr "總閱讀頁數"
+
+msgid "total read time"
+msgstr "總閱讀時長"
+
+msgid "total time"
+msgstr "總時長"
+
+msgid "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings."
+msgstr "開啟禪模式，將 KOReader 精簡至最基本功能。\n\n消除視覺干擾，享受專注無打擾的閱讀體驗。隨時可從設定退出。"
 
 msgid "type"
 msgstr "類型"
@@ -829,47 +1362,50 @@ msgstr "類型"
 msgid "Underline above icon"
 msgstr "圖示上方底線"
 
+msgid "Uniform covers"
+msgstr "統一封面"
+
 msgid "unknown error"
 msgstr "未知錯誤"
 
 msgid "Unread"
 msgstr "未讀"
 
-msgid "Update"
-msgstr "更新"
+msgid "Update available: "
+msgstr "有可用更新："
 
-msgid "Update available — install "
-msgstr "有可用更新 — 安裝 "
+msgid "Update channel"
+msgstr "更新頻道"
+
+msgid "Update now"
+msgstr "立即更新"
 
 msgid "Update Status"
 msgstr "更新狀態"
 
-msgid "Update Zen UI"
-msgstr "更新 Zen UI"
+msgid "Updated to %1"
+msgstr "已更新至 %1"
 
-msgid "Update Zen UI now?"
-msgstr "立即更新 Zen UI？"
-
-msgid "Update Zen UI to "
-msgstr "將 Zen UI 更新至 "
+msgid "Updating…"
+msgstr "正在更新…"
 
 msgid "USB"
 msgstr "USB"
 
-msgid "Use 24-hour time"
-msgstr "使用 24 小時制"
+msgid "Use current folder"
+msgstr "使用目前資料夾"
 
 msgid "Use default font"
 msgstr "使用預設字型"
-
-msgid "Use current folder"
-msgstr "使用目前資料夾"
 
 msgid "Use home folder"
 msgstr "使用主資料夾"
 
 msgid "Use last folder"
 msgstr "使用上次資料夾"
+
+msgid "Verbose time to chapter end"
+msgstr "詳細的本章剩餘時間"
 
 msgid "Vertical bar"
 msgstr "垂直線"
@@ -880,11 +1416,26 @@ msgstr "可見性"
 msgid "Warmth"
 msgstr "色溫"
 
+msgid "Warmth schedule"
+msgstr "色溫排程"
+
+msgid "Welcome to Zen UI"
+msgstr "歡迎使用 Zen UI"
+
+msgid "What should your device show when it goes to sleep?"
+msgstr "裝置休眠時應顯示什麼？"
+
+msgid "When enabled, icons placed in KOReader's user icons folder override the bundled Zen UI icons. Falls back to Zen UI icons, then KOReader built-ins."
+msgstr "啟用後，放置在 KOReader 使用者圖示資料夾中的圖示將覆寫內建的 Zen UI 圖示。回退順序為 Zen UI 圖示，再到 KOReader 內建圖示。"
+
+msgid "Which time format do you prefer?"
+msgstr "您偏好哪種時間格式？"
+
 msgid "Wi-Fi"
 msgstr "Wi-Fi"
 
-msgid "WiFi"
-msgstr "WiFi"
+msgid "You're All Set"
+msgstr "一切就緒"
 
 msgid "Z-Lib"
 msgstr "Z-Lib"
@@ -895,290 +1446,36 @@ msgstr "Z-Library"
 msgid "Zen"
 msgstr "Zen"
 
-msgid "Lockdown"
-msgstr ""
+msgid "Zen highlight menu"
+msgstr "Zen 醒目標示選單"
 
-msgid "Lockdown mode"
-msgstr ""
+msgid "Zen icon - white background"
+msgstr "Zen圖示 — 白色背景"
 
-msgid "Enable lockdown mode"
-msgstr ""
-
-msgid "Magnify UI"
-msgstr "放大介面"
-
-msgid "Disable context menu"
-msgstr ""
-
-msgid "Require hold to toggle buttons"
-msgstr ""
-
-msgid "Disable settings panel"
-msgstr ""
-
-msgid "Disable bottom menu swipe"
-msgstr ""
-
-msgid "Disable multi-word selection"
-msgstr ""
-
-msgid "Disable word search on hold"
-msgstr ""
+msgid "Zen icon - white background"
+msgstr "Zen 圖示 — 白色背景"
 
 msgid "Zen Mode"
 msgstr "禪模式"
 
+msgid "Zen mode"
+msgstr "Zen 模式"
+
+msgid "Zen OPDS"
+msgstr "Zen OPDS"
 
 msgid "Zen quick lookup"
-msgstr ""
+msgstr "Zen 快速查詢"
 
 msgid "Zen UI"
 msgstr "Zen UI"
 
-msgid "Zen UI is up to date."
-msgstr "Zen UI 已是最新版本。"
-
-msgid "Zen UI Pages + %"
-msgstr ""
-
-msgid "Zen UI Pages + Time + %"
-msgstr ""
-
-msgid "Zen UI Settings"
-msgstr "Zen UI 設定"
-
-msgid "Zen UI update completed. Restart KOReader now?"
-msgstr "Zen UI 更新完成。立即重新啟動 KOReader？"
-
-msgid "Zen UI update failed. Check logs and retry."
-msgstr "Zen UI 更新失敗。請檢查記錄並重試。"
-
-msgid "Zen UI updated successfully. Restart KOReader now?"
-msgstr "Zen UI 更新成功。立即重新啟動 KOReader？"
-
-msgid "Zen UI: "
-msgstr "Zen UI: "
-
-msgctxt "File"
-msgid "Copy"
-msgstr "複製"
-
-msgctxt "File"
-msgid "Paste"
-msgstr "貼上"
-
-msgid "< 1 min left in chapter"
-msgstr "本章剩餘 < 1 分鐘"
-
-msgid "1 min left in chapter"
-msgstr "本章剩餘 1 分鐘"
-
-msgid "%1 mins left in chapter"
-msgstr "本章剩餘 %1 分鐘"
-
-msgid "Verbose time to chapter end"
-msgstr "詳細的本章剩餘時間"
-
-msgid "Reader footer settings"
-msgstr "閱讀器頁腳設定"
-
-msgid "Sort folder  ▶"
-msgstr "資料夾排序  ▶"
-
-msgid "Sort folder by"
-msgstr "資料夾排序方式"
-
-msgid "Clear"
-msgstr "清除"
-
-msgctxt "page_count"
-msgid "p."
-msgstr "頁"
-
-msgctxt "page_count_long"
-msgid "pages"
-msgstr "頁"
-
-msgid "Enable page browser"
-msgstr ""
-
-msgid "Contents"
-msgstr ""
-
-msgid "Font"
-msgstr ""
-
-msgid "Page %d of %d"
-msgstr ""
-
-msgid "All Time"
-msgstr "歷史總計"
-
-msgid "Personal Records"
-msgstr "個人紀錄"
-
-msgid "total read time"
-msgstr "總閱讀時長"
-
-msgid "total pages read"
-msgstr "總閱讀頁數"
-
-msgid "books read"
-msgstr "已讀書籍"
-
-msgid "avg time/book"
-msgstr "平均時長/本"
-
-msgid "best day"
-msgstr "單日最佳"
-
-msgid "best week"
-msgstr "單週最佳"
-
-msgid "best month"
-msgstr "單月最佳"
-
-msgid "Welcome to Zen UI"
-msgstr "歡迎使用 Zen UI"
-
-msgid "A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue."
-msgstr "為您的電子閱讀器打造的極簡、整潔介面。\n\n向左滑動或點選「下一步」繼續。"
-
-msgid "File Browser"
-msgstr "檔案瀏覽器"
-
-msgid "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu."
-msgstr "整潔的極簡圖書館，支援網格封面和清單視圖，減少雜亂，右鍵選單更簡潔。"
-
-msgid "Context Menu"
-msgstr "內容選單"
-
-msgid "Tap and hold any book or folder in your library to reveal details."
-msgstr "長按圖書館中的任意書籍或資料夾以查看詳情。"
-
-msgid "Authors & Series"
-msgstr "作者與系列"
-
-msgid "Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar."
-msgstr "按作者或系列瀏覽整個圖書館。\n隨時從導航列存取這些視圖。"
-
-msgid "Library View"
-msgstr "圖書館視圖"
-
-msgid "Mosaic — large cover thumbnails"
-msgstr "網格 — 大封面縮圖"
-
-msgid "List — detailed titles and metadata"
-msgstr "列表 — 詳細標題和元資料"
-
-msgid "Navigation Bar"
-msgstr "導航列"
-
-msgid "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own"
-msgstr "圖書館底部的簡潔標籤列。\n完全可自訂，隨您所好。"
-
-msgid "Navbar Tabs"
-msgstr "導航標籤"
-
-msgid "Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings."
-msgstr "選擇導航列顯示的標籤頁。\n您可以隨時在設定中重新排列或調整。"
-
-msgid "Quick Settings"
-msgstr "快速設定"
-
-msgid "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more."
-msgstr "向下滑動可存取快速設定，如亮度、Wi-Fi、夜間模式、禪模式等。"
-
-msgid "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings."
-msgstr "開啟禪模式，將 KOReader 精簡至最基本功能。\n\n消除視覺干擾，享受專注無打擾的閱讀體驗。隨時可從設定退出。"
-
-msgid "Status Bar"
-msgstr "狀態列"
-
-msgid "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc."
-msgstr "圖書館視圖中的極簡狀態列。\n可自訂——只顯示您需要的內容：時間、電量等。"
-
-msgid "Sleep Screen"
-msgstr "休眠畫面"
-
-msgid "What should your device show when it goes to sleep?"
-msgstr "裝置休眠時應顯示什麼？"
-
-msgid "Keep existing settings"
-msgstr "保留現有設定"
-
-msgid "Book cover — black background"
-msgstr "書籍封面 — 黑色背景"
-
-msgid "Zen icon — white background"
-msgstr "Zen圖示 — 白色背景"
-
-msgid "Time Format"
-msgstr "時間格式"
-
-msgid "Which time format do you prefer?"
-msgstr "您偏好哪種時間格式？"
-
-msgid "12-hour  (3:30 PM)"
-msgstr "12小時  (下午3:30)"
-
-msgid "24-hour  (15:30)"
-msgstr "24小時  (15:30)"
-
-msgid "An unobtrusive reader view with customizable top clock and bottom progress bar."
-msgstr "簡潔的閱讀視圖，可自訂頂部時鐘和底部進度條。"
-
 msgid "Zen UI defaults"
 msgstr "Zen UI 預設設定"
 
-msgid "Reader Progress"
-msgstr "閱讀進度"
+msgid "Zen UI is up to date."
+msgstr "Zen UI 已是最新版本。"
 
-msgid "Choose a preset for your reading progress bar."
-msgstr "為您的閱讀進度條選擇預設。"
-
-msgid "Chapter Time + %"
-msgstr "章節時間 + %"
-
-msgid "Pages and %"
-msgstr "頁數和 %"
-
-msgid "Pages + Chapter Time + %"
-msgstr "頁數 + 章節時間 + %"
-
-msgid "Centered Pages"
-msgstr "置中頁數"
-
-msgid "Page Browser"
-msgstr "頁面瀏覽器"
-
-msgid "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more."
-msgstr "閱讀時從底部向上滑動以開啟頁面瀏覽器。\n\n快速翻閱或跳過章節，瀏覽目錄，管理書籤，調整字型等更多功能。"
-
-msgid "Settings & Updates"
-msgstr "設定與更新"
-
-msgid "All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader."
-msgstr "所有設定集中在一個統一標籤頁。\n直接在電子閱讀器上檢查並安裝 Zen UI 更新。"
-
-msgid "You're All Set"
-msgstr "一切就緒"
-
-msgid "The best interface is the one you forget is there.\nNow go get lost in a good book."
-msgstr "最好的介面是讓您忘記它的存在的介面。\n現在去沉浸於一本好書吧。"
-
-msgid "Home Folder"
-msgstr "主資料夾"
-
-msgid "The place for all your books %1"
-msgstr "您所有書籍的存放位置 %1"
-
-msgid "Create this folder and use as home"
-msgstr "建立此資料夾並設為主資料夾"
-
-msgid "Choose a different folder"
-msgstr "選擇其他資料夾"
-
-msgid "Skip"
-msgstr "略過"
+msgid "Zen UI: "
+msgstr "Zen UI: "
 

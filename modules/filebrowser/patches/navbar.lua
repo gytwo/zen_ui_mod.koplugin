@@ -292,6 +292,19 @@ local function apply_navbar()
             return
         end
 
+        if config.news_action == "rssreader" then
+            local rssreader = fm.rssreader
+            if rssreader then
+                rssreader:openAccountList()
+            else
+                local InfoMessage = require("ui/widget/infomessage")
+                UIManager:show(InfoMessage:new{
+                    text = _("RSS Reader plugin is not installed."),
+                })
+            end
+            return
+        end
+
         -- Default: open QuickRSS
         hookQuickRSSInit()
         local ok, QuickRSSUI = pcall(require, "modules/ui/feed_view")

@@ -278,6 +278,8 @@ function M.build(ctx)
                         text_func = function()
                             if config.navbar.news_action == "folder" then
                                 return _("News tab action: ") .. _("Folder")
+                            elseif config.navbar.news_action == "rssreader" then
+                                return _("News tab action: ") .. _("RSS Reader")
                             end
                             return _("News tab action: ") .. _("QuickRSS")
                         end,
@@ -285,9 +287,20 @@ function M.build(ctx)
                         sub_item_table = {
                             {
                                 text = _("Open QuickRSS"),
-                                checked_func = function() return config.navbar.news_action ~= "folder" end,
+                                checked_func = function()
+                                    return config.navbar.news_action ~= "folder"
+                                        and config.navbar.news_action ~= "rssreader"
+                                end,
                                 callback = function()
                                     config.navbar.news_action = "quickrss"
+                                    save_and_apply_navbar()
+                                end,
+                            },
+                            {
+                                text = _("Open RSS Reader"),
+                                checked_func = function() return config.navbar.news_action == "rssreader" end,
+                                callback = function()
+                                    config.navbar.news_action = "rssreader"
                                     save_and_apply_navbar()
                                 end,
                             },

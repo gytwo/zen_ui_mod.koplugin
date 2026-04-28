@@ -1208,7 +1208,7 @@ local function apply_navbar()
     local orig_setupLayout = FileManager.setupLayout
 
     function FileManager:setupLayout()
-        orig_setupLayout(self)
+        if orig_setupLayout then orig_setupLayout(self) end
         self._navbar_injected = false
         injectNavbar(self)
         -- On reinit (FM already in the window stack), dirty-mark so the updated navbar

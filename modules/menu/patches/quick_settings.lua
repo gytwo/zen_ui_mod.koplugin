@@ -53,7 +53,7 @@ local function apply_quick_settings()
     -- ============================================================
 
     local config_default = {
-        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "notion", "streak", "opds", "filebrowser", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "calibre_search", "notion", "streak", "opds", "filebrowser", "puzzle", "stats_progress", "stats_calendar", "restart", "exit", "sleep" },
         show_buttons = {
             wifi = true,
             night = true,
@@ -66,6 +66,7 @@ local function apply_quick_settings()
             cloud = false,
             zlibrary = false,
             calibre = false,
+            calibre_search = false,
             restart = true,
             exit = true,
             sleep = true,
@@ -74,6 +75,9 @@ local function apply_quick_settings()
             streak = false,
             opds = false,
             filebrowser = false,
+            puzzle = false,
+            stats_progress = false,
+            stats_calendar = false,
         },
         show_frontlight = true,
         show_warmth = true,
@@ -154,6 +158,14 @@ local function apply_quick_settings()
     end
 
     loadConfig()
+
+    -- Returns true if a plugin slot is loaded in the active UI; fails open if no UI yet.
+    local function hasPlugin(slot)
+        local ok_f, FM = pcall(require, "apps/filemanager/filemanager")
+        local ok_r, RU = pcall(require, "apps/reader/readerui")
+        local ui = (ok_f and FM.instance) or (ok_r and RU.instance)
+        return ui == nil or ui[slot] ~= nil
+    end
 
     -- ============================================================
     -- Button definitions (data-driven)
@@ -285,6 +297,7 @@ local function apply_quick_settings()
         quickrss = {
             icon = "quick_quickrss",
             label = _("QuickRSS"),
+            visible_func = function() local ok = pcall(require, "modules/ui/feed_view"); return ok end,
             callback = function()
                 local ok, QuickRSSUI = pcall(require, "modules/ui/feed_view")
                 if ok and QuickRSSUI then
@@ -302,6 +315,7 @@ local function apply_quick_settings()
         cloud = {
             icon = "quick_cloud",
             label = _("Cloud"),
+            visible_func = function() return hasPlugin("cloudstorage") end,
             callback = function()
                 UIManager:broadcastEvent(Event:new("ShowCloudStorage"))
             end,
@@ -309,13 +323,24 @@ local function apply_quick_settings()
         zlibrary = {
             icon = "quick_zlib",
             label = _("Z-Lib"),
+            visible_func = function() return hasPlugin("zlibrary") end,
             callback = function()
                 UIManager:broadcastEvent(Event:new("ZlibrarySearch"))
+            end,
+        },
+        calibre_search = {
+            icon = "quick_search",
+            label = _("Cal. Search"),
+            visible_func = function() return hasPlugin("calibre") end,
+            callback = function(touch_menu)
+                touch_menu:closeMenu()
+                UIManager:broadcastEvent(Event:new("CalibreSearch"))
             end,
         },
         calibre = {
             icon = "quick_calibre",
             label = _("Calibre"),
+            visible_func = function() return hasPlugin("wireless") end,
             active_func = function()
                 local CW = package.loaded["wireless"]
                 return CW ~= nil and CW.calibre_socket ~= nil
@@ -335,6 +360,7 @@ local function apply_quick_settings()
     	notion = {
             icon = "quick_notion",
             label = _("NotionSync"),
+            visible_func = function() return hasPlugin("NotionSync") end,
             callback = function()
                 local ok_r, ReaderUI = pcall(require, "apps/reader/readerui")
                 local ok_f, FileManager = pcall(require, "apps/filemanager/filemanager")
@@ -347,6 +373,7 @@ local function apply_quick_settings()
         streak = {
             icon = "quick_streak",
             label = _("Streak"),
+            visible_func = function() return hasPlugin("readingstreak") end,
             callback = function()
                 UIManager:broadcastEvent(Event:new("ShowReadingStreakCalendar"))
             end,
@@ -354,6 +381,7 @@ local function apply_quick_settings()
         opds = {
             icon = "quick_opds",
             label = _("OPDS"),
+            visible_func = function() return hasPlugin("opds") end,
             callback = function(touch_menu)
                 touch_menu:closeMenu()
                 UIManager:broadcastEvent(Event:new("ShowOPDSCatalog"))
@@ -413,9 +441,37 @@ local function apply_quick_settings()
                 require("modules/settings/zen_settings_apply").prompt_restart()
             end,
         },
+        puzzle = {
+            icon = "quick_puzzle",
+            label = _("Puzzle"),
+            visible_func = function() return hasPlugin("slidepuzzle") end,
+            callback = function(touch_menu)
+                touch_menu:closeMenu()
+                UIManager:broadcastEvent(Event:new("SlidePuzzleOpen"))
+            end,
+        },
+        stats_progress = {
+            icon = "quick_stats_progress",
+            label = _("Progress"),
+            visible_func = function() return hasPlugin("statistics") end,
+            callback = function(touch_menu)
+                touch_menu:closeMenu()
+                UIManager:broadcastEvent(Event:new("ShowReaderProgress"))
+            end,
+        },
+        stats_calendar = {
+            icon = "quick_stats_calendar",
+            label = _("Calendar"),
+            visible_func = function() return hasPlugin("statistics") end,
+            callback = function(touch_menu)
+                touch_menu:closeMenu()
+                UIManager:broadcastEvent(Event:new("ShowCalendarView"))
+            end,
+        },
         filebrowser = {
             icon = "quick_filebrowser",
             label = _("Filebrowser"),
+            visible_func = function() return hasPlugin("filebrowser") end,
             active_func = function()
                 -- Fast check: just test if the pidfile exists
                 local pid_path = "/tmp/filebrowser_koreader.pid"

@@ -18,26 +18,55 @@ function M.build(ctx)
         return utils.make_enable_feature_item(feature, text, config, save_and_apply)
     end
 
+    -- Resolve UI instance once for plugin-availability checks (fail-open if nil).
+    local _ui
+    do
+        local ok_f, FM = pcall(require, "apps/filemanager/filemanager")
+        local ok_r, RU = pcall(require, "apps/reader/readerui")
+        _ui = (ok_f and FM.instance) or (ok_r and RU.instance)
+    end
+    -- Returns true when the plugin slot exists on the UI, or when the UI is
+    -- unavailable (fail-open so we never silently hide a reachable button).
+    local function hasPlugin(slot)
+        return _ui == nil or _ui[slot] ~= nil
+    end
+
     local quick_button_items = {
-        { key = "wifi",        text = _("Wi-Fi")          },
-        { key = "night",       text = _("Night mode")     },
-        { key = "zen",         text = _("Zen mode")       },
-        { key = "lockdown",    text = _("Lockdown")        },
-        { key = "rotate",      text = _("Rotate")         },
-        { key = "usb",         text = _("USB")            },
-        { key = "search",      text = _("File search")    },
-        { key = "quickrss",    text = _("QuickRSS")       },
-        { key = "cloud",       text = _("Cloud storage")  },
-        { key = "zlibrary",    text = _("Z-Library")      },
-        { key = "calibre",     text = _("Calibre")        },
-        { key = "notion",      text = _("Notion")         },
-        { key = "streak",      text = _("Streak")         },
-        { key = "opds",        text = _("OPDS")           },
-        { key = "filebrowser", text = _("Filebrowser")    },
-        { key = "restart",     text = _("Restart")        },
-        { key = "exit",        text = _("Exit")           },
-        { key = "sleep",       text = _("Sleep")          },
+        { key = "wifi",    text = _("Wi-Fi")       },
+        { key = "night",   text = _("Night mode")  },
+        { key = "zen",     text = _("Zen mode")    },
+        { key = "lockdown",text = _("Lockdown")    },
+        { key = "rotate",  text = _("Rotate")      },
+        { key = "usb",     text = _("USB")         },
+        { key = "search",  text = _("File search") },
+        { key = "restart", text = _("Restart")     },
+        { key = "exit",    text = _("Exit")        },
+        { key = "sleep",   text = _("Sleep")       },
+        -- Optional: only shown when the plugin/feature is detected.
+        { key = "quickrss",       text = _("QuickRSS"),        detect = function() local ok = pcall(require, "modules/ui/feed_view"); return ok end },
+        { key = "cloud",          text = _("Cloud storage"),   detect = function() return hasPlugin("cloudstorage") end },
+        { key = "zlibrary",       text = _("Z-Library"),       detect = function() return hasPlugin("zlibrary") end },
+        { key = "calibre",        text = _("Calibre"),         detect = function() return hasPlugin("wireless") end },
+        { key = "calibre_search", text = _("Calibre Search"),  detect = function() return hasPlugin("calibre") end },
+        { key = "notion",         text = _("Notion"),          detect = function() return hasPlugin("NotionSync") end },
+        { key = "streak",         text = _("Streak"),          detect = function() return hasPlugin("readingstreak") end },
+        { key = "opds",           text = _("OPDS"),            detect = function() return hasPlugin("opds") end },
+        { key = "filebrowser",    text = _("Filebrowser"),     detect = function() return hasPlugin("filebrowser") end },
+        { key = "puzzle",         text = _("Slide Puzzle"),    detect = function() return hasPlugin("slidepuzzle") end },
+        { key = "stats_progress", text = _("Stats: Progress"), detect = function() return hasPlugin("statistics") end },
+        { key = "stats_calendar", text = _("Stats: Calendar"), detect = function() return hasPlugin("statistics") end },
     }
+
+    -- Remove any button whose plugin/feature is not detected.
+    do
+        local filtered = {}
+        for _, item in ipairs(quick_button_items) do
+            if not item.detect or item.detect() then
+                filtered[#filtered + 1] = item
+            end
+        end
+        quick_button_items = filtered
+    end
 
     table.sort(quick_button_items, function(a, b) return a.text < b.text end)
 

@@ -411,14 +411,18 @@ local function apply_page_browser()
             end
             table.insert(self.title_bar, make_right_btn("appbar.navigation", right_x - slot_w * toc_slot, open_toc, _toc_icon_path))
 
-            -- Restore last-used layout; default to single page if no preference saved.
+            -- Restore last-used layout; default to grid so thumbnails are small
+            -- and render quickly on slower devices (e.g. Kindle PW4).
+            -- Single-page mode is only used when the user explicitly chose it.
             local _saved_layout = G_reader_settings
                 and G_reader_settings:readSetting("zen_page_browser_layout")
-            if _saved_layout ~= "grid" then
+            if _saved_layout == "single" then
                 self._zen_nb_cols_override = 1
                 self._zen_nb_rows_override = 1
-                self:updateLayout()
             end
+            -- Always re-run updateLayout so the modified title bar is captured
+            -- in self[1] (the first call happened inside _orig_init).
+            self:updateLayout()
         end
 
         -- ----------------------------------------------------------------

@@ -253,6 +253,7 @@ local function apply_quick_settings()
         exit = {
             icon = "quick_exit",
             label = _("Exit"),
+            visible_func = function() return Device:hasExitOptions() end,
             callback = function()
                 UIManager:show(ConfirmBox:new{
                     text = _("Are you sure you want to exit KOReader?"),
@@ -462,7 +463,10 @@ local function apply_quick_settings()
         local visible_buttons = {}
         for _, id in ipairs(config.button_order) do
             if config.show_buttons[id] and button_defs[id] then
-                table.insert(visible_buttons, { id = id, def = button_defs[id] })
+                local def = button_defs[id]
+                if not def.visible_func or def.visible_func() then
+                    table.insert(visible_buttons, { id = id, def = def })
+                end
             end
         end
 
@@ -583,7 +587,7 @@ local function apply_quick_settings()
         }
 
         local fl_group = VerticalGroup:new{ align = "center" }
-        if config.show_frontlight then
+        if config.show_frontlight and Device:hasFrontlight() then
             fl_group = build_brightness_slider(touch_menu, slider_opts)
         end
 

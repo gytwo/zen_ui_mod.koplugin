@@ -24,11 +24,11 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Logs**
-If applicable, add any logs related to your problem.
+If applicable, add the crash.log file.
 
 **please complete the following information:**
- - OS: [e.g. Ubuntu 22.04, Linux, Windows]
- - Browser: [e.g. chrome, safari]
+ - Device/OS: [e.g. Kindle PW12, Pocketbook, Kobo Clara]
+ - KOReader version: [e.g. 2026.03]
  - App Version: [e.g. 1.1.0]
 
 **Additional context**

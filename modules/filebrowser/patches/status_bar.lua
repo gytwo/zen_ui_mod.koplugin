@@ -1049,6 +1049,7 @@ local function apply_status_bar()
 
     -- Refresh the filebrowser status bar whenever any TouchMenu closes
     -- (e.g. after changing settings, toggling night mode, etc.)
+    -- Guard: skip if a fullscreen overlay (e.g. QuickstartScreen) is now on top.
     local TouchMenu = require("ui/widget/touchmenu")
     local orig_tm_close = TouchMenu.onCloseWidget
     TouchMenu.onCloseWidget = function(self_tm)
@@ -1056,8 +1057,14 @@ local function apply_status_bar()
         local fm = FileManager.instance
         if fm and is_enabled() then
             UIManager:nextTick(function()
-                if FileManager.instance == fm then
+                if FileManager.instance ~= fm then return end
+                local stack = UIManager._window_stack
+                local top = stack and stack[#stack]
+                local top_widget = top and top.widget
+                if top_widget == fm or top_widget == fm.show_parent then
                     fm:_updateStatusBar()
+                elseif top_widget and top_widget._zen_status_refresh then
+                    top_widget._zen_status_refresh()
                 end
             end)
         end

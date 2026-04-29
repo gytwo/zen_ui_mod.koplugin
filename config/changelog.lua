@@ -12,7 +12,7 @@ return {
     ["1.0.2"] = {
         "Automatically disable incompatible plugins",
         "Access reader menu from page browser",
-        'Add Report a "Report a Bug" button in Zen Settings > About',
+        'Add "Report a Bug" button in Zen Settings > About',
         "Add in-app changelogs",
         "Add new quick settings buttons, hide when plugin not installed",
         "Add Bulgarian translation",

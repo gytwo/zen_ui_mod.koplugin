@@ -80,17 +80,13 @@ function M.get_plugin_version(plugin)
     end
 
     -- Reliable fallback: load _meta.lua directly from this plugin's root.
-    local src = debug.getinfo(1, "S").source or ""
-    if src:sub(1, 1) == "@" then
-        local this_file = src:sub(2)
-        local plugin_root = this_file:match("^(.*)/modules/settings/zen_settings_utils%.lua$")
-        if plugin_root then
-            local ok_file, file_meta = pcall(dofile, plugin_root .. "/_meta.lua")
-            if ok_file and type(file_meta) == "table" then
-                value = M.first_non_empty(file_meta.version)
-                if value then
-                    return value
-                end
+    local plugin_root = require("common/plugin_root")
+    if plugin_root then
+        local ok_file, file_meta = pcall(dofile, plugin_root .. "/_meta.lua")
+        if ok_file and type(file_meta) == "table" then
+            value = M.first_non_empty(file_meta.version)
+            if value then
+                return value
             end
         end
     end

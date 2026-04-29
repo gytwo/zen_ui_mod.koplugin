@@ -6,15 +6,12 @@ local function apply_screensaver_cover()
     -- Resolve both SVG variants from this file's path at apply-time.
     local _icons_dir
     do
-        local src = debug.getinfo(1, "S").source or ""
-        if src:sub(1, 1) == "@" then
-            local root = src:sub(2):match("^(.*)/modules/")
-            if root then
-                local lfs = require("libs/libkoreader-lfs")
-                local p = root .. "/icons/zen_ui.svg"
-                if lfs.attributes(p, "mode") == "file" then
-                    _icons_dir = root .. "/icons/"
-                end
+        local root = require("common/plugin_root")
+        if root then
+            local lfs = require("libs/libkoreader-lfs")
+            local p = root .. "/icons/zen_ui.svg"
+            if lfs.attributes(p, "mode") == "file" then
+                _icons_dir = root .. "/icons/"
             end
         end
     end

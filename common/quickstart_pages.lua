@@ -11,11 +11,7 @@ local M = {}
 local _ = require("gettext")
 local T = require("ffi/util").template
 
-local _plugin_root = (function()
-    local src = debug.getinfo(1, "S").source or ""
-    if src:sub(1, 1) ~= "@" then return "" end
-    return src:sub(2):match("^(.*)/common/[^/]+%.lua$") or ""
-end)()
+local _plugin_root = require("common/plugin_root") or ""
 
 local function img(rel)
     return _plugin_root .. "/images/quickstart/" .. rel

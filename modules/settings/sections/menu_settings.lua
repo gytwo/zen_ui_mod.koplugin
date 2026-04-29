@@ -44,7 +44,7 @@ function M.build(ctx)
         { key = "sleep",   text = _("Sleep")       },
         -- Optional: only shown when the plugin/feature is detected.
         { key = "quickrss",       text = _("QuickRSS"),        detect = function() local ok = pcall(require, "modules/ui/feed_view"); return ok end },
-        { key = "cloud",          text = _("Cloud storage"),   detect = function() return hasPlugin("cloudstorage") end },
+        { key = "cloud",          text = _("Cloud storage") },
         { key = "zlibrary",       text = _("Z-Library"),       detect = function() return hasPlugin("zlibrary") end },
         { key = "calibre",        text = _("Calibre"),         detect = function() return hasPlugin("wireless") end },
         { key = "calibre_search", text = _("Calibre Search"),  detect = function() return hasPlugin("calibre") end },

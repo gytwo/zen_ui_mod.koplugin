@@ -10,12 +10,7 @@ local GITHUB_RELEASES_URL = "https://api.github.com/repos/AnthonyGress/zen_ui.ko
 
 -- Resolve the plugin root directory from this file's own path so the module
 -- works regardless of where KOReader is installed.
-local PLUGIN_ROOT = (function()
-    local src = debug.getinfo(1, "S").source or ""
-    if src:sub(1, 1) == "@" then
-        return src:sub(2):match("^(.*)/modules/settings/zen_updater%.lua$")
-    end
-end)()
+local PLUGIN_ROOT = require("common/plugin_root")
 
 local M = {}
 

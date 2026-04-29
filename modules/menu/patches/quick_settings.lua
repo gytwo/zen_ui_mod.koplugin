@@ -36,11 +36,8 @@ local function apply_quick_settings()
     -- Resolve plugin icons/ dir from this file's path at apply-time.
     local _icons_dir
     do
-        local src = debug.getinfo(1, "S").source or ""
-        if src:sub(1,1) == "@" then
-            local root = src:sub(2):match("^(.*)/modules/")
-            if root then _icons_dir = root .. "/icons/" end
-        end
+        local root = require("common/plugin_root")
+        if root then _icons_dir = root .. "/icons/" end
     end
 
     local function is_enabled()
@@ -318,7 +315,6 @@ local function apply_quick_settings()
         cloud = {
             icon = "quick_cloud",
             label = _("Cloud"),
-            visible_func = function() return hasPlugin("cloudstorage") end,
             callback = function()
                 UIManager:broadcastEvent(Event:new("ShowCloudStorage"))
             end,

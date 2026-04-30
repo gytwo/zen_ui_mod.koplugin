@@ -81,6 +81,7 @@ function ZenUI:_initModules()
 end
 
 function ZenUI:init()
+    i18n.install()  -- reinstall after any context-switch uninstall (onCloseWidget removes it)
     self.config = ConfigManager.load()
     _zen_plugin_ref = self
 

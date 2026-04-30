@@ -28,11 +28,7 @@ local logger           = require("logger")
 local ok_iw, ImageWidget = pcall(require, "ui/widget/imagewidget")
 if not ok_iw then ImageWidget = nil end
 
-local _plugin_root = (function()
-    local src = debug.getinfo(1, "S").source or ""
-    if src:sub(1, 1) ~= "@" then return "" end
-    return src:sub(2):match("^(.*)/common/[^/]+%.lua$") or ""
-end)()
+local _plugin_root = require("common/plugin_root") or ""
 
 local ZenScreen = InputContainer:extend{
     title             = nil,   -- string shown in top bar; nil hides the title bar entirely

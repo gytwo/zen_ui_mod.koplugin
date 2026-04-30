@@ -1,16 +1,18 @@
 -- settings/zen_bugreporter.lua
--- "Report a Bug" flow: reads crash.log, prompts for title/description,
--- then POSTs a GitHub issue with the log embedded as a collapsible block.
--- Rate-limited to one successful submission per 30 minutes.
+-- "Report a Bug" flow: reads crash.log, uploads it via the Worker,
+-- prompts for title/description, then POSTs a GitHub issue with a log link.
+-- Falls back to inline log if upload fails.
+-- Rate-limited to 3 successful submissions per 30 minutes.
 
 local JSON = require("json")
 local _ = require("gettext")
 local logger = require("logger")
 local UIManager = require("ui/uimanager")
 
-local PROXY_URL     = "https://zen-reporter.misty-mud-afb2.workers.dev/"
+local PROXY_URL       = "https://zen-reporter.misty-mud-afb2.workers.dev/"
+local UPLOAD_URL = PROXY_URL .. "upload"
 local MAX_CRASH_LOG = 60000
-local MAX_TITLE     = 250  -- 256 - len("[BUG] ")
+local MAX_TITLE     = 500
 local MAX_BODY      = 65536
 
 local M = {}
@@ -43,26 +45,32 @@ local function https_post_json(url, payload_str)
     return code, table.concat(resp)
 end
 
---- Read up to `max_chars` bytes from the end of a file. Returns string or nil.
-local function read_log(path, max_chars)
+--- Upload crash log to the Worker. Returns public URL string or nil on failure.
+local function upload_crash_log(log_data)
+    local payload = JSON.encode({ log = log_data })
+    local code, resp = https_post_json(UPLOAD_URL, payload)
+    if code == 200 or code == 201 then
+        return resp and resp:match('"url"%s*:%s*"([^"]+)"')
+    end
+    logger.warn("ZenBugReporter: upload failed, code:", tostring(code))
+    return nil
+end
+
+--- Read the full content of a file. Returns string or nil.
+local function read_file_content(path)
     local f = io.open(path, "rb")
     if not f then return nil end
-    local size = f:seek("end", 0)
-    local offset = math.max(0, size - max_chars)
-    f:seek("set", offset)
     local data = f:read("*a")
     f:close()
-    if offset > 0 then
-        data = "[truncated - showing last " .. max_chars .. " chars of " .. size .. " total]\n" .. data
-    end
-    return data
+    return (data and data ~= "") and data or nil
 end
 
 -- ---------------------------------------------------------------------------
 -- Issue body builder (mirrors the existing bug_report.md template)
 -- ---------------------------------------------------------------------------
 
-local function build_issue_body(description, system_info, crash_log, github_username)
+-- log_url: public link (preferred); if nil, embeds crash_log inline as fallback.
+local function build_issue_body(description, system_info, crash_log, github_username, log_url)
     local parts = {}
 
     parts[#parts+1] = "**Describe the bug**"
@@ -73,14 +81,20 @@ local function build_issue_body(description, system_info, crash_log, github_user
     parts[#parts+1] = system_info
     parts[#parts+1] = ""
 
-    -- Collapsible block keeps the issue readable when the log is large.
-    parts[#parts+1] = "<details>"
-    parts[#parts+1] = "<summary>crash.log</summary>"
-    parts[#parts+1] = ""
-    parts[#parts+1] = "```"
-    parts[#parts+1] = crash_log or "_crash.log not found_"
-    parts[#parts+1] = "```"
-    parts[#parts+1] = "</details>"
+    if log_url then
+        parts[#parts+1] = "**Crash log:** [crash.log](" .. log_url .. ")"
+    elseif crash_log then
+        -- Collapsible inline fallback when upload was unavailable.
+        parts[#parts+1] = "<details>"
+        parts[#parts+1] = "<summary>crash.log</summary>"
+        parts[#parts+1] = ""
+        parts[#parts+1] = "```"
+        parts[#parts+1] = crash_log
+        parts[#parts+1] = "```"
+        parts[#parts+1] = "</details>"
+    else
+        parts[#parts+1] = "**Crash log:** _crash.log not found_"
+    end
     parts[#parts+1] = ""
     if github_username and github_username ~= "" then
         parts[#parts+1] = "**Reported by:** @" .. github_username
@@ -271,18 +285,32 @@ function M._do_submit(ctx, bug_title, description, github_username)
         local ko_ver   = ok_u and sutils.get_koreader_version()       or "?"
         local device   = ok_u and sutils.get_device_model_name()      or "?"
         local firmware = ok_u and sutils.get_device_firmware_display() or "?"
+        local language = ok_u and sutils.get_device_language()        or "?"
         local system_info = "- Zen UI: " .. zen_ver
                          .. "\n- KOReader: " .. ko_ver
                          .. "\n- Device: " .. device
                          .. (firmware ~= "n/a" and ("\n- Firmware: " .. firmware) or "")
+                         .. "\n- Language: " .. language
 
         -- Read crash.log from the KOReader data directory.
         local ok_ds, DataStorage = pcall(require, "datastorage")
         local data_dir = ok_ds and DataStorage:getDataDir() or nil
-        local crash_log = data_dir and read_log(data_dir .. "/crash.log", MAX_CRASH_LOG)
+        local crash_log_full = data_dir and read_file_content(data_dir .. "/crash.log")
+
+        -- Upload the full log; only truncate if upload fails and we need inline embedding.
+        local log_url = crash_log_full and upload_crash_log(crash_log_full)
+        local crash_log_inline
+        if not log_url and crash_log_full then
+            if #crash_log_full > MAX_CRASH_LOG then
+                crash_log_inline = "[truncated - showing last " .. MAX_CRASH_LOG .. " chars of " .. #crash_log_full .. " total]\n"
+                                 .. crash_log_full:sub(-MAX_CRASH_LOG)
+            else
+                crash_log_inline = crash_log_full
+            end
+        end
 
         local issue_title = ("[BUG] " .. bug_title):sub(1, MAX_TITLE + 6)
-        local issue_body  = build_issue_body(description, system_info, crash_log, github_username)
+        local issue_body  = build_issue_body(description, system_info, crash_log_inline, github_username, log_url)
         if #issue_body > MAX_BODY then
             issue_body = issue_body:sub(1, MAX_BODY - 16) .. "\n...[truncated]"
         end

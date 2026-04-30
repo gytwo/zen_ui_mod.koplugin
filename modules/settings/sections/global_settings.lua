@@ -130,14 +130,11 @@ function M.build(ctx)
 
     local _icons_dir
     do
-        local src = debug.getinfo(1, "S").source or ""
-        if src:sub(1, 1) == "@" then
-            local root = src:sub(2):match("^(.*)/modules/settings/")
-            if root then
-                local lfs = require("libs/libkoreader-lfs")
-                if lfs.attributes(root .. "/icons/zen_ui.svg", "mode") == "file" then
-                    _icons_dir = root .. "/icons/"
-                end
+        local root = require("common/plugin_root")
+        if root then
+            local lfs = require("libs/libkoreader-lfs")
+            if lfs.attributes(root .. "/icons/zen_ui.svg", "mode") == "file" then
+                _icons_dir = root .. "/icons/"
             end
         end
     end

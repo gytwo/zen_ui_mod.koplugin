@@ -21,12 +21,9 @@ local function apply_touch_menu_footer()
     -- Resolve this file's plugin root to locate icons/large_chevron_up.svg
     local _icon_file
     do
-        local src = debug.getinfo(1, "S").source or ""
-        if src:sub(1, 1) == "@" then
-            local root = src:sub(2):match("^(.*)/modules/")
-            if root then
-                _icon_file = root .. "/icons/large_chevron_up.svg"
-            end
+        local root = require("common/plugin_root")
+        if root then
+            _icon_file = root .. "/icons/large_chevron_up.svg"
         end
     end
 

@@ -29,11 +29,8 @@ local function apply_navbar()
 
     local _icons_dir
     do
-        local src = debug.getinfo(1, "S").source or ""
-        if src:sub(1,1) == "@" then
-            local root = src:sub(2):match("^(.*)/modules/")
-            if root then _icons_dir = root .. "/icons/" end
-        end
+        local root = require("common/plugin_root")
+        if root then _icons_dir = root .. "/icons/" end
     end
 
     local function is_navbar_enabled()

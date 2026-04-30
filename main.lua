@@ -12,11 +12,8 @@ local registry = require("modules/registry")
 local zen_settings = require("modules/settings/zen_settings")
 local zen_updater   = require("modules/settings/zen_updater")
 
--- Absolute path to this plugin's root directory (used for custom icon paths).
-local _plugin_root = (function()
-    local src = debug.getinfo(1, "S").source or ""
-    return (src:sub(1, 1) == "@") and src:sub(2):match("^(.*)/[^/]+$") or nil
-end)()
+-- Absolute path to this plugin's root directory (shared module resolves relative paths).
+local _plugin_root = require("common/plugin_root")
 
 -- Register all plugin icons into KOReader's icon cache (copies to user icons dir).
 require("common/inject_icons")
@@ -84,6 +81,7 @@ function ZenUI:_initModules()
 end
 
 function ZenUI:init()
+    i18n.install()  -- reinstall after any context-switch uninstall (onCloseWidget removes it)
     self.config = ConfigManager.load()
     _zen_plugin_ref = self
 

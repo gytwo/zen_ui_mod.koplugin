@@ -18,4 +18,9 @@ return {
         "Add Bulgarian translation",
         "Bug fixes and performance improvements",
     },
+    ["1.0.3"] = {
+        "Fix: some quick settings buttons not showing",
+        "Fix: language defaulting to english after plugin restart",
+        "Bug fixes and performance improvements",
+    },
 }

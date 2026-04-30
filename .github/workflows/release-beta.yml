@@ -28,33 +28,55 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Check if version is new
+      - name: Resolve beta tag
         id: version_check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v${{ steps.meta.outputs.version }}"
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            echo "Release $TAG already exists — skipping."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
+          BASE="v${{ steps.meta.outputs.version }}"
+          N=1
+          while gh release view "${BASE}-beta${N}" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; do
+            N=$((N + 1))
+          done
+          BETA_TAG="${BASE}-beta${N}"
+          echo "tag=$BETA_TAG" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
 
       - name: Build plugin zip
         if: steps.version_check.outputs.skip == 'false'
         run: bash build.sh
+
+      - name: Build release notes
+        if: steps.version_check.outputs.skip == 'false'
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          python3 - "$VERSION" <<'PYEOF' > release_notes.md
+          import re, sys
+          version = sys.argv[1]
+          with open("config/changelog.lua") as f:
+              content = f.read()
+          pattern = r'\["' + re.escape(version) + r'"\]\s*=\s*\{([^}]+)\}'
+          m = re.search(pattern, content, re.DOTALL)
+          if m:
+              block = m.group(1)
+              items = [a or b for a, b in re.findall(r'"([^"]+)"|\'([^\']+)\'', block)]
+              print("## What's Changed\n")
+              for item in items:
+                  print(f"- {item}")
+          else:
+              print("## What's Changed\n\n_No changelog entries for this version._")
+          PYEOF
 
       - name: Create release
         if: steps.version_check.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v${{ steps.meta.outputs.version }}"
+          TAG="${{ steps.version_check.outputs.tag }}"
           gh release create "$TAG" \
             dist/zen_ui.koplugin.zip \
             --repo "$GITHUB_REPOSITORY" \
             --title "Zen UI $TAG" \
-            --generate-notes \
+            --notes-file release_notes.md \
             --prerelease
 

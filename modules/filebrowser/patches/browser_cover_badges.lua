@@ -9,11 +9,8 @@
 -- Resolve the plugin icons/ directory at module-load time.
 local _ICONS_DIR
 do
-    local src = debug.getinfo(1, "S").source or ""
-    if src:sub(1, 1) == "@" then
-        local plugin_root = src:sub(2):match("^(.*)/modules/")
-        if plugin_root then _ICONS_DIR = plugin_root .. "/icons/" end
-    end
+    local root = require("common/plugin_root")
+    if root then _ICONS_DIR = root .. "/icons/" end
 end
 
 local function apply_browser_cover_badges()

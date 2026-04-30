@@ -3,9 +3,7 @@
 
 local utils = require("common/utils")
 
-local src = debug.getinfo(1, "S").source or ""
--- File is in common/, so strip two path components to reach the plugin root.
-local _plugin_root = (src:sub(1, 1) == "@") and src:sub(2):match("^(.*)/common/[^/]+$") or nil
+local _plugin_root = require("common/plugin_root")
 
 if _plugin_root then
     utils.registerPluginIcons(_plugin_root .. "/icons/", {

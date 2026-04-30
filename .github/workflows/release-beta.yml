@@ -28,18 +28,19 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Check if version is new
+      - name: Resolve beta tag
         id: version_check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v${{ steps.meta.outputs.version }}"
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            echo "Release $TAG already exists — skipping."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
+          BASE="v${{ steps.meta.outputs.version }}"
+          N=1
+          while gh release view "${BASE}-beta${N}" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; do
+            N=$((N + 1))
+          done
+          BETA_TAG="${BASE}-beta${N}"
+          echo "tag=$BETA_TAG" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
 
       - name: Build plugin zip
         if: steps.version_check.outputs.skip == 'false'
@@ -71,7 +72,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v${{ steps.meta.outputs.version }}"
+          TAG="${{ steps.version_check.outputs.tag }}"
           gh release create "$TAG" \
             dist/zen_ui.koplugin.zip \
             --repo "$GITHUB_REPOSITORY" \

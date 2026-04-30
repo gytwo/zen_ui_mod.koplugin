@@ -268,18 +268,25 @@ function M.get_device_firmware_display()
 end
 
 function M.get_device_language()
-    -- Prefer the user-configured KOReader language setting.
+    local lang_code
     local ok_gs, gs = pcall(function() return G_reader_settings end)
     if ok_gs and gs and type(gs.readSetting) == "function" then
-        local lang = M.normalize_value(gs:readSetting("language"))
-        if lang then return lang end
+        lang_code = M.normalize_value(gs:readSetting("language"))
     end
-    -- Fallback: G_defaults DLANGUAGE global.
-    local dlang = M.normalize_value(rawget(_G, "DLANGUAGE"))
-    if dlang then return dlang end
-    -- System locale as last resort.
-    local env_lang = M.normalize_value(os.getenv("LANG") or os.getenv("LC_ALL") or os.getenv("LC_MESSAGES"))
-    if env_lang then return env_lang end
+    lang_code = lang_code
+        or M.normalize_value(rawget(_G, "DLANGUAGE"))
+        or M.normalize_value(os.getenv("LANG") or os.getenv("LC_ALL") or os.getenv("LC_MESSAGES"))
+
+    if not lang_code then return "unknown" end
+
+    -- Resolve human-readable name via KOReader's Language module ("C" = English).
+    local ok_lm, Language = pcall(require, "ui/language")
+    if ok_lm and Language and type(Language.getLanguageName) == "function" then
+        local name = Language:getLanguageName(lang_code)
+        if name and name ~= lang_code then
+            return name
+        end
+    end
     return "unknown"
 end
 

@@ -57,8 +57,8 @@ local function apply_quick_settings()
             rotate = true,
             zen = true,
             lockdown = false,
-            usb = false,
             search = false,
+            usb = false,
             quickrss = false,
             cloud = false,
             zlibrary = false,
@@ -101,23 +101,26 @@ local function apply_quick_settings()
                     config.show_buttons[k] = v
                 end
             end
-            -- Auto-enable filebrowser button on first run if the plugin is installed
-            if first_time.filebrowser then
-                local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
-                local ok_ru, ReaderUI    = pcall(require, "apps/reader/readerui")
-                local ui = (ok_fm and FileManager.instance) or (ok_ru and ReaderUI.instance)
-                if ui and ui.filebrowser then
-                    config.show_buttons.filebrowser = true
+            -- Auto-enable plugin-dependent buttons on first run if the plugin is installed
+            local function autoEnable(key, slot)
+                if first_time[key] then
+                    local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
+                    local ok_ru, ReaderUI    = pcall(require, "apps/reader/readerui")
+                    local ui = (ok_fm and FileManager.instance) or (ok_ru and ReaderUI.instance)
+                    if ui and ui[slot] then
+                        config.show_buttons[key] = true
+                    end
                 end
             end
+            autoEnable("filebrowser",    "filebrowser")
         else
             config.show_buttons = utils.deepcopy(config_default.show_buttons)
-            -- Auto-enable filebrowser on first ever config creation if plugin is installed
+            -- Auto-enable plugin-dependent buttons on first ever config creation
             local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
             local ok_ru, ReaderUI    = pcall(require, "apps/reader/readerui")
             local ui = (ok_fm and FileManager.instance) or (ok_ru and ReaderUI.instance)
-            if ui and ui.filebrowser then
-                config.show_buttons.filebrowser = true
+            if ui then
+                if ui.filebrowser then config.show_buttons.filebrowser    = true end
             end
         end
         if type(config.button_order) ~= "table" then
@@ -265,7 +268,6 @@ local function apply_quick_settings()
         exit = {
             icon = "quick_exit",
             label = _("Exit"),
-            visible_func = function() return Device:hasExitOptions() end,
             callback = function()
                 UIManager:show(ConfirmBox:new{
                     text = _("Are you sure you want to exit KOReader?"),
@@ -339,7 +341,7 @@ local function apply_quick_settings()
         calibre = {
             icon = "quick_calibre",
             label = _("Calibre"),
-            visible_func = function() return hasPlugin("wireless") end,
+            visible_func = function() return hasPlugin("calibre") end,
             active_func = function()
                 local CW = package.loaded["wireless"]
                 return CW ~= nil and CW.calibre_socket ~= nil

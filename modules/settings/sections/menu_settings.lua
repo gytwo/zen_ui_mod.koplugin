@@ -46,7 +46,7 @@ function M.build(ctx)
         { key = "quickrss",       text = _("QuickRSS"),        detect = function() local ok = pcall(require, "modules/ui/feed_view"); return ok end },
         { key = "cloud",          text = _("Cloud storage") },
         { key = "zlibrary",       text = _("Z-Library"),       detect = function() return hasPlugin("zlibrary") end },
-        { key = "calibre",        text = _("Calibre"),         detect = function() return hasPlugin("wireless") end },
+        { key = "calibre",        text = _("Calibre"),         detect = function() return hasPlugin("calibre") end },
         { key = "calibre_search", text = _("Calibre Search"),  detect = function() return hasPlugin("calibre") end },
         { key = "notion",         text = _("Notion"),          detect = function() return hasPlugin("NotionSync") end },
         { key = "streak",         text = _("Streak"),          detect = function() return hasPlugin("readingstreak") end },

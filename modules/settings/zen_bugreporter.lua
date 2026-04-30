@@ -271,10 +271,12 @@ function M._do_submit(ctx, bug_title, description, github_username)
         local ko_ver   = ok_u and sutils.get_koreader_version()       or "?"
         local device   = ok_u and sutils.get_device_model_name()      or "?"
         local firmware = ok_u and sutils.get_device_firmware_display() or "?"
+        local language = ok_u and sutils.get_device_language()        or "?"
         local system_info = "- Zen UI: " .. zen_ver
                          .. "\n- KOReader: " .. ko_ver
                          .. "\n- Device: " .. device
                          .. (firmware ~= "n/a" and ("\n- Firmware: " .. firmware) or "")
+                         .. "\n- Language: " .. language
 
         -- Read crash.log from the KOReader data directory.
         local ok_ds, DataStorage = pcall(require, "datastorage")

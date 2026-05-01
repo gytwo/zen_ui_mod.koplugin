@@ -331,7 +331,7 @@ local function apply_quick_settings()
         },
         calibre_search = {
             icon = "quick_search",
-            label = _("Cal. Search"),
+            label = _("Search"),
             visible_func = function() return hasPlugin("calibre") end,
             callback = function(touch_menu)
                 touch_menu:closeMenu()

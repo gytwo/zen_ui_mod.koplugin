@@ -39,8 +39,16 @@ jobs:
             N=$((N + 1))
           done
           BETA_TAG="${BASE}-beta${N}"
+          BETA_VERSION="${{ steps.meta.outputs.version }}-beta${N}"
           echo "tag=$BETA_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$BETA_VERSION" >> "$GITHUB_OUTPUT"
           echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp beta version in _meta.lua
+        if: steps.version_check.outputs.skip == 'false'
+        run: |
+          BETA_VERSION="${{ steps.version_check.outputs.version }}"
+          sed -i "s/version = \"[^\"]*\"/version = \"${BETA_VERSION}\"/" _meta.lua
 
       - name: Build plugin zip
         if: steps.version_check.outputs.skip == 'false'

@@ -141,7 +141,9 @@ local defaults = {
         show_series_badge = false,
     },
     zen_scroll_bar = {
-        style = "dots",   -- "bar" | "dots"
+        style              = "dots",     -- "bar" | "dots" | "page_number"
+        page_number_format = "total",  -- "current" | "total"
+        hold_skip          = "ends",       -- "10" | "20" | "ends"
     },
     context_menu = {
         allow_delete = false,

@@ -1,11 +1,16 @@
 local function apply_zen_scroll_bar()
-    -- Replaces the pagination footer with a pill-bar or dot-style scroll indicator.
-    -- Style ("bar" / "dots") is read live from config; no restart needed to toggle.
-    local Blitbuffer = require("ffi/blitbuffer")
-    local Device     = require("device")
-    local Geom       = require("ui/geometry")
-    local Menu       = require("ui/widget/menu")
-    local Screen     = Device.screen
+    -- Replaces the pagination footer with a pill-bar, dot-style, or page-number
+    -- scroll indicator. Style is read live from config; no restart needed to toggle.
+    local _           = require("gettext")
+    local Blitbuffer  = require("ffi/blitbuffer")
+    local Device      = require("device")
+    local Font        = require("ui/font")
+    local Geom        = require("ui/geometry")
+    local IconWidget  = require("ui/widget/iconwidget")
+    local Menu        = require("ui/widget/menu")
+    local RenderText  = require("ui/rendertext")
+    local Screen      = Device.screen
+    local UIManager   = require("ui/uimanager")
     local target_menus = {
         filemanager = true,
         history = true,
@@ -20,11 +25,19 @@ local function apply_zen_scroll_bar()
     local BAR_W_PCT  = 0.92                     -- track width as fraction of screen width
     local BAR_PAD    = Screen:scaleBySize(5)    -- vertical padding above and below the indicator
     -- Footer must be tall enough for the larger of bar or dots.
-    local FOOTER_H   = math.max(BAR_H, DOT_DIAM) + BAR_PAD * 2
+    local FOOTER_H    = math.max(BAR_H, DOT_DIAM) + BAR_PAD * 2
+    -- Tap zone width for each chevron in page_number style.
+    local CHEV_W      = Screen:scaleBySize(60)
+    -- Desired chevron icon size; page_number footer is made tall enough to fit.
+    local PN_ICON_SIZE = Screen:scaleBySize(36)
+    local PN_FOOTER_H  = math.max(FOOTER_H, PN_ICON_SIZE + Screen:scaleBySize(6))
 
-    local TRACK_COLOR    = Blitbuffer.COLOR_LIGHT_GRAY
-    local THUMB_COLOR    = Blitbuffer.COLOR_BLACK
+    local TRACK_COLOR     = Blitbuffer.COLOR_LIGHT_GRAY
+    local THUMB_COLOR     = Blitbuffer.COLOR_BLACK
     local DOT_INACT_COLOR = Blitbuffer.COLOR_DARK_GRAY
+
+    -- Font for page_number style: same face as the status bar clock.
+    local _pn_face = Font:getFace("xx_smallinfofont")
 
     -- Capture plugin reference while __ZEN_UI_PLUGIN is still set.
     local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
@@ -47,17 +60,31 @@ local function apply_zen_scroll_bar()
         end
     end
 
-    -- Read style from config at paint time; toggle takes effect on next repaint.
+    -- Config accessors — read live at paint/event time so toggles take effect
+    -- on the next repaint without a menu restart.
     local function get_style()
         local p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
-        if p
-            and type(p.config) == "table"
-            and type(p.config.zen_scroll_bar) == "table"
-            and p.config.zen_scroll_bar.style == "dots"
-        then
-            return "dots"
+        if p and type(p.config) == "table" and type(p.config.zen_scroll_bar) == "table" then
+            local s = p.config.zen_scroll_bar.style
+            if s == "dots" or s == "bar" or s == "page_number" then return s end
         end
         return "bar"
+    end
+
+    local function get_page_format()
+        local p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+        if p and type(p.config) == "table" and type(p.config.zen_scroll_bar) == "table" then
+            return p.config.zen_scroll_bar.page_number_format or "current"
+        end
+        return "current"
+    end
+
+    local function get_hold_skip()
+        local p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+        if p and type(p.config) == "table" and type(p.config.zen_scroll_bar) == "table" then
+            return p.config.zen_scroll_bar.hold_skip or "10"
+        end
+        return "10"
     end
 
     local orig_menu_init = Menu.init
@@ -87,10 +114,17 @@ local function apply_zen_scroll_bar()
         local scr_w  = Screen:getWidth()
         local bar_w  = math.floor(scr_w * BAR_W_PCT)
         local bar_x  = math.floor((scr_w - bar_w) / 2)   -- centred offset from left edge
-        local foot   = Geom:new{ w = scr_w, h = FOOTER_H }
+        -- Decide footer height once at init; page_number gets the taller strip.
+        local foot_h = get_style() == "page_number" and PN_FOOTER_H or FOOTER_H
+        local foot   = Geom:new{ w = scr_w, h = foot_h }
+
+        -- Chevron icons for page_number style, cached per menu instance.
+        local icon_size = PN_ICON_SIZE
+        local _icon_l   = IconWidget:new{ icon = "chevron.left",  width = icon_size, height = icon_size }
+        local _icon_r   = IconWidget:new{ icon = "chevron.right", width = icon_size, height = icon_size }
 
         -- _recalculateDimen uses getSize().h on these two widgets to compute
-        -- bottom_height.  Returning FOOTER_H reserves exactly that strip.
+        -- bottom_height.  Returning foot reserves exactly that strip.
         self.page_info_text.getSize    = function() return foot end
         self.page_return_arrow.getSize = function() return foot end
 
@@ -106,7 +140,9 @@ local function apply_zen_scroll_bar()
             -- Nothing to show if the list fits on one page.
             if nb <= 1 then return end
 
-            if get_style() == "dots" and nb <= 75 then
+            local style = get_style()
+
+            if style == "dots" and nb <= 75 then
                 -- Dots style
                 -- One circle per page; the active page is filled black.
                 local diam = DOT_DIAM
@@ -122,13 +158,40 @@ local function apply_zen_scroll_bar()
                 local total_w = step * (nb - 1) + diam
                 local start_x = x + bar_x + math.floor((bar_w - total_w) / 2)
                 -- Centre dots vertically within the footer strip.
-                local dot_y   = y + math.floor((FOOTER_H - diam) / 2)
+                local dot_y   = y + math.floor((foot_h - diam) / 2)
 
                 for i = 1, nb do
                     local dot_x = start_x + (i - 1) * step
                     local color = (i == page) and THUMB_COLOR or DOT_INACT_COLOR
                     paintPill(bb, dot_x, dot_y, diam, diam, color)
                 end
+
+            elseif style == "page_number" then
+                -- Page number style: centered page text with ‹ › chevrons at
+                -- the same x-positions as the bar track edges.
+                local fmt = get_page_format()
+                local text_str = fmt == "total"
+                    and (tostring(page) .. " / " .. tostring(nb))
+                    or  tostring(page)
+
+                -- Vertical baseline: roughly centres the text in foot_h.
+                local face_h     = _pn_face.bb_size or _pn_face.size or Screen:scaleBySize(10)
+                local baseline_y = y + math.floor(foot_h / 2 + face_h * 0.25)
+
+                -- Centered page label between the two chevron zones.
+                local inner_w  = bar_w - CHEV_W * 2
+                local text_w   = RenderText:sizeUtf8Text(0, 9999, _pn_face, text_str, true, false).x
+                local text_x   = x + bar_x + CHEV_W + math.floor((inner_w - text_w) / 2)
+                RenderText:renderUtf8Text(bb, text_x, baseline_y, _pn_face,
+                                         text_str, false, false, THUMB_COLOR)
+
+                -- Left and right chevron icons, centered vertically and horizontally in their tap zones.
+                local icon_y = y + math.floor((foot_h - icon_size) / 2)
+                local lx     = x + bar_x + math.floor((CHEV_W - icon_size) / 2)
+                local rx     = x + bar_x + bar_w - CHEV_W + math.floor((CHEV_W - icon_size) / 2)
+                _icon_l:paintTo(bb, lx, icon_y)
+                _icon_r:paintTo(bb, rx, icon_y)
+
             else
                 -- Bar style (default)
                 -- Track (full bar width, lighter colour).
@@ -145,6 +208,108 @@ local function apply_zen_scroll_bar()
                 paintPill(bb, x + thumb_x, y + BAR_PAD, thumb_w, BAR_H, THUMB_COLOR)
             end
         end
+
+        -- Register touch zones for the page_number style.
+        -- These are no-ops when another style is active (get_style() guard).
+        -- screen_zone uses ratio_x/y/w/h (fractions of screen dimensions),
+        -- as required by InputContainer:registerTouchZones.
+        local scr_h    = Screen:getHeight()
+        local footer_y = self.dimen.y + self.dimen.h - foot_h
+        local menu_x   = self.dimen.x
+
+        -- Pre-compute ratios shared across zones.
+        local rz_left_x   = (menu_x + bar_x) / scr_w
+        local rz_right_x  = (menu_x + bar_x + bar_w - CHEV_W) / scr_w
+        local rz_center_x = (menu_x + bar_x + CHEV_W) / scr_w
+        local rz_chev_w   = CHEV_W / scr_w
+        local rz_center_w = math.max(0, bar_w - CHEV_W * 2) / scr_w
+        local rz_y        = footer_y / scr_h
+        local rz_h        = foot_h / scr_h
+
+        self:registerTouchZones({
+            -- Left chevron — tap: prev page.
+            {
+                id = "zen_pn_left_tap",
+                ges = "tap",
+                screen_zone = { ratio_x = rz_left_x,   ratio_y = rz_y, ratio_w = rz_chev_w,   ratio_h = rz_h },
+                handler = function()
+                    if get_style() ~= "page_number" then return end
+                    local target = menu.page > 1 and (menu.page - 1) or menu.page_num
+                    menu:onGotoPage(target)
+                    return true
+                end,
+            },
+            -- Right chevron — tap: next page.
+            {
+                id = "zen_pn_right_tap",
+                ges = "tap",
+                screen_zone = { ratio_x = rz_right_x,  ratio_y = rz_y, ratio_w = rz_chev_w,   ratio_h = rz_h },
+                handler = function()
+                    if get_style() ~= "page_number" then return end
+                    local target = menu.page < menu.page_num and (menu.page + 1) or 1
+                    menu:onGotoPage(target)
+                    return true
+                end,
+            },
+            -- Center area — tap: numeric "Go to page" input dialog.
+            {
+                id = "zen_pn_center_tap",
+                ges = "tap",
+                screen_zone = { ratio_x = rz_center_x, ratio_y = rz_y, ratio_w = rz_center_w, ratio_h = rz_h },
+                handler = function()
+                    if get_style() ~= "page_number" then return end
+                    local createZenDialog = require("common/zen_dialog")
+                    local nb     = menu.page_num or 1
+                    local dialog = createZenDialog{
+                        title           = _("Go to page"),
+                        input           = "",
+                        input_type      = "number",
+                        input_hint      = "1 - " .. tostring(nb),
+                        button_text     = "\u{F124} " .. _("Go"),
+                        button_callback = function(dialog)
+                            local p = tonumber(dialog:getInputText())
+                            if p and p >= 1 and p <= nb then
+                                UIManager:close(dialog)
+                                menu:onGotoPage(math.floor(p))
+                            end
+                        end,
+                    }
+                    UIManager:show(dialog)
+                    dialog:onShowKeyboard()
+                    return true
+                end,
+            },
+            -- Left chevron — hold: skip back (configurable) or jump to first page.
+            {
+                id = "zen_pn_left_hold",
+                ges = "hold",
+                screen_zone = { ratio_x = rz_left_x,  ratio_y = rz_y, ratio_w = rz_chev_w, ratio_h = rz_h },
+                handler = function()
+                    if get_style() ~= "page_number" then return end
+                    local skip   = get_hold_skip()
+                    local target = skip == "ends"
+                        and 1
+                        or  math.max(1, menu.page - (tonumber(skip) or 10))
+                    menu:onGotoPage(target)
+                    return true
+                end,
+            },
+            -- Right chevron — hold: skip forward (configurable) or jump to last page.
+            {
+                id = "zen_pn_right_hold",
+                ges = "hold",
+                screen_zone = { ratio_x = rz_right_x, ratio_y = rz_y, ratio_w = rz_chev_w, ratio_h = rz_h },
+                handler = function()
+                    if get_style() ~= "page_number" then return end
+                    local skip   = get_hold_skip()
+                    local target = skip == "ends"
+                        and menu.page_num
+                        or  math.min(menu.page_num, menu.page + (tonumber(skip) or 10))
+                    menu:onGotoPage(target)
+                    return true
+                end,
+            },
+        })
 
         -- Re-run layout so the new sizes take effect before the first paint.
         self:_recalculateDimen()

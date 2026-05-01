@@ -590,8 +590,9 @@ function M.build(ctx)
     -- -------------------------------------------------------------------------
 
     local scroll_bar_styles = {
-        { text = _("Bar"),  style = "bar"  },
-        { text = _("Dots"), style = "dots" },
+        { text = _("Bar"),         style = "bar"         },
+        { text = _("Dots"),        style = "dots"        },
+        { text = _("Page number"), style = "page_number" },
     }
 
     local function get_scroll_bar_style()
@@ -609,9 +610,72 @@ function M.build(ctx)
                 config.zen_scroll_bar.style = entry.style
                 plugin:saveConfig()
                 UIManager:setDirty(nil, "ui")
+                -- Footer height differs between page_number and other styles;
+                -- reinit rebuilds the menu with the correct height and touch zones.
+                settings_apply.reinit_filemanager()
             end,
         })
     end
+
+    -- Page number format sub-menu (nested inside scroll bar style, greyed out unless page_number)
+    local pn_formats = {
+        { text = _("Current only"), fmt = "current" },
+        { text = _("Page x / y"),   fmt = "total"   },
+    }
+    local function get_pn_format()
+        return (type(config.zen_scroll_bar) == "table"
+            and config.zen_scroll_bar.page_number_format) or "current"
+    end
+    local pn_format_sub_items = {}
+    for _, entry in ipairs(pn_formats) do
+        table.insert(pn_format_sub_items, {
+            text = entry.text,
+            checked_func = function() return get_pn_format() == entry.fmt end,
+            radio = true,
+            callback = function()
+                if type(config.zen_scroll_bar) ~= "table" then config.zen_scroll_bar = {} end
+                config.zen_scroll_bar.page_number_format = entry.fmt
+                plugin:saveConfig()
+                UIManager:setDirty(nil, "ui")
+            end,
+        })
+    end
+    table.insert(scroll_bar_sub_items, {
+        text           = _("Page number format"),
+        enabled_func   = function() return get_scroll_bar_style() == "page_number" end,
+        sub_item_table = pn_format_sub_items,
+        separator      = true,  -- visual break after the radio style entries
+    })
+
+    -- Hold-to-skip sub-menu (nested inside scroll bar style, greyed out unless page_number)
+    local hold_skip_opts = {
+        { text = _("Skip 10 pages"),   skip = "10"   },
+        { text = _("Skip 20 pages"),   skip = "20"   },
+        { text = _("Beginning / End"), skip = "ends" },
+    }
+    local function get_hold_skip()
+        return (type(config.zen_scroll_bar) == "table"
+            and config.zen_scroll_bar.hold_skip) or "10"
+    end
+    local hold_skip_sub_items = {}
+    for _, entry in ipairs(hold_skip_opts) do
+        table.insert(hold_skip_sub_items, {
+            text = entry.text,
+            checked_func = function() return get_hold_skip() == entry.skip end,
+            radio = true,
+            callback = function()
+                if type(config.zen_scroll_bar) ~= "table" then config.zen_scroll_bar = {} end
+                config.zen_scroll_bar.hold_skip = entry.skip
+                plugin:saveConfig()
+                UIManager:setDirty(nil, "ui")
+            end,
+        })
+    end
+    table.insert(scroll_bar_sub_items, {
+        text           = _("Hold to skip"),
+        enabled_func   = function() return get_scroll_bar_style() == "page_number" end,
+        sub_item_table = hold_skip_sub_items,
+    })
 
     table.insert(items, {
         text = _("Scroll bar style"),

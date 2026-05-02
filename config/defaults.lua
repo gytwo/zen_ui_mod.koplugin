@@ -126,6 +126,7 @@ local defaults = {
     browser_hide_up_folder = {
         hide_up_folder = true,
     },
+    additional_home_dirs = {},
     browser_list_item_layout = {
         hide_list_borders = false,
     },
@@ -133,6 +134,7 @@ local defaults = {
         show_mosaic_progress = true,
         show_native_progress_bar = false,
         show_new_banner = true,
+        badge_size = "compact",
     },
     browser_page_count = {
         show_page_count = false,
@@ -140,8 +142,14 @@ local defaults = {
     browser_series_badge = {
         show_series_badge = false,
     },
+    mosaic_title_strip = {
+        show_title  = false,
+        show_author = false,
+    },
     zen_scroll_bar = {
-        style = "dots",   -- "bar" | "dots"
+        style              = "dots",     -- "bar" | "dots" | "page_number"
+        page_number_format = "total",  -- "current" | "total"
+        hold_skip          = "ends",       -- "10" | "20" | "ends"
     },
     context_menu = {
         allow_delete = false,

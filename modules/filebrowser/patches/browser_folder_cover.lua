@@ -27,6 +27,7 @@ local function apply_browser_folder_cover()
     local lfs = require("libs/libkoreader-lfs")
     local util = require("util")
     local paths = require("common/paths")
+    local utils = require("common/utils")
 
     local _ = require("gettext")
     local Screen = Device.screen
@@ -388,7 +389,9 @@ local function apply_browser_folder_cover()
             if not (cd and cd.w and cd.w > 0) then return end
             local corner_mark_size = (_badge_uv_fn and _badge_uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
-            local eff_size = math.max(corner_mark_size, math.floor((cd.w or 0) * 0.14))
+            local _p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+            local eff_size = math.floor(math.max(corner_mark_size, math.floor((cd.w or 0) * 0.14))
+                * utils.getBadgeScale(_p and _p.config))
 
             -- Use the cached centered_top (computed when self.height = cover-area height).
             -- Re-deriving from self.height would be wrong when mosaic_title_strip inflates it.
@@ -406,12 +409,12 @@ local function apply_browser_folder_cover()
                 padding = 0,
             }
             local tw_sz = tw:getSize()
-            local diam   = math.max(tw_sz.w, tw_sz.h) + math.floor(eff_size * 0.3)
-            local r      = math.floor(diam / 2)
-            local margin = math.floor(eff_size * 0.3)
-            -- top-right of cover frame
-            local cx = cover_x + cd.w - r - margin
-            local cy = cover_y + r + margin
+            local diam  = math.max(tw_sz.w, tw_sz.h) + math.floor(eff_size * 0.3)
+            local r     = math.floor(diam / 2)
+            -- Same corner inset as favorites badge: r * 0.25 from each edge (top-right corner).
+            local inset = math.floor(r * 0.25)
+            local cx = cover_x + cd.w - r - inset
+            local cy = cover_y + r + inset
 
             paintCircle(bb, cx, cy, r + 2, _BlitBadge.COLOR_BLACK)
             paintCircle(bb, cx, cy, r,     _BlitBadge.COLOR_LIGHT_GRAY)

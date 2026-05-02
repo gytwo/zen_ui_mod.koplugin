@@ -134,7 +134,9 @@ local function apply_browser_page_count()
             -- Read corner_mark_size fresh each paint so it tracks layout changes.
             local corner_mark_size = (_uv_fn and _uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
-            local eff_size = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+            local _p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+            local eff_size = math.floor(math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+                * utils.getBadgeScale(_p and _p.config))
             local cover_left   = x + math.floor((self.width - target.dimen.w) / 2)
             -- Use absolute coords so cover_bottom stays correct when a title strip
             -- below the cover inflates self.height beyond the actual image area.
@@ -168,9 +170,10 @@ local function apply_browser_page_count()
             -- Horizontal padding proportional to eff_size (≈ bw * 0.12).
             local h_pad  = math.floor(eff_size * 0.12)
             local bw     = tw_sz.w + 2 * h_pad
-            local margin = math.floor(eff_size * 0.3)
-            local bx     = cover_left + margin
-            local by     = cover_bottom - bh - margin
+            -- Same corner inset as favorites badge: r + r*0.25 from each edge (r = bh/2).
+            local inset  = math.floor(bh / 2 * 0.25)
+            local bx     = cover_left + inset
+            local by     = cover_bottom - bh - inset
 
             -- 7. Paint pill: 2-px border offset (matches cover badge pattern).
             paintPill(bb, bx - 2, by - 2, bw + 4, bh + 4, Blitbuffer.COLOR_BLACK)

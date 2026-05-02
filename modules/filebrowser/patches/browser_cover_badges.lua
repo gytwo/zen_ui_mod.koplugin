@@ -21,6 +21,7 @@ local function apply_browser_cover_badges()
     local ReadCollection = require("readcollection")
     local Screen         = require("device").screen
     local TextWidget     = require("ui/widget/textwidget")
+    local utils          = require("common/utils")
     local _              = require("gettext")
 
     -- Capture plugin reference while __ZEN_UI_PLUGIN is still set.
@@ -256,6 +257,8 @@ local function apply_browser_cover_badges()
             if not (corner_mark_size and corner_mark_size > 0) then return end
 
             local border = target.bordersize or 0
+            local _p_ref = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+            local _badge_scale = utils.getBadgeScale(_p_ref and _p_ref.config)
 
             -- 3. Favorite star → top-left inside a circle
             local show_fav_badge = _plugin
@@ -267,19 +270,20 @@ local function apply_browser_cover_badges()
                 and self.menu.name ~= "collections"
                 and ReadCollection:isFileInCollections(self.filepath, true)
             then
-                local eff_corner = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+                local eff_corner = math.floor(math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14)) * _badge_scale)
                 local r      = math.floor(eff_corner / 2)
-                local margin = math.floor(eff_corner * 0.3)
+                -- Center on the 45-deg diagonal from the corner: r + border + small inset from each edge.
+                local inset = math.floor(r * 0.25)
                 local cx, cy
                 if BD.mirroredUILayout() then
                     local cover_right = x + self.width
                         - math.ceil((self.width - target.dimen.w) / 2)
-                    cx = cover_right - r - margin
+                    cx = cover_right - border - r - inset
                 else
                     local cover_left = x + math.floor((self.width - target.dimen.w) / 2)
-                    cx = cover_left + r + margin
+                    cx = cover_left + border + r + inset
                 end
-                cy = target.dimen.y + r + margin
+                cy = target.dimen.y + border + r + inset
                 -- Border ring then fill (same two-call pattern as series badge)
                 paintCircle(bb, cx, cy, r + 2, Blitbuffer.COLOR_BLACK)
                 paintCircle(bb, cx, cy, r,     Blitbuffer.COLOR_LIGHT_GRAY)
@@ -333,7 +337,7 @@ local function apply_browser_cover_badges()
                 local do_pct   = not do_check and not do_pause and self.percent_finished ~= nil
 
                 if do_check or do_pause or do_pct then
-                    local eff_size = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+                    local eff_size = math.floor(math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14)) * _badge_scale)
                     local bw = math.floor(eff_size * 1.2)
                     local bh = math.floor(eff_size * 1.1)
 
@@ -435,7 +439,7 @@ local function apply_browser_cover_badges()
                     and self.status ~= "complete"
                     and self.status ~= "abandoned"
                 if is_new then
-                    local eff_size   = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+                    local eff_size   = math.floor(math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14)) * _badge_scale)
                     local span       = math.floor(eff_size * 2.5)
                     local band_thick = math.floor(span * 0.35)
                     -- Font tied to cover size, not band thickness, so it stays small regardless of ribbon scale

@@ -66,6 +66,7 @@ local function apply_browser_series_badge()
         local Font       = require("ui/font")
         local Screen     = require("device").screen
         local TextWidget = require("ui/widget/textwidget")
+        local utils      = require("common/utils")
 
         -- Walk the orig_paintTo wrapper chain to find the `uv` accessor function
         -- (lives inside browser_cover_badges' closure, potentially many layers deep).
@@ -114,7 +115,9 @@ local function apply_browser_series_badge()
             --    this one sits at bottom-right of the same cover frame.
             local corner_mark_size = (_uv_fn and _uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
-            local eff_size = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+            local _p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+            local eff_size = math.floor(math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
+                * utils.getBadgeScale(_p and _p.config))
             local cover_left   = x + math.floor((self.width - target.dimen.w) / 2)
             local cover_right  = cover_left + target.dimen.w
             -- Use absolute coords so cover_bottom stays correct when a title strip
@@ -129,11 +132,12 @@ local function apply_browser_series_badge()
                 idx_str = "#" .. string.format("%.1f", series_idx)
             end
 
-            -- Fixed circle radius — never grows with label length.
-            local r      = math.max(math.floor(eff_size * 0.38), Screen:scaleBySize(10))
-            local margin = math.floor(eff_size * 0.3)
-            local cx = cover_right  - r - margin
-            local cy = cover_bottom - r - margin
+            -- Radius matches favorites badge: eff_size / 2.
+            local r     = math.floor(eff_size / 2)
+            -- Same corner inset as favorites badge: r + r*0.25 from each edge.
+            local inset = math.floor(r * 0.25)
+            local cx = cover_right  - r - inset
+            local cy = cover_bottom - r - inset
 
             -- Usable text width inside the circle (conservative inner chord).
             local inner_w  = math.floor(r * 1.30)

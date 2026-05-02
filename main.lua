@@ -347,6 +347,13 @@ function ZenUI:init()
         menu_class.setUpdateItemTable = function(m_self)
             orig_sut(m_self)
             if type(m_self.tab_item_table) ~= "table" or not _zen_plugin_ref then return end
+            -- Remove KOReader's default filebrowser tab; our library tab replaces it.
+            for i = #m_self.tab_item_table, 1, -1 do
+                if m_self.tab_item_table[i].id == "filemanager" then
+                    table.remove(m_self.tab_item_table, i)
+                    break
+                end
+            end
             -- Insert Zen UI tab right after quicksettings.
             local zen_items = zen_settings.build(_zen_plugin_ref).sub_item_table
             -- Hide the zen tab if lockdown hides the settings panel.

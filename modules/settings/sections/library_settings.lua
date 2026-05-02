@@ -4,6 +4,7 @@
 
 local _ = require("gettext")
 local UIManager = require("ui/uimanager")
+local paths = require("common/paths")
 
 local status_bar_section = require("modules/settings/sections/library_settings/status_bar_settings")
 local settings_apply     = require("modules/settings/zen_settings_apply")
@@ -129,13 +130,9 @@ function M.build(ctx)
                         end,
                     },
                 },
-            },
+            }
         },
     })
-
-    -- -------------------------------------------------------------------------
-    -- Covers
-    -- -------------------------------------------------------------------------
 
     table.insert(items, {
         text = _("Covers"),
@@ -743,7 +740,7 @@ function M.build(ctx)
                 callback = function()
                     local filemanagerutil = require("apps/filemanager/filemanagerutil")
                     local title_header = _("Current home folder:")
-                    local current_path = G_reader_settings:readSetting("home_dir")
+                    local current_path = paths.getHomeDir()
                     local default_path = filemanagerutil.getDefaultDir()
                     filemanagerutil.showChooseDialog(title_header, function(path)
                         G_reader_settings:saveSetting("home_dir", path)
@@ -766,6 +763,64 @@ function M.build(ctx)
                 callback = function()
                     G_reader_settings:flipNilOrFalse("lock_home_folder")
                     refresh_filechooser()
+                end,
+            },
+            {
+                text = _("Additional home folders"),
+                sub_item_table_func = function()
+                    local dirs = type(config.additional_home_dirs) == "table"
+                        and config.additional_home_dirs or {}
+                    local sub = {}
+                    table.insert(sub, {
+                        text = _("Add folder…"),
+                        keep_menu_open = true,
+                        callback = function(touchmenu_instance)
+                            local PathChooser = require("ui/widget/pathchooser")
+                            local start_path = paths.getHomeDir()
+                                or G_reader_settings:readSetting("lastdir") or "/"
+                            UIManager:show(PathChooser:new{
+                                select_file = false,
+                                show_files  = false,
+                                path        = start_path,
+                                onConfirm   = function(dir_path)
+                                    if type(config.additional_home_dirs) ~= "table" then
+                                        config.additional_home_dirs = {}
+                                    end
+                                    for _, existing in ipairs(config.additional_home_dirs) do
+                                        if existing == dir_path then return end
+                                    end
+                                    table.insert(config.additional_home_dirs, dir_path)
+                                    plugin:saveConfig()
+                                    if touchmenu_instance then
+                                        touchmenu_instance:updateItems()
+                                    end
+                                end,
+                            })
+                        end,
+                    })
+                    for i, dir in ipairs(dirs) do
+                        local util = require("util")
+                        local _d, name = util.splitFilePathName(dir)
+                        table.insert(sub, {
+                            text = name ~= "" and name or dir,
+                            keep_menu_open = true,
+                            callback = function(touchmenu_instance)
+                                local ConfirmBox = require("ui/widget/confirmbox")
+                                UIManager:show(ConfirmBox:new{
+                                    text = _("Remove this folder from additional home folders?") .. "\n" .. dir,
+                                    ok_text = _("Remove"),
+                                    ok_callback = function()
+                                        table.remove(config.additional_home_dirs, i)
+                                        plugin:saveConfig()
+                                        if touchmenu_instance then
+                                            touchmenu_instance:updateItems()
+                                        end
+                                    end,
+                                })
+                            end,
+                        })
+                    end
+                    return sub
                 end,
             },
         },

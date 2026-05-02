@@ -26,6 +26,7 @@ local function apply_browser_folder_cover()
     local VerticalSpan = require("ui/widget/verticalspan")
     local lfs = require("libs/libkoreader-lfs")
     local util = require("util")
+    local paths = require("common/paths")
 
     local _ = require("gettext")
     local Screen = Device.screen
@@ -424,10 +425,10 @@ local function apply_browser_folder_cover()
             if bi then return bi, path end
 
             local basename = ffiUtil.basename(path)
-            local home_dir = G_reader_settings and G_reader_settings:readSetting("home_dir") or nil
+            local home_dir = paths.getHomeDir()
 
             -- Search ancestor dirs only within home_dir.
-            if not home_dir or path:sub(1, #home_dir) ~= home_dir then
+            if not home_dir or not paths.isInHomeDir(path) then
                 return nil, nil
             end
 
@@ -1273,9 +1274,10 @@ local function apply_browser_folder_cover()
                 function ListMenuItem:_setListFolderCover(img)
                     local underline_h = 1 -- same as self.underline_h = 1 set in ListMenuItem:init()
                     local border_size = Size.border.thin
+                    local cover_v_pad = Screen:scaleBySize(4)  -- matches bll top+bottom padding
                     local dimen_h = self.height - 2 * underline_h
                     local cover_zone_w = dimen_h -- squared, matches book cover zone in list mode
-                    local max_img = dimen_h - 2 * border_size
+                    local max_img = dimen_h - 2 * border_size - 2 * cover_v_pad
 
                     -- Font sizes scaled to item height, matching ListMenuItem's _fontSize formula.
                     local scale_by_size = Screen:scaleBySize(1000000) * (1 / 1000000)

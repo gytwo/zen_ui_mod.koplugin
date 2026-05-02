@@ -11,6 +11,7 @@ local ConfigManager = require("config/manager")
 local registry = require("modules/registry")
 local zen_settings = require("modules/settings/zen_settings")
 local zen_updater   = require("modules/settings/zen_updater")
+local paths         = require("common/paths")
 
 -- Absolute path to this plugin's root directory (shared module resolves relative paths).
 local _plugin_root = require("common/plugin_root")
@@ -272,7 +273,7 @@ function ZenUI:init()
                             local ok_fm3, FM3 = pcall(require, "apps/filemanager/filemanager")
                             local fm3 = ok_fm3 and FM3 and FM3.instance
                             if fm3 and fm3.file_chooser then
-                                local new_home = G_reader_settings:readSetting("home_dir")
+                                local new_home = paths.getHomeDir()
                                 if new_home and new_home ~= "" and new_home ~= fm3.file_chooser.path then
                                     fm3.file_chooser:changeToPath(new_home)
                                 end

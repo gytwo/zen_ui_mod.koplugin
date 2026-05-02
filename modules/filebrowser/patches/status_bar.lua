@@ -20,6 +20,7 @@ local function apply_status_bar()
     local Size = require("ui/size")
     local VerticalGroup = require("ui/widget/verticalgroup")
     local utils = require("common/utils")
+    local paths = require("common/paths")
     local _ = require("gettext")
 
     local zen_plugin = rawget(_G, "__ZEN_UI_PLUGIN")
@@ -280,7 +281,7 @@ local function apply_status_bar()
             return "\u{F0A0}", " " .. cached_disk_text, colors.disk
         end
         -- Use the home_dir KOReader is actually browsing, then common fallbacks.
-        local home_dir = G_reader_settings and G_reader_settings:readSetting("home_dir")
+        local home_dir = paths.getHomeDir()
         local search_paths = {}
         if home_dir and home_dir ~= "" then
             table.insert(search_paths, home_dir)
@@ -409,13 +410,12 @@ local function apply_status_bar()
         local at_home = false
         local folder_name = nil
         local g_settings = rawget(_G, "G_reader_settings")
-        local home_dir = g_settings and g_settings:readSetting("home_dir")
+        local home_dir = paths.getHomeDir()
         if home_dir and path then
-            local norm_home = home_dir:gsub("/$", "")
-            local norm_path = path:gsub("/$", "")
-            if norm_path == norm_home then
+            local norm_path = paths.normPath(path:gsub("/$", ""))
+            if norm_path == home_dir then
                 at_home = true
-            elseif norm_path:sub(1, #norm_home + 1) == norm_home .. "/" then
+            elseif norm_path:sub(1, #home_dir + 1) == home_dir .. "/" then
                 in_subfolder = true
                 folder_name = path:match("([^/]+)/?$") or path
             end

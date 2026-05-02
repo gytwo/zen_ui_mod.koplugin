@@ -44,9 +44,16 @@ local function apply_collections()
     -- Display mode setup: match the filemanager display mode setting
     -- Returns the mode type ("mosaic", "list") or "classic" / false
     ---------------------------------------------------------------------------
+    -- Pre-cached display mode: set in onShowColl before orig call so Menu:init uses
+    -- the correct value even if CoverBrowser overwrites collection_display_mode in DB.
+    local _coll_display_mode_override = nil
+
     local function setup_display_mode(menu)
         local BookInfoManager = require("bookinfomanager")
-        local display_mode = BookInfoManager:getSetting("filemanager_display_mode")
+        -- Use pre-cached mode if available (set before orig_onShowColl to survive
+        -- CoverBrowser overwriting the DB during updateCollectionFromFolder).
+        local display_mode = _coll_display_mode_override
+            or BookInfoManager:getSetting("collection_display_mode")
         menu._zen_coll_list = true
 
         if not display_mode then
@@ -92,6 +99,10 @@ local function apply_collections()
         if not menu.resetBookInfoCache then
             menu.resetBookInfoCache = function() end
         end
+
+        -- Prevent CoverBrowser's getUpdateItemTableFunc from overwriting these instance patches
+        menu._coverbrowser_overridden = true
+
 
         return display_mode_type
     end
@@ -339,8 +350,9 @@ local function apply_collections()
             local underline_h  = 1
             local dimen_h      = self.height - 2 * underline_h
             local border_size  = Size.border.thin
+            local cover_v_pad  = Screen:scaleBySize(4)  -- matches bll top+bottom padding
             local cover_zone_w = dimen_h
-            local max_img      = dimen_h - 2 * border_size
+            local max_img      = dimen_h - 2 * border_size - 2 * cover_v_pad
             local cover_w      = math.floor(max_img * 2 / 3)
 
             local function _fontSize(nominal, max_size)
@@ -766,20 +778,20 @@ local function apply_collections()
         local function showDisplaySubmenu()
             UIManager_bm:close(button_dialog)
             local ok_bim, bim = pcall(require, "bookinfomanager")
-            local ok_fm, FM   = pcall(require, "apps/filemanager/filemanager")
-            local fm          = ok_fm and FM and FM.instance
             local cur_mode
             if ok_bim and bim then
                 local ok3, m = pcall(function()
-                    return bim:getSetting("filemanager_display_mode")
+                    return bim:getSetting("collection_display_mode")
                 end)
                 if ok3 then cur_mode = m end
             end
             local function apply_mode(mode)
-                if fm and type(fm.onSetDisplayMode) == "function" then
-                    pcall(fm.onSetDisplayMode, fm, mode)
+                -- Use CoverBrowser to apply new mode (saves to DB + repatches updateItemTable)
+                local cb = fm_coll.ui and fm_coll.ui.coverbrowser
+                if cb and type(cb.setupWidgetDisplayMode) == "function" then
+                    pcall(cb.setupWidgetDisplayMode, "collections", mode)
                 elseif ok_bim and bim then
-                    pcall(bim.saveSetting, bim, "filemanager_display_mode", mode)
+                    pcall(bim.saveSetting, bim, "collection_display_mode", mode)
                 end
             end
             local view_dialog
@@ -851,18 +863,20 @@ local function apply_collections()
     end
 
     ---------------------------------------------------------------------------
-    -- Flag set during onShowCollList so Menu:init can detect coll_list creation
+    -- Flags set during show calls so Menu:init can detect which menu is being created
     ---------------------------------------------------------------------------
-    local _patching_coll_list = false
+    local _patching_coll_list  = false
+    local _patching_named_coll = false
 
     ---------------------------------------------------------------------------
     -- Menu:init hook — minimal TitleBar + optional mosaic setup
     ---------------------------------------------------------------------------
     local orig_menu_init = Menu.init
     function Menu:init()
-        local should_patch = is_enabled() and should_match_statusbar_height()
-            and (self.name == "collections" or _patching_coll_list)
-        if should_patch then
+        local is_coll_menu = _patching_coll_list or _patching_named_coll
+        local should_patch_titlebar = is_enabled() and should_match_statusbar_height()
+            and (self.name == "collections" or is_coll_menu)
+        if should_patch_titlebar then
             local TitleBar    = require("ui/widget/titlebar")
             local orig_tb_new = TitleBar.new
             TitleBar.new = function(cls, t)
@@ -885,18 +899,18 @@ local function apply_collections()
             end
             orig_menu_init(self)
             TitleBar.new = orig_tb_new
-
-            -- For the collections list, set up display mode BEFORE any updateItems
-            if _patching_coll_list then
-                local mode_type = setup_display_mode(self)
-                if mode_type == "mosaic" then
-                    patch_mosaic_item()
-                elseif mode_type == "list" then
-                    patch_list_item()
-                end
-            end
         else
             orig_menu_init(self)
+        end
+
+        -- Apply collection display mode regardless of titlebar config
+        if is_enabled() and is_coll_menu then
+            local mode_type = setup_display_mode(self)
+            if mode_type == "mosaic" then
+                patch_mosaic_item()
+            elseif mode_type == "list" then
+                patch_list_item()
+            end
         end
     end
 
@@ -1065,19 +1079,19 @@ local function apply_collections()
             or resolved_name == nil
             or (ok and resolved_name == ReadCollection.default_collection_name)
 
-        if is_enabled() and self.ui then
-            local coverbrowser = self.ui.coverbrowser
-            if coverbrowser and type(coverbrowser.setupWidgetDisplayMode) == "function" then
-                local BookInfoManager = require("bookinfomanager")
-                local fm_mode   = BookInfoManager:getSetting("filemanager_display_mode")
-                local coll_mode = BookInfoManager:getSetting("collection_display_mode")
-                if fm_mode ~= coll_mode then
-                    coverbrowser.setupWidgetDisplayMode("collections", fm_mode)
-                end
+        if is_enabled() then
+            -- Cache mode now; CoverBrowser may overwrite collection_display_mode in DB
+            -- during updateCollectionFromFolder (called inside orig_onShowColl before
+            -- BookList:new), so Menu:init must not read from DB.
+            local ok_bim, bim = pcall(require, "bookinfomanager")
+            if ok_bim then
+                _coll_display_mode_override = bim:getSetting("collection_display_mode")
             end
+            _patching_named_coll = true
         end
-
         orig_onShowColl(self, collection_name)
+        _patching_named_coll = false
+        _coll_display_mode_override = nil
 
         if not is_enabled() then return end
 
@@ -1112,8 +1126,8 @@ local function apply_collections()
     function FileManagerCollection:onShowCollList(file_or_selected_collections, caller_callback, no_dialog)
         local is_browse = file_or_selected_collections == nil
 
-        -- Set flag so Menu:init creates minimal TitleBar + sets up mosaic
-        if is_browse and is_enabled() and should_match_statusbar_height() then
+        -- Set flag so Menu:init sets up display mode (+ minimal TitleBar when status bar is active)
+        if is_browse and is_enabled() then
             _patching_coll_list = true
         end
 

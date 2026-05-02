@@ -14,10 +14,12 @@ local function apply_navbar()
     local InputContainer = require("ui/widget/container/inputcontainer")
     local LineWidget = require("ui/widget/linewidget")
     local TextWidget = require("ui/widget/textwidget")
+    local Event = require("ui/event")
     local UIManager = require("ui/uimanager")
     local VerticalGroup = require("ui/widget/verticalgroup")
     local VerticalSpan = require("ui/widget/verticalspan")
     local utils = require("common/utils")
+    local paths = require("common/paths")
     local Screen = Device.screen
     local _ = require("gettext")
     local lfs = require("libs/libkoreader-lfs")
@@ -63,13 +65,14 @@ local function apply_navbar()
             series = false,
             to_be_read = false,
             search = false,
+            calibre_search = false,
             stats = false,
             exit = false,
             page_left = false,
             page_right = false,
             menu = false,
         },
-        tab_order = { "page_left", "books", "manga", "news", "continue", "authors", "series", "to_be_read", "history", "favorites", "collections", "stats", "search", "exit", "page_right", "menu" },
+        tab_order = { "page_left", "books", "manga", "news", "continue", "authors", "series", "to_be_read", "history", "favorites", "collections", "stats", "search", "calibre_search", "exit", "page_right", "menu" },
         show_labels = true,
         books_label = "Library",
         manga_action = "rakuyomi",
@@ -182,6 +185,11 @@ local function apply_navbar()
             icon = "appbar.search",
         },
         {
+            id = "calibre_search",
+            label = _("Search"),
+            icon = "appbar.search",
+        },
+        {
             id = "stats",
             label = _("Stats"),
             icon = "tab_stats",
@@ -239,7 +247,7 @@ local function apply_navbar()
         local fm = FileManager.instance
         if not fm then return end
         utils.closeWidgetsAbove(fm)
-        local home_dir = G_reader_settings:readSetting("home_dir")
+        local home_dir = paths.getHomeDir()
                          or require("apps/filemanager/filemanagerutil").getDefaultDir()
         fm.file_chooser.path_items[home_dir] = nil
         fm.file_chooser:changeToPath(home_dir)
@@ -371,6 +379,18 @@ local function apply_navbar()
         end
     end
 
+    local function onTabCalibreSearch()
+        local fm = FileManager.instance
+        if not fm or not fm.calibre then
+            local InfoMessage = require("ui/widget/infomessage")
+            UIManager:show(InfoMessage:new{
+                text = _("Calibre plugin is not installed."),
+            })
+            return
+        end
+        UIManager:broadcastEvent(Event:new("CalibreSearch"))
+    end
+
     local function onTabStats()
         local StatsPage = require("modules/filebrowser/patches/stats_page")
         local _createStatusRow = zen_plugin._zen_shared
@@ -436,6 +456,7 @@ local function apply_navbar()
         series = onTabSeries,
         to_be_read = onTabTBR,
         search = onTabSearch,
+        calibre_search = onTabCalibreSearch,
         stats = onTabStats,
         exit = onTabExit,
         page_left = onTabPageLeft,
@@ -951,9 +972,9 @@ local function apply_navbar()
         end
         -- Check home dir for books
         if not new_tab then
-            local home_dir = G_reader_settings:readSetting("home_dir")
+            local home_dir = paths.getHomeDir()
                              or require("apps/filemanager/filemanagerutil").getDefaultDir()
-            if home_dir and (path == home_dir or startsWith(path, home_dir .. "/")) then
+            if home_dir and paths.isInHomeDir(path) then
                 new_tab = "books"
             end
         end

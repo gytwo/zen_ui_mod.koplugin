@@ -126,6 +126,7 @@ local defaults = {
     browser_hide_up_folder = {
         hide_up_folder = true,
     },
+    additional_home_dirs = {},
     browser_list_item_layout = {
         hide_list_borders = false,
     },

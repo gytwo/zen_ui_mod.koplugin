@@ -63,6 +63,7 @@ function M.build(ctx)
         { key = "stats_calendar", text = _("Stats: Calendar"), detect = function() return hasPlugin("statistics") end },
         { key = "battery_stats",  text = _("Battery Stats"),   detect = function() return hasPlugin("batterystat") end },
         { key = "kosync",         text = _("Sync") },
+        { key = "screenshot",     text = _("Screenshot") },
     }
 
     -- Remove any button whose plugin/feature is not detected.

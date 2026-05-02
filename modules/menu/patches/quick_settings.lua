@@ -51,7 +51,7 @@ local function apply_quick_settings()
     -- ============================================================
 
     local config_default = {
-        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "calibre_search", "notion", "streak", "opds", "localsend", "filebrowser", "puzzle", "crossword", "connections", "chess", "casualchess", "stats_progress", "stats_calendar", "battery_stats", "kosync", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "calibre_search", "notion", "streak", "opds", "localsend", "filebrowser", "puzzle", "crossword", "connections", "chess", "casualchess", "stats_progress", "stats_calendar", "battery_stats", "kosync", "restart", "exit", "sleep", "screenshot" },
         show_buttons = {
             wifi = true,
             night = true,
@@ -83,6 +83,7 @@ local function apply_quick_settings()
             chess = false,
             casualchess = false,
             localsend = false,
+            screenshot = false,
         },
         show_frontlight = true,
         show_warmth = true,
@@ -611,6 +612,16 @@ local function apply_quick_settings()
                         text = _("Filebrowser plugin is not installed."),
                     })
                 end
+            end,
+        },
+        screenshot = {
+            icon = "quick_screenshot",
+            label = _("Screenshot"),
+            callback = function(touch_menu)
+                touch_menu:closeMenu()
+                UIManager:scheduleIn(0.3, function()
+                    require("common/countdown_screenshot").run()
+                end)
             end,
         },
         chess = {

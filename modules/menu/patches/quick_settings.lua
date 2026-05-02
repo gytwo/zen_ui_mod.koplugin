@@ -51,7 +51,7 @@ local function apply_quick_settings()
     -- ============================================================
 
     local config_default = {
-        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "calibre_search", "notion", "streak", "opds", "localsend", "filebrowser", "puzzle", "crossword", "connections", "chess", "casualchess", "stats_progress", "stats_calendar", "kosync", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "calibre_search", "notion", "streak", "opds", "localsend", "filebrowser", "puzzle", "crossword", "connections", "chess", "casualchess", "stats_progress", "stats_calendar", "battery_stats", "kosync", "restart", "exit", "sleep" },
         show_buttons = {
             wifi = true,
             night = true,
@@ -78,6 +78,7 @@ local function apply_quick_settings()
             connections = false,
             stats_progress = false,
             stats_calendar = false,
+            battery_stats = false,
             kosync = false,
             chess = false,
             casualchess = false,
@@ -280,7 +281,7 @@ local function apply_quick_settings()
             icon = "quick_rotate",
             label = _("Rotate"),
             callback = function()
-                UIManager:broadcastEvent(Event:new("SwapRotation"))
+                UIManager:broadcastEvent(Event:new("IterateRotation"))
             end,
         },
         usb = {
@@ -558,6 +559,15 @@ local function apply_quick_settings()
             callback = function(touch_menu)
                 touch_menu:closeMenu()
                 UIManager:broadcastEvent(Event:new("ShowCalendarView"))
+            end,
+        },
+        battery_stats = {
+            icon = "quick_battery",
+            label = _("Battery"),
+            visible_func = function() return hasPlugin("batterystat") end,
+            callback = function(touch_menu)
+                touch_menu:closeMenu()
+                UIManager:broadcastEvent(Event:new("ShowBatteryStatistics"))
             end,
         },
         kosync = {

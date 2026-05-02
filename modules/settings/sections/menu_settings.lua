@@ -61,6 +61,7 @@ function M.build(ctx)
         { key = "casualchess",    text = _("Casual Chess"),     detect = function() return hasPlugin("casualkochess") end },
         { key = "stats_progress", text = _("Stats: Progress"), detect = function() return hasPlugin("statistics") end },
         { key = "stats_calendar", text = _("Stats: Calendar"), detect = function() return hasPlugin("statistics") end },
+        { key = "battery_stats",  text = _("Battery Stats"),   detect = function() return hasPlugin("batterystat") end },
         { key = "kosync",         text = _("Sync") },
     }
 

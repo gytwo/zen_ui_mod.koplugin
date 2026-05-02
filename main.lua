@@ -224,8 +224,11 @@ function ZenUI:init()
         elseif is_update then
             local ok_pages, pages_mod = pcall(require, "common/quickstart_pages")
             if ok_pages then
+                -- Strip beta suffix (e.g. "1.0.4-beta2" -> "1.0.4") for changelog lookup.
+                local stable_ver = current_ver:match("^([%d%.]+)")
                 pages_to_show     = pages_mod.UPDATE_PAGES[current_ver]
-                changelog_to_show = pages_mod.CHANGELOGS and pages_mod.CHANGELOGS[current_ver]
+                changelog_to_show = pages_mod.CHANGELOGS and (
+                    pages_mod.CHANGELOGS[current_ver] or pages_mod.CHANGELOGS[stable_ver])
             end
         end
 

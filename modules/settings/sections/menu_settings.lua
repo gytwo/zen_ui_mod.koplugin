@@ -52,6 +52,7 @@ function M.build(ctx)
         { key = "notion",         text = _("Notion"),          detect = function() return hasPlugin("NotionSync") end },
         { key = "streak",         text = _("Streak"),          detect = function() return hasPlugin("readingstreak") end },
         { key = "opds",           text = _("OPDS"),            detect = function() return hasPlugin("opds") end },
+        { key = "localsend",      text = _("LocalSend"),       detect = function() return hasPlugin("localsend") end },
         { key = "filebrowser",    text = _("Filebrowser"),     detect = function() return hasPlugin("filebrowser") end },
         { key = "puzzle",         text = _("Slide Puzzle"),    detect = function() return hasPlugin("slidepuzzle") end },
         { key = "crossword",      text = _("Crossword"),       detect = function() return hasPlugin("crossword") end },

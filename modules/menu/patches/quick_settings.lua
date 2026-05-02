@@ -51,7 +51,7 @@ local function apply_quick_settings()
     -- ============================================================
 
     local config_default = {
-        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "calibre_search", "notion", "streak", "opds", "filebrowser", "puzzle", "crossword", "connections", "chess", "casualchess", "stats_progress", "stats_calendar", "kosync", "restart", "exit", "sleep" },
+        button_order = { "wifi", "night", "rotate", "zen", "lockdown", "usb", "search", "quickrss", "cloud", "zlibrary", "calibre", "calibre_search", "notion", "streak", "opds", "localsend", "filebrowser", "puzzle", "crossword", "connections", "chess", "casualchess", "stats_progress", "stats_calendar", "kosync", "restart", "exit", "sleep" },
         show_buttons = {
             wifi = true,
             night = true,
@@ -81,6 +81,7 @@ local function apply_quick_settings()
             kosync = false,
             chess = false,
             casualchess = false,
+            localsend = false,
         },
         show_frontlight = true,
         show_warmth = true,
@@ -425,6 +426,24 @@ local function apply_quick_settings()
             callback = function(touch_menu)
                 touch_menu:closeMenu()
                 UIManager:broadcastEvent(Event:new("ShowOPDSCatalog"))
+            end,
+        },
+        localsend = {
+            icon = "quick_localsend",
+            label = _("LocalSend"),
+            visible_func = function() return hasPlugin("localsend") end,
+            active_func = function()
+                local f = io.open("/tmp/localsend_koreader.pid", "r")
+                if f then f:close(); return true end
+                return false
+            end,
+            callback = function(touch_menu)
+                UIManager:broadcastEvent(Event:new("ToggleLocalSend"))
+                UIManager:scheduleIn(1.5, function()
+                    if touch_menu._qs_refs then
+                        touch_menu:updateItems(1)
+                    end
+                end)
             end,
         },
         zen = {

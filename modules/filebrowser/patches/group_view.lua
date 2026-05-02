@@ -878,8 +878,9 @@ local function sortDetailFiles(files, collate, reverse)
         elseif collate == "series" then
             sort_key = (bookinfo and bookinfo.series) or ""
         elseif collate == "access" then
-            -- Recently read: use last_read timestamp (higher = more recent)
-            sort_key = (bookinfo and bookinfo.last_read) or 0
+            -- Use file access time, which KOReader updates via lfs.touch() on each open.
+            local lfs = require("libs/libkoreader-lfs")
+            sort_key = lfs.attributes(fpath, "access") or 0
         else
             sort_key = fpath:match("([^/]+)$") or fpath
         end
@@ -894,15 +895,15 @@ local function sortDetailFiles(files, collate, reverse)
             local a_n = type(a.key) == "number" and a.key or 0
             local b_n = type(b.key) == "number" and b.key or 0
             if collate == "access" then
-                return reverse and (a_n < b_n) or (a_n > b_n)
+                if reverse then return a_n < b_n else return a_n > b_n end
             else
-                return reverse and (a_n > b_n) or (a_n < b_n)
+                if reverse then return a_n > b_n else return a_n < b_n end
             end
         else
             -- Alphabetical for title/series
             local a_lower = type(a.key) == "string" and a.key:lower() or tostring(a.key)
             local b_lower = type(b.key) == "string" and b.key:lower() or tostring(b.key)
-            return reverse and (a_lower > b_lower) or (a_lower < b_lower)
+            if reverse then return a_lower > b_lower else return a_lower < b_lower end
         end
     end)
 

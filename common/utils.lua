@@ -225,6 +225,14 @@ function M.formatPageCount(pages, long)
 end
 
 --- Scale multiplier for mosaic cover badge sizes (compact=1.0, normal=1.10, large=1.20).
+--- Returns the corner inset for badge positioning (same value for all 4 corners).
+--- Changing the factor here moves all badges in/out uniformly.
+--- @param r number  the badge radius (or half-height for pill badges)
+--- @return number
+function M.getBadgeInset(r)
+    return math.floor(r * 0.40)
+end
+
 --- @param config table|nil  the plugin config table (p.config)
 --- @return number
 function M.getBadgeScale(config)

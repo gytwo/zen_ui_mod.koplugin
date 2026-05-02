@@ -272,8 +272,8 @@ local function apply_browser_cover_badges()
             then
                 local eff_corner = math.floor(math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14)) * _badge_scale)
                 local r      = math.floor(eff_corner / 2)
-                -- Center on the 45-deg diagonal from the corner: r + border + small inset from each edge.
-                local inset = math.floor(r * 0.25)
+                -- Center on the 45-deg diagonal from the corner.
+                local inset = utils.getBadgeInset(r)
                 local cx, cy
                 if BD.mirroredUILayout() then
                     local cover_right = x + self.width

@@ -166,12 +166,11 @@ local function apply_browser_page_count()
             }
             local tw_sz  = tw:getSize()
             -- Height fixed by eff_size (same scale as cover badge bh).
-            local bh     = math.floor(eff_size * 0.95)
+            local bh     = math.floor(eff_size * 0.85)
             -- Horizontal padding proportional to eff_size (≈ bw * 0.12).
             local h_pad  = math.floor(eff_size * 0.12)
             local bw     = tw_sz.w + 2 * h_pad
-            -- Same corner inset as favorites badge: r + r*0.25 from each edge (r = bh/2).
-            local inset  = math.floor(bh / 2 * 0.25)
+            local inset  = utils.getBadgeInset(math.floor(bh / 2))
             local bx     = cover_left + inset
             local by     = cover_bottom - bh - inset
 

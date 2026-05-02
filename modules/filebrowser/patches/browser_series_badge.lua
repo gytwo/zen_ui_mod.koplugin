@@ -134,8 +134,7 @@ local function apply_browser_series_badge()
 
             -- Radius matches favorites badge: eff_size / 2.
             local r     = math.floor(eff_size / 2)
-            -- Same corner inset as favorites badge: r + r*0.25 from each edge.
-            local inset = math.floor(r * 0.25)
+            local inset = utils.getBadgeInset(r)
             local cx = cover_right  - r - inset
             local cy = cover_bottom - r - inset
 

@@ -411,8 +411,7 @@ local function apply_browser_folder_cover()
             local tw_sz = tw:getSize()
             local diam  = math.max(tw_sz.w, tw_sz.h) + math.floor(eff_size * 0.3)
             local r     = math.floor(diam / 2)
-            -- Same corner inset as favorites badge: r * 0.25 from each edge (top-right corner).
-            local inset = math.floor(r * 0.25)
+            local inset = utils.getBadgeInset(r)
             local cx = cover_x + cd.w - r - inset
             local cy = cover_y + r + inset
 

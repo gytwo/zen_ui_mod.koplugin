@@ -901,15 +901,15 @@ local function apply_browser_folder_cover()
             -- approach used in browser_cover_mosaic_uniform.lua.
             local border      = Folder.face.border_size  -- Size.border.thin
             local max_w       = self.width  - 2 * border
-            local bh          = self.height - 2 * border
+            -- When title strip is active and _setFolderCover is called from a standalone
+            -- update() (deferred refresh), self.height has been restored to full size by
+            -- mosaic_title_strip.update. During init, mosaic_title_strip.init already
+            -- reduced self.height, so no further adjustment is needed (_zen_in_init=true).
+            local strip_h = (not MosaicMenuItem._zen_in_init)
+                and (rawget(MosaicMenuItem, "_zen_strip_h") or 0) or 0
+            local eff_h   = self.height - strip_h
+            local bh          = eff_h - 2 * border
             local available_h = bh
-            local portrait_w, portrait_h
-            do
-                local logger = require("logger")
-                logger.dbg("zen-ui:browser_folder_cover:_setFolderCover: self.height=", self.height,
-                    "self.width=", self.width, "MosaicMenuItem._zen_title_strip_patched=",
-                    tostring(MosaicMenuItem._zen_title_strip_patched))
-            end
             local portrait_w, portrait_h
             if available_h * 2 <= max_w * 3 then
                 -- Height-constrained: cell is wide enough for a 2:3 portrait box.
@@ -1023,10 +1023,9 @@ local function apply_browser_folder_cover()
             -- Cover geometry is stored on self so the paintTo wrapper can position
             -- the badge correctly without walking the widget tree at paint time.
             self._zen_cover_dimen = dimen
-            -- centered_top is computed here (when self.height = cover-area height, not
-            -- inflated by STRIP_H). Cache it so paintTo doesn't re-derive from the
-            -- restored (larger) self.height and land the badge inside the strip.
-            self._zen_cover_top = math.floor((self.height - dimen.h) / 2)
+            -- centered_top is computed against eff_h (usable area, strip excluded) so
+            -- the badge lands on the cover image rather than inside the strip.
+            self._zen_cover_top = math.floor((eff_h - dimen.h) / 2)
             self._zen_folder_count = (settings.show_item_count.get() and img.book_count and img.book_count > 0)
                 and img.book_count or nil
             local directory = self:_getTextBoxes { w = size.w, h = size.h }
@@ -1064,7 +1063,7 @@ local function apply_browser_folder_cover()
             --   the left of the cover, mirroring list mode.
             -- In both cases the line closer to the cover is longer; the outer one is
             -- shorter.  Rounded corners inset the lines on both sides.
-            local centered_top  = math.floor((self.height - dimen.h) / 2)
+            local centered_top  = math.floor((eff_h - dimen.h) / 2)
             local top_h         = 2 * (Folder.edge.thick + Folder.edge.margin)
             local spine_gap     = Screen:scaleBySize(9)
             local use_top_lines = centered_top >= top_h
@@ -1109,12 +1108,14 @@ local function apply_browser_folder_cover()
                 local spine_x   = math.max(0, math.floor((self.width - dimen.w) / 2))
                 local line1_h   = math.max(0, math.floor(dimen.h * (Folder.edge.width ^ 2)) - 2 * line_inset)
                 local line2_h   = math.max(0, math.floor(dimen.h * Folder.edge.width)       - 2 * line_inset)
+                -- Use eff_h so spine lines center within the cover area, not the full
+                -- cell (which includes the strip region when called via deferred refresh).
                 decoration_layer = LeftContainer:new {
-                    dimen = { w = self.width, h = self.height },
+                    dimen = { w = self.width, h = eff_h },
                     HorizontalGroup:new {
                         HorizontalSpan:new { width = math.max(0, spine_x - spine_gap) },
                         CenterContainer:new {
-                            dimen = { w = Folder.edge.thick, h = self.height },
+                            dimen = { w = Folder.edge.thick, h = eff_h },
                             LineWidget:new {
                                 background = Folder.edge.color,
                                 dimen = { w = Folder.edge.thick, h = line1_h },
@@ -1122,7 +1123,7 @@ local function apply_browser_folder_cover()
                         },
                         HorizontalSpan:new { width = Folder.edge.margin },
                         CenterContainer:new {
-                            dimen = { w = Folder.edge.thick, h = self.height },
+                            dimen = { w = Folder.edge.thick, h = eff_h },
                             LineWidget:new {
                                 background = Folder.edge.color,
                                 dimen = { w = Folder.edge.thick, h = line2_h },

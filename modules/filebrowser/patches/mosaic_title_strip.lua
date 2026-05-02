@@ -86,6 +86,8 @@ local function apply_mosaic_title_strip()
     if _show_author then STRIP_H = STRIP_H + AUTHOR_LINE end
     STRIP_H = STRIP_H + PAD
     logger.dbg("zen-ui:mosaic_title_strip: STRIP_H=", STRIP_H)
+    -- Shared with browser_folder_cover so _setFolderCover can use the correct effective height.
+    MosaicMenuItem._zen_strip_h = STRIP_H
 
     -- Flag to prevent double height reduction when init calls update internally.
     local _in_init = false
@@ -97,8 +99,10 @@ local function apply_mosaic_title_strip()
         logger.dbg("zen-ui:mosaic_title_strip:init: self.height before=", self.height, "STRIP_H=", STRIP_H)
         self.height = self.height - STRIP_H
         _in_init = true
+        MosaicMenuItem._zen_in_init = true
         orig_init(self)
         _in_init = false
+        MosaicMenuItem._zen_in_init = false
         self.height = self.height + STRIP_H
         logger.dbg("zen-ui:mosaic_title_strip:init: self.height after restore=", self.height)
     end
@@ -159,8 +163,8 @@ local function apply_mosaic_title_strip()
 
             -- Directories: show folder name in strip (either setting enabled means strip is active).
             if self.is_directory then
-                local folder_name = self.text
-                if not folder_name or folder_name == "" then return end
+                local folder_name = self.text and self.text:gsub("/$", "") or ""
+                if folder_name == "" then return end
                 -- Render and cache the directory name strip on first paint.
                 if not self._zen_strip_bb then
                     local strip_w  = self.width

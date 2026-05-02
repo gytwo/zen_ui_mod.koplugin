@@ -261,6 +261,38 @@ function M.build(ctx)
                     UIManager:setDirty(nil, "full")
                 end,
             },
+            {
+                text = _("Show title below cover (mosaic)"),
+                checked_func = function()
+                    return type(config.mosaic_title_strip) == "table"
+                        and config.mosaic_title_strip.show_title == true
+                end,
+                callback = function()
+                    if type(config.mosaic_title_strip) ~= "table" then
+                        config.mosaic_title_strip = {}
+                    end
+                    config.mosaic_title_strip.show_title =
+                        not (config.mosaic_title_strip.show_title == true)
+                    plugin:saveConfig()
+                    settings_apply.prompt_restart()
+                end,
+            },
+            {
+                text = _("Show author below cover (mosaic)"),
+                checked_func = function()
+                    return type(config.mosaic_title_strip) == "table"
+                        and config.mosaic_title_strip.show_author == true
+                end,
+                callback = function()
+                    if type(config.mosaic_title_strip) ~= "table" then
+                        config.mosaic_title_strip = {}
+                    end
+                    config.mosaic_title_strip.show_author =
+                        not (config.mosaic_title_strip.show_author == true)
+                    plugin:saveConfig()
+                    settings_apply.prompt_restart()
+                end,
+            },
         },
     })
 

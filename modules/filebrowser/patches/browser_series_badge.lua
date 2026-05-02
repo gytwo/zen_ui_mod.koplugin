@@ -117,8 +117,9 @@ local function apply_browser_series_badge()
             local eff_size = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
             local cover_left   = x + math.floor((self.width - target.dimen.w) / 2)
             local cover_right  = cover_left + target.dimen.w
-            local cover_bottom = y + self.height
-                - math.floor((self.height - target.dimen.h) / 2)
+            -- Use absolute coords so cover_bottom stays correct when a title strip
+            -- below the cover inflates self.height beyond the actual image area.
+            local cover_bottom = target.dimen.y + target.dimen.h
 
             -- 6. Format series index: integer → "#N", float → "#N.N"
             local idx_str

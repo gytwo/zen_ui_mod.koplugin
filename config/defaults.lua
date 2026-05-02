@@ -141,6 +141,10 @@ local defaults = {
     browser_series_badge = {
         show_series_badge = false,
     },
+    mosaic_title_strip = {
+        show_title  = false,
+        show_author = false,
+    },
     zen_scroll_bar = {
         style              = "dots",     -- "bar" | "dots" | "page_number"
         page_number_format = "total",  -- "current" | "total"

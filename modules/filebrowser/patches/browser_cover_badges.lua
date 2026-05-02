@@ -205,11 +205,21 @@ local function apply_browser_cover_badges()
             return fav_mark
         end
 
+        local _badges_log_done = false
+        local _badges_target_log_done = false
         function MosaicMenuItem:paintTo(bb, x, y)
             -- Clear the full cell to white before painting so that portrait
             -- covers (which are narrower than the cell) don't leave ghost pixels
             -- from a previously painted full-width placeholder in the margins.
             if self.width and self.height then
+                if not _badges_log_done then
+                    _badges_log_done = true
+                    local logger = require("logger")
+                    logger.dbg("zen-ui:browser_cover_badges:paintTo: white fill x=", x, "y=", y,
+                        "w=", self.width, "h=", self.height,
+                        "strip_patched=", tostring(MosaicMenuItem._zen_title_strip_patched),
+                        "is_directory=", tostring(self.is_directory))
+                end
                 bb:paintRect(x, y, self.width, self.height, Blitbuffer.COLOR_WHITE)
             end
 
@@ -225,7 +235,22 @@ local function apply_browser_cover_badges()
 
             -- Resolve inner cover-frame sub-widget and current mark size
             local target = self[1] and self[1][1] and self[1][1][1]
-            if not (target and target.dimen and target.dimen.y) then return end
+            if not (target and target.dimen and target.dimen.y) then
+                local logger = require("logger")
+                logger.dbg("zen-ui:browser_cover_badges:paintTo: target not found, self[1]=",
+                    tostring(self[1] ~= nil), "self[1][1]=", tostring(self[1] and self[1][1] ~= nil),
+                    "self[1][1][1]=", tostring(self[1] and self[1][1] and self[1][1][1] ~= nil))
+                return
+            end
+            do
+                if not _badges_target_log_done then
+                    _badges_target_log_done = true
+                    local logger = require("logger")
+                    logger.dbg("zen-ui:browser_cover_badges:paintTo: target.dimen x=", target.dimen.x,
+                        "y=", target.dimen.y, "w=", target.dimen.w, "h=", target.dimen.h,
+                        "self.height=", self.height, "self.width=", self.width)
+                end
+            end
 
             local corner_mark_size = uv("corner_mark_size")
             if not (corner_mark_size and corner_mark_size > 0) then return end

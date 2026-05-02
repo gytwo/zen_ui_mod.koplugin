@@ -104,6 +104,7 @@ local function apply_browser_page_count()
         end
         local _uv_fn = find_uv_fn(orig_paintTo)
 
+        local _page_count_log_done = false
         function MosaicMenuItem:paintTo(bb, x, y)
             -- 1. Paint cover + all badge layers from previous patches.
             orig_paintTo(self, bb, x, y)
@@ -135,8 +136,20 @@ local function apply_browser_page_count()
                 or Screen:scaleBySize(20)
             local eff_size = math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
             local cover_left   = x + math.floor((self.width - target.dimen.w) / 2)
-            local cover_bottom = y + self.height
-                - math.floor((self.height - target.dimen.h) / 2)
+            -- Use absolute coords so cover_bottom stays correct when a title strip
+            -- below the cover inflates self.height beyond the actual image area.
+            local cover_bottom = target.dimen.y + target.dimen.h
+
+            if not _page_count_log_done then
+                _page_count_log_done = true
+                local logger = require("logger")
+                logger.dbg("zen-ui:browser_page_count:paintTo: x=", x, "y=", y,
+                    "self.height=", self.height, "self.width=", self.width,
+                    "target.dimen.h=", target.dimen.h, "target.dimen.w=", target.dimen.w,
+                    "target.dimen.y=", target.dimen.y,
+                    "cover_left=", cover_left, "cover_bottom=", cover_bottom,
+                    "strip_patched=", tostring(MosaicMenuItem._zen_title_strip_patched))
+            end
 
             -- 6. Measure text — font, height, padding all scale with eff_size
             --    matching the cover badge proportions exactly.

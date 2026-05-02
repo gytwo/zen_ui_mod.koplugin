@@ -369,8 +369,16 @@ local function apply_browser_folder_cover()
         -- Captured once at setupLayout time; uv reads corner_mark_size live.
         local _badge_uv_fn = find_uv_fn(MosaicMenuItem.paintTo)
 
+        local _folder_paintTo_logged = false
         local orig_folder_paintTo = MosaicMenuItem.paintTo
         function MosaicMenuItem:paintTo(bb, x, y)
+            if not _folder_paintTo_logged and self.is_directory then
+                _folder_paintTo_logged = true
+                local logger = require("logger")
+                logger.dbg("zen-ui:browser_folder_cover:paintTo: self.height=", self.height,
+                    "self.width=", self.width, "_zen_cover_dimen=", tostring(rawget(self, "_zen_cover_dimen")),
+                    "_zen_title_strip_patched=", tostring(MosaicMenuItem._zen_title_strip_patched))
+            end
             orig_folder_paintTo(self, bb, x, y)
             local count = rawget(self, "_zen_folder_count")
             if not count then return end
@@ -382,9 +390,10 @@ local function apply_browser_folder_cover()
                 or Screen:scaleBySize(20)
             local eff_size = math.max(corner_mark_size, math.floor((cd.w or 0) * 0.14))
 
-            -- Cover is centered within the cell (same math as _setFolderCover).
-            local cover_x = x + math.floor((self.width  - cd.w) / 2)
-            local cover_y = y + math.floor((self.height - cd.h) / 2)
+            -- Use the cached centered_top (computed when self.height = cover-area height).
+            -- Re-deriving from self.height would be wrong when mosaic_title_strip inflates it.
+            local cover_x = x + math.floor((self.width - cd.w) / 2)
+            local cover_y = y + (rawget(self, "_zen_cover_top") or math.floor((self.height - cd.h) / 2))
 
             local count_str  = tostring(count)
             local font_size  = math.max(7, math.floor(eff_size * 0.24))
@@ -882,6 +891,13 @@ local function apply_browser_folder_cover()
             local bh          = self.height - 2 * border
             local available_h = bh
             local portrait_w, portrait_h
+            do
+                local logger = require("logger")
+                logger.dbg("zen-ui:browser_folder_cover:_setFolderCover: self.height=", self.height,
+                    "self.width=", self.width, "MosaicMenuItem._zen_title_strip_patched=",
+                    tostring(MosaicMenuItem._zen_title_strip_patched))
+            end
+            local portrait_w, portrait_h
             if available_h * 2 <= max_w * 3 then
                 -- Height-constrained: cell is wide enough for a 2:3 portrait box.
                 portrait_h = available_h
@@ -994,12 +1010,18 @@ local function apply_browser_folder_cover()
             -- Cover geometry is stored on self so the paintTo wrapper can position
             -- the badge correctly without walking the widget tree at paint time.
             self._zen_cover_dimen = dimen
+            -- centered_top is computed here (when self.height = cover-area height, not
+            -- inflated by STRIP_H). Cache it so paintTo doesn't re-derive from the
+            -- restored (larger) self.height and land the badge inside the strip.
+            self._zen_cover_top = math.floor((self.height - dimen.h) / 2)
             self._zen_folder_count = (settings.show_item_count.get() and img.book_count and img.book_count > 0)
                 and img.book_count or nil
             local directory = self:_getTextBoxes { w = size.w, h = size.h }
 
             local folder_name_widget
-            if settings.show_folder_name.get() then
+            -- When the title strip is active it renders the folder name below
+            -- the cover; suppress the on-cover overlay to avoid duplication.
+            if settings.show_folder_name.get() and not MosaicMenuItem._zen_title_strip_patched then
                 local NameContainer = settings.name_centered.get() and CenterContainer or BottomContainer
                 local name_frame = FrameContainer:new {
                     padding = 0,

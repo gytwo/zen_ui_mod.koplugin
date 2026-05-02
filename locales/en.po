@@ -1235,6 +1235,12 @@ msgstr "Show labels"
 msgid "Show new banner"
 msgstr "Show new banner"
 
+msgid "Show author below cover (mosaic)"
+msgstr "Show author below cover (mosaic)"
+
+msgid "Show title below cover (mosaic)"
+msgstr "Show title below cover (mosaic)"
+
 msgid "Show other items"
 msgstr "Show other items"
 

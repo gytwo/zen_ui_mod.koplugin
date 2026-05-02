@@ -1061,8 +1061,7 @@ local function apply_context_menu()
             -- ── Main dialog ───────────────────────────────────────────────────
             local buttons = {}
 
-            -- Details: description popup (with Book information button) when available,
-            -- otherwise opens book information directly.
+            -- Details: description popup (with Book information button)
             if is_file and is_not_parent_folder then
                 table.insert(buttons, {
                     {

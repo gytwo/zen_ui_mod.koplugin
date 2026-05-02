@@ -1070,29 +1070,28 @@ local function apply_context_menu()
                         align    = "left",
                         callback = function()
                             close_dialog()
-                            if book_description then
-                                local util       = require("util")
-                                local TextViewer = require("ui/widget/textviewer")
-                                local tv
-                                tv = TextViewer:new{
-                                    title     = _("Description"),
-                                    text      = util.htmlToPlainTextIfHtml(book_description),
-                                    text_type = "book_info",
-                                    -- replace default Find/Top/Bottom/Close with one button
-                                    buttons_table = {
-                                        {{
-                                            text     = "\u{F02FD} " .. _("Book information"),
-                                            callback = function()
-                                                UIManager:close(tv)
-                                                file_manager.bookinfo:show(file)
-                                            end,
-                                        }},
-                                    },
-                                }
-                                UIManager:show(tv)
-                            else
-                                file_manager.bookinfo:show(file)
-                            end
+                            local util       = require("util")
+                            local TextViewer = require("ui/widget/textviewer")
+                            local desc_text  = book_description
+                                and util.htmlToPlainTextIfHtml(book_description)
+                                or _("No description.")
+                            local tv
+                            tv = TextViewer:new{
+                                title     = _("Description"),
+                                text      = desc_text,
+                                text_type = "book_info",
+                                -- replace default Find/Top/Bottom/Close with one button
+                                buttons_table = {
+                                    {{
+                                        text     = "\u{F02FD} " .. _("Book information"),
+                                        callback = function()
+                                            UIManager:close(tv)
+                                            file_manager.bookinfo:show(file)
+                                        end,
+                                    }},
+                                },
+                            }
+                            UIManager:show(tv)
                         end,
                     },
                 })

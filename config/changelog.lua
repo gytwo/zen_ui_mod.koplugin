@@ -23,4 +23,15 @@ return {
         "Fix: language defaulting to english after plugin restart",
         "Bug fixes and performance improvements",
     },
+    ["1.0.4"] = {
+        "Add scroll bar with page numbers, jump to page, and buttons + skip (Library > Scroll bar)",
+        "Add title/author strip (Library > Covers)",
+        "Add padding to covers in list views",
+        "Add Calibre search in navbar, label is Search (Navbar > Tabs)",
+        "Add custom quick settings buttons (Quick settings > Buttons)",
+        "Add book information to context menu (Tap + hold book > Details)",
+        "Collections and history have independent displays (Tap + hold Navbar)",
+        "Support additional home folders (Library > Home folder)",
+        "Various fixes for android devices",
+    },
 }

@@ -57,7 +57,7 @@ function M.build(ctx)
         { key = "crossword",      text = _("Crossword"),       detect = function() return hasPlugin("crossword") end },
         { key = "connections",    text = _("Connections"),      detect = function() return hasPlugin("nytconnections") end },
         { key = "chess",          text = _("Chess"),            detect = function() return hasPlugin("kochess") end },
-        -- { key = "casualchess",    text = _("Casual Chess"),     detect = function() return hasPlugin("casualkochess") end },
+        { key = "casualchess",    text = _("Casual Chess"),     detect = function() return hasPlugin("casualkochess") end },
         { key = "stats_progress", text = _("Stats: Progress"), detect = function() return hasPlugin("statistics") end },
         { key = "stats_calendar", text = _("Stats: Calendar"), detect = function() return hasPlugin("statistics") end },
         { key = "kosync",         text = _("Sync") },

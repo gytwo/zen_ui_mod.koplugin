@@ -80,7 +80,7 @@ local function apply_quick_settings()
             stats_calendar = false,
             kosync = false,
             chess = false,
-            -- casualchess = false,
+            casualchess = false,
         },
         show_frontlight = true,
         show_warmth = true,
@@ -593,15 +593,15 @@ local function apply_quick_settings()
                 UIManager:broadcastEvent(Event:new("KochessStart"))
             end,
         },
-        -- casualchess = {
-        --     icon = "quick_chess",
-        --     label = _("Chess"),
-        --     visible_func = function() return hasPlugin("casualkochess") end,
-        --     callback = function(touch_menu)
-        --         touch_menu:closeMenu()
-        --         UIManager:broadcastEvent(Event:new("CasualChessStart"))
-        --     end,
-        -- },
+        casualchess = {
+            icon = "quick_chess",
+            label = _("Chess"),
+            visible_func = function() return hasPlugin("casualkochess") end,
+            callback = function(touch_menu)
+                touch_menu:closeMenu()
+                UIManager:broadcastEvent(Event:new("CasualChessStart"))
+            end,
+        },
 
     }
 

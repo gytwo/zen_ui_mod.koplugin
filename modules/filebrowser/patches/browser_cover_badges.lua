@@ -206,6 +206,18 @@ local function apply_browser_cover_badges()
             return fav_mark
         end
 
+        local _cached_badge_scale    = 1.0
+        local _cached_badge_size_key = false
+        local function get_badge_scale()
+            local cur = _plugin and type(_plugin.config) == "table"
+                and type(_plugin.config.browser_cover_badges) == "table"
+                and _plugin.config.browser_cover_badges.badge_size or false
+            if cur ~= _cached_badge_size_key then
+                _cached_badge_size_key = cur
+                _cached_badge_scale    = utils.getBadgeScale(_plugin and _plugin.config)
+            end
+            return _cached_badge_scale
+        end
         local _badges_log_done = false
         local _badges_target_log_done = false
         function MosaicMenuItem:paintTo(bb, x, y)
@@ -257,8 +269,7 @@ local function apply_browser_cover_badges()
             if not (corner_mark_size and corner_mark_size > 0) then return end
 
             local border = target.bordersize or 0
-            local _p_ref = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
-            local _badge_scale = utils.getBadgeScale(_p_ref and _p_ref.config)
+            local _badge_scale = get_badge_scale()
 
             -- 3. Favorite star → top-left inside a circle
             local show_fav_badge = _plugin

@@ -184,6 +184,9 @@ local function apply_status_bar()
     -- Disk free space cache
     local cached_disk_text = nil
     local cached_disk_time = 0
+    -- RAM usage cache
+    local cached_ram_text = nil
+    local cached_ram_time = 0
 
     -- === Color text support ===
     -- TextWidget.colorblitFrom is grayscale; colorblitFromRGB32 needed for color.
@@ -264,12 +267,18 @@ local function apply_status_bar()
     end
 
     local function getRamInfo()
+        local now = os.time()
+        if cached_ram_text and (now - cached_ram_time) < 30 then
+            return "\u{EA5A}", " " .. cached_ram_text, colors.ram
+        end
         local statm = io.open("/proc/self/statm", "r")
         if statm then
             local _, rss = statm:read("*number", "*number")
             statm:close()
             if rss then
-                return "\u{EA5A}", string.format(" %dM", math.floor(rss / 256)), colors.ram
+                cached_ram_text = string.format("%dM", math.floor(rss / 256))
+                cached_ram_time = now
+                return "\u{EA5A}", " " .. cached_ram_text, colors.ram
             end
         end
         return "\u{EA5A}", " ?M", colors.ram

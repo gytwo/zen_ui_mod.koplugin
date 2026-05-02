@@ -33,8 +33,15 @@ local THUMB_COLOR = Blitbuffer.COLOR_BLACK
 local DOT_INACT   = Blitbuffer.COLOR_DARK_GRAY
 
 local _pn_face = Font:getFace("xx_smallinfofont")
-local _icon_l  = IconWidget:new{ icon = "chevron.left",  width = M.PN_ICON_SZ, height = M.PN_ICON_SZ }
-local _icon_r  = IconWidget:new{ icon = "chevron.right", width = M.PN_ICON_SZ, height = M.PN_ICON_SZ }
+local _icon_l, _icon_r  -- lazy: only created when page_number style is first painted
+
+local function get_pn_icons()
+    if not _icon_l then
+        _icon_l = IconWidget:new{ icon = "chevron.left",  width = M.PN_ICON_SZ, height = M.PN_ICON_SZ }
+        _icon_r = IconWidget:new{ icon = "chevron.right", width = M.PN_ICON_SZ, height = M.PN_ICON_SZ }
+    end
+    return _icon_l, _icon_r
+end
 
 local function get_plugin()
     return _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
@@ -120,8 +127,9 @@ function M.paint(bb, x, y, w, h, cur_page, total_pages)
         local text_x   = x + M.CHEV_W + math.floor((inner_w - text_w) / 2)
         RenderText:renderUtf8Text(bb, text_x, base_y, _pn_face, text_str, false, false, THUMB_COLOR)
         local icon_y = y + math.floor((h - M.PN_ICON_SZ) / 2)
-        _icon_l:paintTo(bb, x + math.floor((M.CHEV_W - M.PN_ICON_SZ) / 2), icon_y)
-        _icon_r:paintTo(bb, x + w - M.CHEV_W + math.floor((M.CHEV_W - M.PN_ICON_SZ) / 2), icon_y)
+        local il, ir = get_pn_icons()
+        il:paintTo(bb, x + math.floor((M.CHEV_W - M.PN_ICON_SZ) / 2), icon_y)
+        ir:paintTo(bb, x + w - M.CHEV_W + math.floor((M.CHEV_W - M.PN_ICON_SZ) / 2), icon_y)
 
     else -- "bar" (default)
         M.paintPill(bb, x, y + M.BAR_PAD, w, M.BAR_H, TRACK_COLOR)

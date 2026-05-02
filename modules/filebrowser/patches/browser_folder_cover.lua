@@ -370,6 +370,18 @@ local function apply_browser_folder_cover()
         -- Captured once at setupLayout time; uv reads corner_mark_size live.
         local _badge_uv_fn = find_uv_fn(MosaicMenuItem.paintTo)
 
+        local _cached_badge_scale    = 1.0
+        local _cached_badge_size_key = false
+        local function get_badge_scale()
+            local cur = _plugin and type(_plugin.config) == "table"
+                and type(_plugin.config.browser_cover_badges) == "table"
+                and _plugin.config.browser_cover_badges.badge_size or false
+            if cur ~= _cached_badge_size_key then
+                _cached_badge_size_key = cur
+                _cached_badge_scale    = utils.getBadgeScale(_plugin and _plugin.config)
+            end
+            return _cached_badge_scale
+        end
         local _folder_paintTo_logged = false
         local orig_folder_paintTo = MosaicMenuItem.paintTo
         function MosaicMenuItem:paintTo(bb, x, y)
@@ -389,9 +401,8 @@ local function apply_browser_folder_cover()
             if not (cd and cd.w and cd.w > 0) then return end
             local corner_mark_size = (_badge_uv_fn and _badge_uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
-            local _p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
             local eff_size = math.floor(math.max(corner_mark_size, math.floor((cd.w or 0) * 0.14))
-                * utils.getBadgeScale(_p and _p.config))
+                * get_badge_scale())
 
             -- Use the cached centered_top (computed when self.height = cover-area height).
             -- Re-deriving from self.height would be wrong when mosaic_title_strip inflates it.

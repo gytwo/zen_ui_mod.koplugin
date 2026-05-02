@@ -85,6 +85,18 @@ local function apply_browser_series_badge()
             return nil
         end
 
+        local _cached_badge_scale    = 1.0
+        local _cached_badge_size_key = false
+        local function get_badge_scale()
+            local cur = _plugin and type(_plugin.config) == "table"
+                and type(_plugin.config.browser_cover_badges) == "table"
+                and _plugin.config.browser_cover_badges.badge_size or false
+            if cur ~= _cached_badge_size_key then
+                _cached_badge_size_key = cur
+                _cached_badge_scale    = utils.getBadgeScale(_plugin and _plugin.config)
+            end
+            return _cached_badge_scale
+        end
         local orig_paintTo = MosaicMenuItem.paintTo
         local _uv_fn = find_uv_fn(orig_paintTo)
 
@@ -115,9 +127,8 @@ local function apply_browser_series_badge()
             --    this one sits at bottom-right of the same cover frame.
             local corner_mark_size = (_uv_fn and _uv_fn("corner_mark_size"))
                 or Screen:scaleBySize(20)
-            local _p = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
             local eff_size = math.floor(math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14))
-                * utils.getBadgeScale(_p and _p.config))
+                * get_badge_scale())
             local cover_left   = x + math.floor((self.width - target.dimen.w) / 2)
             local cover_right  = cover_left + target.dimen.w
             -- Use absolute coords so cover_bottom stays correct when a title strip

@@ -67,6 +67,7 @@ local function apply_mosaic_title_strip()
     local AUTHOR_FONT = 13
     local PAD         = Screen:scaleBySize(3)
     local GAP         = Screen:scaleBySize(2)  -- space between title and author rows
+    local PAD_H       = Screen:scaleBySize(6)  -- horizontal text margin (device constant)
 
     -- Measure actual pixel line heights for the chosen fonts at this device's DPI.
     local function measure_line_h(font_size, bold)
@@ -110,7 +111,11 @@ local function apply_mosaic_title_strip()
             logger.dbg("zen-ui:mosaic_title_strip:update: reducing height by STRIP_H=", STRIP_H, "from=", self.height)
             self.height = self.height - STRIP_H
         end
-        self._zen_strip_data = nil -- reset cache so next paintTo re-queries bookinfo
+        self._zen_strip_data = nil -- reset text/render cache on cover reload
+        if self._zen_strip_bb then
+            self._zen_strip_bb:free()
+            self._zen_strip_bb = nil
+        end
         orig_update(self)
         if not _in_init then
             self.height = self.height + STRIP_H
@@ -156,23 +161,27 @@ local function apply_mosaic_title_strip()
             if self.is_directory then
                 local folder_name = self.text
                 if not folder_name or folder_name == "" then return end
-                local strip_y = y + self.height - STRIP_H
-                bb:paintRect(x, strip_y, self.width, STRIP_H, Blitbuffer.COLOR_WHITE)
-                local pad_f = Screen:scaleBySize(6)
-                local tw = TextWidget:new{
-                    text                   = BD.auto(folder_name),
-                    face                   = Font:getFace("cfont", TITLE_FONT),
-                    bold                   = true,
-                    padding                = 0,
-                    fgcolor                = Blitbuffer.COLOR_BLACK,
-                    max_width              = self.width - 2 * pad_f,
-                    truncate_with_ellipsis = true,
-                }
-                local tsz = tw:getSize()
-                -- tsz.w <= max_width, so centering is always within bounds.
-                tw:paintTo(bb, x + math.floor((self.width - tsz.w) / 2),
-                    strip_y + math.floor((STRIP_H - tsz.h) / 2))
-                tw:free()
+                -- Render and cache the directory name strip on first paint.
+                if not self._zen_strip_bb then
+                    local strip_w  = self.width
+                    local strip_bb = Blitbuffer.new(strip_w, STRIP_H, bb:getType())
+                    strip_bb:fill(Blitbuffer.COLOR_WHITE)
+                    local tw = TextWidget:new{
+                        text                   = BD.auto(folder_name),
+                        face                   = Font:getFace("cfont", TITLE_FONT),
+                        bold                   = true,
+                        padding                = 0,
+                        fgcolor                = Blitbuffer.COLOR_BLACK,
+                        max_width              = strip_w - 2 * PAD_H,
+                        truncate_with_ellipsis = true,
+                    }
+                    local tsz = tw:getSize()
+                    tw:paintTo(strip_bb, math.floor((strip_w - tsz.w) / 2),
+                        math.floor((STRIP_H - tsz.h) / 2))
+                    tw:free()
+                    self._zen_strip_bb = strip_bb
+                end
+                bb:blitFrom(self._zen_strip_bb, x, y + self.height - STRIP_H, 0, 0, self.width, STRIP_H)
                 return
             end
 
@@ -195,50 +204,55 @@ local function apply_mosaic_title_strip()
             end
             if not self._zen_strip_data then return end
 
-            local strip_y = y + self.height - STRIP_H
-            local strip_w = self.width
-            local pad_h   = Screen:scaleBySize(6)  -- min margin each side
-            local text_w  = strip_w - 2 * pad_h    -- max_width guarantees tsz.w <= text_w
-            local cur_y   = strip_y + PAD
+            -- Render and cache the text strip blitbuffer on first paint after a data change.
+            if not self._zen_strip_bb then
+                local strip_w  = self.width
+                local text_w   = strip_w - 2 * PAD_H
+                local strip_bb = Blitbuffer.new(strip_w, STRIP_H, bb:getType())
+                strip_bb:fill(Blitbuffer.COLOR_WHITE)
+                local cur_y = PAD
 
-            bb:paintRect(x, strip_y, strip_w, STRIP_H, Blitbuffer.COLOR_WHITE)
-
-            if _show_title then
-                local title_str = self._zen_strip_data.title
-                if title_str then
-                    local tw = TextWidget:new{
-                        text                   = BD.auto(title_str),
-                        face                   = Font:getFace("cfont", TITLE_FONT),
-                        bold                   = true,
-                        padding                = 0,
-                        fgcolor                = Blitbuffer.COLOR_BLACK,
-                        max_width              = text_w,
-                        truncate_with_ellipsis = true,
-                    }
-                    local tsz = tw:getSize()
-                    tw:paintTo(bb, x + math.floor((strip_w - tsz.w) / 2), cur_y)
-                    tw:free()
+                if _show_title then
+                    local title_str = self._zen_strip_data.title
+                    if title_str then
+                        local tw = TextWidget:new{
+                            text                   = BD.auto(title_str),
+                            face                   = Font:getFace("cfont", TITLE_FONT),
+                            bold                   = true,
+                            padding                = 0,
+                            fgcolor                = Blitbuffer.COLOR_BLACK,
+                            max_width              = text_w,
+                            truncate_with_ellipsis = true,
+                        }
+                        local tsz = tw:getSize()
+                        tw:paintTo(strip_bb, math.floor((strip_w - tsz.w) / 2), cur_y)
+                        tw:free()
+                    end
+                    if _show_author then cur_y = cur_y + TITLE_LINE + GAP end
                 end
-                if _show_author then cur_y = cur_y + TITLE_LINE + GAP end
+
+                if _show_author then
+                    local authors_str = self._zen_strip_data.authors
+                    if authors_str then
+                        local aw = TextWidget:new{
+                            text                   = BD.auto(authors_str),
+                            face                   = Font:getFace("cfont", AUTHOR_FONT),
+                            bold                   = false,
+                            padding                = 0,
+                            fgcolor                = Blitbuffer.COLOR_BLACK,
+                            max_width              = text_w,
+                            truncate_with_ellipsis = true,
+                        }
+                        local asz = aw:getSize()
+                        aw:paintTo(strip_bb, math.floor((strip_w - asz.w) / 2), cur_y)
+                        aw:free()
+                    end
+                end
+
+                self._zen_strip_bb = strip_bb
             end
 
-            if _show_author then
-                local authors_str = self._zen_strip_data.authors
-                if authors_str then
-                    local aw = TextWidget:new{
-                        text                   = BD.auto(authors_str),
-                        face                   = Font:getFace("cfont", AUTHOR_FONT),
-                        bold                   = false,
-                        padding                = 0,
-                        fgcolor                = Blitbuffer.COLOR_BLACK,
-                        max_width              = text_w,
-                        truncate_with_ellipsis = true,
-                    }
-                    local asz = aw:getSize()
-                    aw:paintTo(bb, x + math.floor((strip_w - asz.w) / 2), cur_y)
-                    aw:free()
-                end
-            end
+            bb:blitFrom(self._zen_strip_bb, x, y + self.height - STRIP_H, 0, 0, self.width, STRIP_H)
         end
     end
 end

@@ -1504,6 +1504,13 @@ local function apply_context_menu()
                 },
             })
 
+            -- Caller-supplied extra buttons (e.g. "Remove from history")
+            if item._zen_extra_buttons then
+                for _, row in ipairs(item._zen_extra_buttons) do
+                    table.insert(buttons, row)
+                end
+            end
+
             -- NOTE: using an explicit local avoids the Lua `A and nil or B` gotcha
             -- where `nil` is falsy so the expression always returns B.
             local dlg_title = dialog_cover_widget and "" or dialog_title

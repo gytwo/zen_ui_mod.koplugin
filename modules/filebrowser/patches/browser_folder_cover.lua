@@ -812,12 +812,18 @@ local function apply_browser_folder_cover()
 
             -- Folder items only below this point.
             local dir_path = self.entry and self.entry.path
+            -- is_go_up items from group_view detail menus have no path; check before
+            -- the dir_path guard so they still get the themed folder cover.
+            if self.entry.is_go_up then
+                self._foldercover_processed = true
+                self:_setFolderCover { no_image = true }
+                return
+            end
             if not dir_path then return end
 
-            -- For is_go_up items and non-filemanager menus (PathChooser, dialogs):
-            -- give folders the visual shape (uniform size, rounded corners) but
+            -- For non-filemanager menus (PathChooser, dialogs): visual shape only,
             -- skip the expensive recursive cover fetch and sub-item count.
-            if is_non_fm or self.entry.is_go_up then
+            if is_non_fm then
                 self._foldercover_processed = true
                 self:_setFolderCover { no_image = true }
                 return

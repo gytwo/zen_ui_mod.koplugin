@@ -17,6 +17,18 @@ local _detail_menus = {}
 local _zen_shared    = nil
 local _zen_plugin    = nil  -- captured at init; __ZEN_UI_PLUGIN is cleared after init
 
+-- True when up-folder items should be shown (mirrors browser_hide_up_folder config).
+local function should_show_up_folder()
+    local p = _zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+    if not p or type(p.config) ~= "table" then return true end
+    local features = p.config.features
+    -- Feature not enabled -> default KOReader behaviour: show up folder.
+    if type(features) ~= "table" or not features.browser_hide_up_folder then return true end
+    local cfg = p.config.browser_hide_up_folder
+    -- Feature enabled; default is hide=true. Only show when explicitly set to false.
+    return type(cfg) == "table" and cfg.hide_up_folder == false
+end
+
 -------------------------------------------------------------------------------
 -- Utility: walk upvalue chain to find a named upvalue
 -------------------------------------------------------------------------------
@@ -154,6 +166,57 @@ local function patch_mosaic_item()
 
     local orig_update = MosaicMenuItem.update
     function MosaicMenuItem:update(...)
+        -- Up-folder item in a group view: render as a folder-cover-style placeholder.
+        if self.menu and self.menu._zen_group_view and self.entry and self.entry.is_go_up then
+            self._foldercover_processed = true
+            if self._setFolderCover then
+                self:_setFolderCover { no_image = true }
+            else
+                -- Inline fallback: portrait-shaped gray placeholder.
+                local Blitbuffer2     = require("ffi/blitbuffer")
+                local CenterContainer2 = require("ui/widget/container/centercontainer")
+                local FrameContainer2  = require("ui/widget/container/framecontainer")
+                local OverlapGroup2    = require("ui/widget/overlapgroup")
+                local Size2            = require("ui/size")
+                local VerticalGroup2   = require("ui/widget/verticalgroup")
+                local VerticalSpan2    = require("ui/widget/verticalspan")
+                local border   = Size2.border.thin
+                local max_w    = self.width  - 2 * border
+                local bh       = self.height - 2 * border
+                local pw, ph
+                if bh * 2 <= max_w * 3 then
+                    ph = bh; pw = math.floor(bh * 2 / 3)
+                else
+                    pw = max_w; ph = math.min(math.floor(max_w * 3 / 2), bh)
+                end
+                local frame = FrameContainer2:new{
+                    padding = 0, bordersize = border,
+                    width = pw + 2 * border, height = ph + 2 * border,
+                    background = Blitbuffer2.COLOR_LIGHT_GRAY,
+                    overlap_align = "center",
+                    CenterContainer2:new{
+                        dimen = { w = pw, h = ph },
+                        VerticalSpan2:new{ width = 1 },
+                    },
+                }
+                local top = math.floor((self.height - ph - 2 * border) / 2)
+                if self._underline_container[1] then
+                    self._underline_container[1]:free()
+                end
+                self._underline_container[1] = OverlapGroup2:new{
+                    dimen = { w = self.width, h = self.height },
+                    VerticalGroup2:new{
+                        VerticalSpan2:new{ width = top },
+                        CenterContainer2:new{
+                            dimen = { w = self.width, h = ph + 2 * border },
+                            frame,
+                        },
+                    },
+                }
+            end
+            return
+        end
+
         if not (self.menu and self.menu._zen_group_view
                 and self.entry and self.entry._zen_files) then
             return orig_update(self, ...)
@@ -1079,6 +1142,9 @@ local function showDetailView(group_item, injectNavbar, tab_id)
             callback = function() end,
         })
     end
+    if should_show_up_folder() then
+        table.insert(book_items, 1, { text = "\u{2B06} ..", is_go_up = true, mandatory = "" })
+    end
 
     -- Minimise TitleBar during Menu creation
     local orig_tb_new = TitleBar.new
@@ -1110,6 +1176,11 @@ local function showDetailView(group_item, injectNavbar, tab_id)
         title_bar_fm_style = true,  -- picked up by zen_scroll_bar patch
         item_table         = book_items,
         onMenuSelect       = function(menu_self, item)
+            if item.is_go_up then
+                if menu_self.close_callback then menu_self.close_callback()
+                else UIManager:close(menu_self) end
+                return
+            end
             if item.path then
                 ReaderUI:showReader(item.path)
             end
@@ -1244,6 +1315,7 @@ showGroupView = function(tab_id, injectNavbar, groups)
 
     local title = tab_id == "authors" and _("Authors") or _("Series")
     local item_table = build_group_item_table(groups, tab_id)
+    -- No up-folder at the root group list level.
 
     -- Minimise TitleBar during Menu creation
     local orig_tb_new = TitleBar.new
@@ -1275,6 +1347,11 @@ showGroupView = function(tab_id, injectNavbar, groups)
         title_bar_fm_style = true,  -- picked up by zen_scroll_bar patch
         item_table         = item_table,
         onMenuSelect       = function(menu_self, item)
+            if item.is_go_up then
+                if menu_self.close_callback then menu_self.close_callback()
+                else UIManager:close(menu_self) end
+                return
+            end
             if item._zen_files then
                 showDetailView(item, injectNavbar, tab_id)
             end
@@ -1521,8 +1598,19 @@ function M.showTBRView(injectNavbar)
         is_borderless      = true,
         is_popout          = false,
         title_bar_fm_style = true,
-        item_table         = buildItems(sorted_files),
+        item_table         = (function()
+            local items = buildItems(sorted_files)
+            if should_show_up_folder() then
+                table.insert(items, 1, { text = "\u{2B06} ..", is_go_up = true, mandatory = "" })
+            end
+            return items
+        end)(),
         onMenuSelect       = function(menu_self, item)
+            if item.is_go_up then
+                if menu_self.close_callback then menu_self.close_callback()
+                else UIManager:close(menu_self) end
+                return
+            end
             if item.path then
                 ReaderUI:showReader(item.path)
             end

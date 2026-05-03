@@ -166,6 +166,9 @@ local function apply_context_menu()
         end
 
         file_chooser.showFileDialog = function(self_fc, item)
+            -- Never show a context menu for the up-folder item.
+            if item.is_go_up then return end
+
             -- Lockdown: block context menu across all views (filebrowser, groups, collections, etc.)
             if zen_plugin then
                 local ft = zen_plugin.config and zen_plugin.config.features

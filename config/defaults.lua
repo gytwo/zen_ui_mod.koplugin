@@ -162,6 +162,7 @@ local defaults = {
     },
     reader_footer = {
         verbose_chapter_time = false,
+        hide_in_cbz = false,
         backup_preset = nil,
     },
     highlight_lookup = {

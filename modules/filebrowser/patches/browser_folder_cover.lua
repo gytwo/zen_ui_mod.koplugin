@@ -393,6 +393,7 @@ local function apply_browser_folder_cover()
                     "_zen_title_strip_patched=", tostring(MosaicMenuItem._zen_title_strip_patched))
             end
             orig_folder_paintTo(self, bb, x, y)
+            if self.is_go_up then return end
             local count = rawget(self, "_zen_folder_count")
             if not count then return end
 
@@ -606,6 +607,8 @@ local function apply_browser_folder_cover()
             local _t0_orig = os.clock()
             original_update(self, ...)
             _perf.orig_update_time = _perf.orig_update_time + (os.clock() - _t0_orig)
+            -- Never apply any zen cover/badge logic to the up-folder navigation item.
+            if self.entry.is_go_up then return end
             if self._foldercover_processed or self.menu.no_refresh_covers then return end
             -- For file items CoverBrowser must have enabled cover rendering and set mandatory.
             -- For folder items (incl. search results) we always attempt it regardless.
@@ -1249,6 +1252,7 @@ local function apply_browser_folder_cover()
 
                 function ListMenuItem:update(...)
                     original_list_update(self, ...)
+                    if self.entry.is_go_up then return end
                     if self._foldercover_processed or self.menu.no_refresh_covers then return end
                     -- Only handle folder items; file items are handled by CoverBrowser directly.
                     -- Do not gate on mandatory: search results don't set it on directory items.

@@ -445,7 +445,7 @@ local function apply_browser_cover_badges()
                 and _plugin.config
                 and type(_plugin.config.browser_cover_badges) == "table"
                 and _plugin.config.browser_cover_badges.show_new_banner == true
-            if show_new_banner and self.filepath then
+            if show_new_banner and self.filepath and not self.is_go_up and not self.is_directory then
                 local is_new = self.percent_finished == nil
                     and self.status ~= "complete"
                     and self.status ~= "abandoned"

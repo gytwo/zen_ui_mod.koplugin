@@ -383,14 +383,11 @@ local function apply_context_menu()
                 return true
             end
 
-            -- Delegate to stock KOReader dialog outside home directory.
-            local home_dir   = paths.getHomeDir()
-            local cur_path   = self_fc.path or ""
+            -- Delegate to stock KOReader dialog outside home directory (and additional home dirs).
+            local home_dir = paths.getHomeDir()
+            local cur_path = self_fc.path or ""
             if home_dir then
-                local norm_cur = paths.normPath(cur_path:gsub("/$", ""))
-                local is_at_or_under_home = norm_cur == home_dir
-                    or norm_cur:sub(1, #home_dir + 1) == home_dir .. "/"
-                if not is_at_or_under_home then
+                if not paths.isInHomeDir(cur_path) then
                     return orig_showFileDialog(self_fc, item)
                 end
             end
@@ -398,8 +395,7 @@ local function apply_context_menu()
             local file               = item.path
             local is_file            = item.is_file
             local is_not_parent_folder = not item.is_go_up
-            local is_home_dir = (not is_file) and home_dir
-                and (paths.normPath(file:gsub("/$", "")) == home_dir)
+            local is_home_dir = (not is_file) and paths.isHomeRoot(file)
 
             local function close_dialog()
                 UIManager:close(self_fc.file_dialog)

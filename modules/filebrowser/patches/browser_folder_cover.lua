@@ -607,8 +607,7 @@ local function apply_browser_folder_cover()
             local _t0_orig = os.clock()
             original_update(self, ...)
             _perf.orig_update_time = _perf.orig_update_time + (os.clock() - _t0_orig)
-            -- Never apply any zen cover/badge logic to the up-folder navigation item.
-            if self.entry.is_go_up then return end
+            local is_non_fm = not (self.menu and self.menu.name == "filemanager")
             if self._foldercover_processed or self.menu.no_refresh_covers then return end
             -- For file items CoverBrowser must have enabled cover rendering and set mandatory.
             -- For folder items (incl. search results) we always attempt it regardless.
@@ -814,6 +813,15 @@ local function apply_browser_folder_cover()
             -- Folder items only below this point.
             local dir_path = self.entry and self.entry.path
             if not dir_path then return end
+
+            -- For is_go_up items and non-filemanager menus (PathChooser, dialogs):
+            -- give folders the visual shape (uniform size, rounded corners) but
+            -- skip the expensive recursive cover fetch and sub-item count.
+            if is_non_fm or self.entry.is_go_up then
+                self._foldercover_processed = true
+                self:_setFolderCover { no_image = true }
+                return
+            end
 
             local cover_file = findCover(dir_path) --custom
             if cover_file then

@@ -56,7 +56,10 @@ local function apply_context_menu()
             })
         end
 
-        local function scan(dir_path, depth)
+        -- prefix: prepended to rel paths (e.g. "Books" -> "Books/1", "Books/2")
+        -- skip_set: set of realpath strings to omit entirely (not shown, not recursed)
+        local function scan(dir_path, depth, base, prefix, skip_set)
+            base = base or root
             local ok3, iter3, dir_obj3 = pcall(lfs3.dir, dir_path)
             if not ok3 then return end
             local subdirs = {}
@@ -71,22 +74,58 @@ local function apply_context_menu()
                 end
             end
             table.sort(subdirs, function(a, b) return a.name < b.name end)
-            for _, sub in ipairs(subdirs) do
-                local rel = sub.path:sub(#root + 2)  -- e.g. "Fantasy/Pratchett"
-                table.insert(items, {
-                    text           = rel,
-                    path           = sub.path,
-                    is_file        = false,
-                    bidi_wrap_func = BD3.directory,
-                    mandatory      = self:getMenuItemMandatory({ path = sub.path }),
-                })
-                if depth < MAX_DEPTH then
-                    scan(sub.path, depth + 1)
+            for _i, sub in ipairs(subdirs) do
+                local sub_real = ffiUtil3.realpath(sub.path) or sub.path
+                -- Skip paths already shown in another section (e.g. primary home is a subdir here)
+                if not (skip_set and skip_set[sub_real]) then
+                    local rel = sub.path:sub(#base + 2)  -- e.g. "Fantasy/Pratchett"
+                    local display = prefix and (prefix .. "/" .. rel) or rel
+                    table.insert(items, {
+                        text           = display,
+                        path           = sub.path,
+                        is_file        = false,
+                        bidi_wrap_func = BD3.directory,
+                        mandatory      = self:getMenuItemMandatory({ path = sub.path }),
+                    })
+                    if depth < MAX_DEPTH then
+                        scan(sub.path, depth + 1, base, prefix, skip_set)
+                    end
                 end
             end
         end
 
         scan(root, 1)
+
+        -- Append additional home dirs after all primary-root entries.
+        if type(self.extra_roots) == "table" then
+            -- Build a skip set: primary root + all other extra roots, so their
+            -- subtrees aren't duplicated when scanning a parent extra root.
+            local skip_set = { [root] = true }
+            for _i, er_path in ipairs(self.extra_roots) do
+                local er = ffiUtil3.realpath(er_path) or er_path
+                skip_set[er] = true
+            end
+
+            for _i, er_path in ipairs(self.extra_roots) do
+                local er = ffiUtil3.realpath(er_path) or er_path
+                if er ~= root then
+                    local er_name = ffiUtil3.basename(er)
+                    if not self.src_dir or self.src_dir ~= er then
+                        table.insert(items, {
+                            text           = er_name,
+                            path           = er,
+                            is_file        = false,
+                            bidi_wrap_func = BD3.directory,
+                            mandatory      = self:getMenuItemMandatory({ path = er }),
+                        })
+                    end
+                    -- Subfolders prefixed with root name: "Books/1", "Books/2"
+                    -- skip_set prevents showing already-listed roots as sub-entries
+                    scan(er, 1, er, er_name, skip_set)
+                end
+            end
+        end
+
         return items
     end
 
@@ -1143,6 +1182,11 @@ local function apply_context_menu()
                                 or file_chooser.path
                             if not home_dir then return end
                             local src_dir = ffiUtil.realpath(ffiUtil.dirname(src))
+                            local _g = rawget(_G, "G_reader_settings")
+                            local _zen_cfg = _g and _g:readSetting("zen_ui_config")
+                            local _extra = type(_zen_cfg) == "table"
+                                and type(_zen_cfg.additional_home_dirs) == "table"
+                                and _zen_cfg.additional_home_dirs or nil
                             local chooser = MoveChooser:new{
                                 select_directory = true,
                                 select_file      = false,
@@ -1150,6 +1194,7 @@ local function apply_context_menu()
                                 title            = _("Move to…"),
                                 path             = home_dir,
                                 src_dir          = src_dir,
+                                extra_roots      = _extra,
                                 onConfirm        = function(dest_dir_real)
                                     local name      = ffiUtil.basename(src)
                                     local dest_file = ffiUtil.joinPath(dest_dir_real, name)

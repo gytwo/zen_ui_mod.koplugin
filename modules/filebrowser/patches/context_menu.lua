@@ -1394,6 +1394,7 @@ local function apply_context_menu()
                                             callback = function()
                                                 fsd_api.set(real_folder, opt.key, cur_reverse)
                                                 UIManager:close(sort_dialog)
+                                                self_fc:refreshPath()
                                             end,
                                         }})
                                     end
@@ -1408,6 +1409,7 @@ local function apply_context_menu()
                                                 on_select       = function(reverse)
                                                     if cur_collate then
                                                         fsd_api.set(real_folder, cur_collate, reverse)
+                                                        self_fc:refreshPath()
                                                     end
                                                 end,
                                             })
@@ -1422,6 +1424,7 @@ local function apply_context_menu()
                                             callback = function()
                                                 fsd_api.clear(real_folder)
                                                 UIManager:close(sort_dialog)
+                                                self_fc:refreshPath()
                                             end,
                                         }})
                                     end

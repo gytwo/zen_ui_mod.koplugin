@@ -14,6 +14,7 @@ local function apply_context_menu()
     local _            = require("gettext")
     local C_           = _.pgettext
     local paths        = require("common/paths")
+    local icons        = require("common/inline_icon_map")
     local zen_plugin   = rawget(_G, "__ZEN_UI_PLUGIN")
 
     -- ── MoveChooser ──────────────────────────────────────────────────────────
@@ -391,6 +392,12 @@ local function apply_context_menu()
                     },
                 }
                 local buttons = {}
+                -- Caller-supplied buttons to show before Sort
+                if item._zen_prepend_buttons then
+                    for _, row in ipairs(item._zen_prepend_buttons) do
+                        table.insert(buttons, row)
+                    end
+                end
                 if sort_cb then
                     table.insert(buttons, {{
                         text     = "\u{F04BF}  " .. _("Sort") .. "  \u{25B8}",
@@ -1542,6 +1549,94 @@ local function apply_context_menu()
                         })
                     end
                 end
+            end
+
+            -- ── Filter by read status (current dir only) ─────────────────────────────
+            if item._is_current_dir then
+                local function showFilterDialog()
+                    local cur_st = FileChooser.show_filter and FileChooser.show_filter.status
+                    local is_all = cur_st == nil
+                    local filter_dialog
+
+                    local function setFilter(new_status)
+                        FileChooser.show_filter.status = new_status
+                        local gs = rawget(_G, "G_reader_settings")
+                        if gs then
+                            gs:saveSetting("show_filter", FileChooser.show_filter)
+                            pcall(gs.flush, gs)
+                        end
+                        self_fc:refreshPath()
+                    end
+
+                    local STATUS_OPTS = {
+                        { key = "new",       icon = icons.status,   label = _("Unread")     },
+                        { key = "reading",   icon = icons.reading,  label = _("Reading")    },
+                        { key = "abandoned", icon = icons.tbr,      label = _("To Be Read") },
+                        { key = "complete",  icon = icons.finished, label = _("Finished")   },
+                    }
+
+                    local fbts = {}
+                    table.insert(fbts, {{
+                        text     = _("All") .. (is_all and "  " .. icons.check or ""),
+                        align    = "left",
+                        enabled  = not is_all,
+                        callback = function()
+                            UIManager:close(filter_dialog)
+                            setFilter(nil)
+                        end,
+                    }})
+                    for _, st in ipairs(STATUS_OPTS) do
+                        local is_active = cur_st and cur_st[st.key] == true
+                        table.insert(fbts, {{
+                            text     = st.icon .. "  " .. st.label .. (is_active and "  " .. icons.check or ""),
+                            align    = "left",
+                            callback = function()
+                                UIManager:close(filter_dialog)
+                                -- Copy current set (nil = all shown) then toggle the key.
+                                local new_st = {}
+                                if cur_st then
+                                    for k, v in pairs(cur_st) do new_st[k] = v end
+                                end
+                                if new_st[st.key] then
+                                    new_st[st.key] = nil
+                                else
+                                    new_st[st.key] = true
+                                end
+                                local n = 0
+                                for _, v in pairs(new_st) do if v then n = n + 1 end end
+                                -- collapse to nil when no statuses or all 4 are selected
+                                setFilter((n == 0 or n == 4) and nil or new_st)
+                                UIManager:nextTick(showFilterDialog)
+                            end,
+                        }})
+                    end
+
+                    filter_dialog = ButtonDialog:new{
+                        title       = _("Filter by status"),
+                        title_align = "center",
+                        buttons     = fbts,
+                    }
+                    UIManager:show(filter_dialog)
+                end
+
+                local n_active = 0
+                if FileChooser.show_filter and FileChooser.show_filter.status then
+                    for _, v in pairs(FileChooser.show_filter.status) do
+                        if v then n_active = n_active + 1 end
+                    end
+                end
+                table.insert(buttons, {
+                    {
+                        text     = icons.filter .. "  " .. _("Filter")
+                            .. (n_active > 0 and " (" .. n_active .. ")" or "")
+                            .. "  " .. icons.arrow_right,
+                        align    = "left",
+                        callback = function()
+                            close_dialog()
+                            UIManager:nextTick(showFilterDialog)
+                        end,
+                    },
+                })
             end
 
             -- ── Display mode (current dir only) ──────────────────────────────────────

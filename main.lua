@@ -45,6 +45,34 @@ end
 -- Holds the single plugin instance so the FileManagerMenu patch can reach it.
 local _zen_plugin_ref = nil
 
+-- Defensive nil-action guard: prevent UIManager:scheduleIn/nextTick(nil) crashes.
+-- Installed once per process; logs a traceback so the real culprit can be identified.
+-- Catches bugs in Zen UI *and* in KOReader sync plugins (which share the same UIManager).
+if not rawget(_G, "__zen_ui_uimgr_guard") then
+    _G.__zen_ui_uimgr_guard = true
+    local ok_um, UIManager = pcall(require, "ui/uimanager")
+    if ok_um and UIManager then
+        local _orig_scheduleIn = UIManager.scheduleIn
+        UIManager.scheduleIn = function(self, seconds, action, ...)
+            if action == nil then
+                logger.warn("ZenUI guard: UIManager:scheduleIn(nil) suppressed\n" ..
+                    (debug and debug.traceback and debug.traceback("", 2) or ""))
+                return
+            end
+            return _orig_scheduleIn(self, seconds, action, ...)
+        end
+        local _orig_nextTick = UIManager.nextTick
+        UIManager.nextTick = function(self, action, ...)
+            if action == nil then
+                logger.warn("ZenUI guard: UIManager:nextTick(nil) suppressed\n" ..
+                    (debug and debug.traceback and debug.traceback("", 2) or ""))
+                return
+            end
+            return _orig_nextTick(self, action, ...)
+        end
+    end
+end
+
 local ZenUI = WidgetContainer:extend{
     name = "zen_ui",
     is_doc_only = false,

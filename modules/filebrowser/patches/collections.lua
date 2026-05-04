@@ -1,4 +1,5 @@
 local logger = require("logger")
+local icons  = require("common/inline_icon_map")
 logger.dbg("zen-coll: module loaded")
 
 local function apply_collections()
@@ -694,21 +695,11 @@ local function apply_collections()
         end
 
         -- Extra buttons appended after Sort in the shared showFileDialog dialog
-        local extra_buttons = {
-            {{
-                text     = "\u{F0337}  " .. _("Connect folders"),
-                align    = "left",
-                callback = function()
-                    local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
-                    local fm = ok_fm and FM and FM.instance
-                    if fm then UIManager_cm:close(fm.file_chooser.file_dialog) end
-                    fm_coll:showCollFolderList(item)
-                end,
-            }},
-        }
+        local prepend_buttons = {}
+        local extra_buttons = {}
         if not is_favorites then
-            table.insert(extra_buttons, {{
-                text     = "\u{F0CB6}  " .. _("Rename"),
+            table.insert(prepend_buttons, {{
+                text     = icons.rename .. "  " .. _("Rename"),
                 align    = "left",
                 callback = function()
                     local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
@@ -717,8 +708,20 @@ local function apply_collections()
                     fm_coll:renameCollection(item)
                 end,
             }})
+        end
+        table.insert(extra_buttons, {{
+            text     = "\u{F0337}  " .. _("Connect folders"),
+            align    = "left",
+            callback = function()
+                local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+                local fm = ok_fm and FM and FM.instance
+                if fm then UIManager_cm:close(fm.file_chooser.file_dialog) end
+                fm_coll:showCollFolderList(item)
+            end,
+        }})
+        if not is_favorites then
             table.insert(extra_buttons, {{
-                text     = "\u{F0B89}  " .. _("Remove"),
+                text     = icons.delete .. "  " .. _("Delete collection"),
                 align    = "left",
                 callback = function()
                     local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
@@ -733,24 +736,25 @@ local function apply_collections()
         local fm = ok_fm and FM and FM.instance
         if fm and fm.file_chooser and fm.file_chooser.showFileDialog then
             fm.file_chooser:showFileDialog({
-                _zen_group_files    = files,
-                _zen_group_name     = display_name,
-                _zen_group_subtitle = book_count == 1 and _("1 book")
+                _zen_group_files     = files,
+                _zen_group_name      = display_name,
+                _zen_group_subtitle  = book_count == 1 and _("1 book")
                                       or (tostring(book_count) .. " " .. _("books")),
                 -- dialog closed before sort_cb fires, so close_parent is a no-op
-                _zen_sort_cb        = function() show_coll_sort_submenu(coll_name, function() end) end,
-                _zen_extra_buttons  = extra_buttons,
+                _zen_sort_cb         = function() show_coll_sort_submenu(coll_name, function() end) end,
+                _zen_prepend_buttons = prepend_buttons,
+                _zen_extra_buttons   = extra_buttons,
             })
         else
             -- FM not available: show without cover gallery
             local button_dialog
-            local buttons = {
-                {{
-                    text     = "\u{F04BF}  " .. _("Sort") .. "  \u{25B8}",
-                    align    = "left",
-                    callback = function() show_coll_sort_submenu(coll_name, function() UIManager_cm:close(button_dialog) end) end,
-                }},
-            }
+            local buttons = {}
+            for _, row in ipairs(prepend_buttons) do table.insert(buttons, row) end
+            table.insert(buttons, {{
+                text     = "\u{F04BF}  " .. _("Sort") .. "  \u{25B8}",
+                align    = "left",
+                callback = function() show_coll_sort_submenu(coll_name, function() UIManager_cm:close(button_dialog) end) end,
+            }})
             for _, row in ipairs(extra_buttons) do table.insert(buttons, row) end
             button_dialog = ButtonDialog:new{ buttons = buttons }
             UIManager_cm:show(button_dialog)

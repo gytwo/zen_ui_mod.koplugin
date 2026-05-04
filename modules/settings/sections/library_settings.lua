@@ -749,27 +749,6 @@ function M.build(ctx)
         sub_item_table = scroll_bar_sub_items,
     })
 
-    table.insert(items, {
-        text = _("Hide finished books"),
-        checked_func = function()
-            return type(config.browser_hide_finished) == "table"
-                and config.browser_hide_finished.hide_finished == true
-        end,
-        callback = function()
-            if type(config.browser_hide_finished) ~= "table" then
-                config.browser_hide_finished = {}
-            end
-            config.browser_hide_finished.hide_finished =
-                not (config.browser_hide_finished.hide_finished == true)
-            plugin:saveConfig()
-            local ok, FileManager = pcall(require, "apps/filemanager/filemanager")
-            local fm = ok and FileManager and FileManager.instance
-            if fm and fm.file_chooser and type(fm.file_chooser.refreshPath) == "function" then
-                pcall(fm.file_chooser.refreshPath, fm.file_chooser)
-            end
-        end,
-    })
-
     -- -------------------------------------------------------------------------
     -- Misc toggles
     -- -------------------------------------------------------------------------

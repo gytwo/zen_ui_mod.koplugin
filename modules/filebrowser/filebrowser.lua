@@ -40,7 +40,6 @@ local PATCH_MODULES = {
     browser_page_count = "modules/filebrowser/patches/browser_page_count",
     browser_series_badge = "modules/filebrowser/patches/browser_series_badge",
     browser_display_mode_by_path = "modules/filebrowser/patches/browser_display_mode_by_path",
-    browser_hide_finished = "modules/filebrowser/patches/browser_hide_finished",
     search = "modules/filebrowser/patches/search",
     group_view = "modules/filebrowser/patches/group_view",
 }
@@ -168,11 +167,6 @@ function M.init(logger, plugin)
     local browser_show_hidden_fn = load_patch("browser_show_hidden")
     if browser_show_hidden_fn then
         run_feature(logger, plugin, "browser_show_hidden", browser_show_hidden_fn)
-    end
-
-    local browser_hide_finished_fn = load_patch("browser_hide_finished")
-    if browser_hide_finished_fn then
-        run_feature(logger, plugin, "browser_hide_finished", browser_hide_finished_fn)
     end
 
     local browser_page_count_fn = load_patch("browser_page_count")

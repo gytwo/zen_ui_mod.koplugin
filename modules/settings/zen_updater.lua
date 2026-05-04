@@ -25,22 +25,27 @@ M._dl_url     = nil   -- download URL for release.zip
 -- ---------------------------------------------------------------------------
 
 --- Parse major/minor/patch integers from version strings like "v1.2.3",
---- "1.2.3", or "1.2.3-beta1". Pre-release suffixes are stripped so that
---- "1.2.3-beta1" compares numerically equal to "1.2.3" (stable wins ties).
+--- "1.2.3", or "1.2.3-beta1". Returns nums + a boolean for pre-release so
+--- that stable "1.2.3" compares greater than "1.2.3-beta1".
 local function parse_semver(v)
     v = (v or ""):match("^v?(.+)$") or ""
-    v = v:match("^([%d%.]+)") or ""  -- strip -prerelease / +build suffixes
-    local maj, min, pat = v:match("^(%d+)%.(%d+)%.?(%d*)$")
-    return tonumber(maj) or 0, tonumber(min) or 0, tonumber(pat) or 0
+    local base = v:match("^([%d%.]+)") or ""
+    local is_pre = v:find("[-+]") ~= nil
+    local maj, min, pat = base:match("^(%d+)%.(%d+)%.?(%d*)$")
+    return tonumber(maj) or 0, tonumber(min) or 0, tonumber(pat) or 0, is_pre
 end
 
 --- Returns true when version string a is strictly greater than b.
+--- Stable "1.2.3" > pre-release "1.2.3-beta1" per semver precedence rules.
 local function semver_gt(a, b)
-    local a1, a2, a3 = parse_semver(a)
-    local b1, b2, b3 = parse_semver(b)
+    local a1, a2, a3, a_pre = parse_semver(a)
+    local b1, b2, b3, b_pre = parse_semver(b)
     if a1 ~= b1 then return a1 > b1 end
     if a2 ~= b2 then return a2 > b2 end
-    return a3 > b3
+    if a3 ~= b3 then return a3 > b3 end
+    -- same numbers: stable beats pre-release
+    if a_pre ~= b_pre then return not a_pre end
+    return false
 end
 
 --- Read the current plugin version from _meta.lua.
@@ -299,11 +304,11 @@ local function do_network_check()
 end
 
 --- Check for updates at most once every 24 h (throttled via G_reader_settings).
---- Silently falls back to the last cached result when offline or throttled.
+--- Returns "ok" (live check succeeded), "error" (network failure), or "cached" (throttled).
 function M.check_for_update()
     if M._checked then
         logger.dbg("ZenUpdater: already checked this session, skipping")
-        return
+        return "cached"
     end
     M._checked = true
 
@@ -316,17 +321,18 @@ function M.check_for_update()
         logger.dbg("ZenUpdater: within throttle window, loading cached state")
         load_cached_state()
         logger.dbg("ZenUpdater: cached has_update=", tostring(M._has_update), "latest=", tostring(M._latest_ver))
-        return
+        return "cached"
     end
 
     -- Attempt a live check; if it fails, fall back to cached state.
     if not do_network_check() then
         logger.warn("ZenUpdater: live check failed, loading cached state")
         load_cached_state()
-        return
+        return "error"
     end
 
     persist_state(now)
+    return "ok"
 end
 
 --- Returns true when a newer release has been detected.
@@ -474,9 +480,15 @@ function M.build_update_now_item(plugin)
             UIManager:forceRePaint()
 
             UIManager:scheduleIn(0.1, function()
-                M.check_for_update()
+                local status = M.check_for_update()
 
-                if M._has_update then
+                if status == "error" then
+                    screen:update{
+                        subtitle    = _("Could not reach update server. Check your internet connection."),
+                        button      = _("OK"),
+                        dismissable = true,
+                    }
+                elseif M._has_update then
                     screen:update{ dismissable = true }
                     UIManager:close(screen)
                     _show_update_screen_and_install(plugin)

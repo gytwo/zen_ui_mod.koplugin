@@ -979,6 +979,24 @@ local function sortDetailFiles(files, collate, reverse)
     return sorted
 end
 
+-- Filter a file list to only those matching FileChooser.show_filter.status.
+-- Returns the original list unchanged when no filter is active.
+local function apply_status_filter(files)
+    local ok_fc, FileChooser = pcall(require, "ui/widget/filechooser")
+    if not ok_fc then return files end
+    local status_filter = FileChooser.show_filter and FileChooser.show_filter.status
+    if not status_filter then return files end
+    local ok_bl, BookList = pcall(require, "ui/widget/booklist")
+    if not ok_bl then return files end
+    local filtered = {}
+    for _, fpath in ipairs(files) do
+        if status_filter[BookList.getBookStatus(fpath)] then
+            table.insert(filtered, fpath)
+        end
+    end
+    return filtered
+end
+
 -------------------------------------------------------------------------------
 -- showDetailSortDialog: show sort options dialog for detail view
 -- group_name: the author or series name
@@ -1010,6 +1028,7 @@ local function showDetailSortDialog(group_name, tab_id, menu, files)
         if not (menu and files) then return end
 
         local sorted_files = sortDetailFiles(files, collate, reverse)
+        sorted_files = apply_status_filter(sorted_files)
 
         local book_items = {}
         for _, fpath in ipairs(sorted_files) do
@@ -1118,6 +1137,7 @@ local function showDetailView(group_item, injectNavbar, tab_id)
 
     -- Sort files based on current settings
     local sorted_files = sortDetailFiles(files, cur_collate, cur_reverse)
+    sorted_files = apply_status_filter(sorted_files)
 
     -- Build menu items from sorted files
     local lfs_mod  = require("libs/libkoreader-lfs")
@@ -1544,6 +1564,7 @@ function M.showTBRView(injectNavbar)
     local cur_reverse = g_settings and g_settings:isTrue(reverse_key) or false
 
     local sorted_files = sortDetailFiles(files, cur_collate, cur_reverse)
+    sorted_files = apply_status_filter(sorted_files)
 
     local function buildItems(flist)
         local lfs_mod  = require("libs/libkoreader-lfs")

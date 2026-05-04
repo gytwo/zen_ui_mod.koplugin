@@ -36,4 +36,12 @@ return {
         "Support for non touchscreen devices",
         "Bug fixes and performance improvements",
     },
+    ["1.1.1"] = {
+        "Add/remove from collections via context menu",
+        "Allow remove from history in context menu",
+        "Better support for multiple home folders",
+        "Up folder fixes and styling",
+        "Fix lag in folder/path chooser",
+        "Bug fixes and performance improvements",
+    },
 }

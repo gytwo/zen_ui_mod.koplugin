@@ -221,10 +221,12 @@ local function apply_browser_cover_badges()
         local _badges_log_done = false
         local _badges_target_log_done = false
         function MosaicMenuItem:paintTo(bb, x, y)
+            local _is_fm = self.menu and self.menu.name == "filemanager"
             -- Clear the full cell to white before painting so that portrait
             -- covers (which are narrower than the cell) don't leave ghost pixels
             -- from a previously painted full-width placeholder in the margins.
-            if self.width and self.height then
+            -- Only needed in the file manager; PathChooser uses default KOReader rendering.
+            if _is_fm and self.width and self.height then
                 if not _badges_log_done then
                     _badges_log_done = true
                     local logger = require("logger")
@@ -270,9 +272,10 @@ local function apply_browser_cover_badges()
 
             local border = target.bordersize or 0
             local _badge_scale = get_badge_scale()
+            local in_fm = _is_fm
 
             -- 3. Favorite star → top-left inside a circle
-            local show_fav_badge = _plugin
+            local show_fav_badge = in_fm and _plugin
                 and _plugin.config
                 and type(_plugin.config.browser_cover_badges) == "table"
                 and _plugin.config.browser_cover_badges.show_favorite_badge == true
@@ -337,7 +340,7 @@ local function apply_browser_cover_badges()
             end
 
             -- 6. Zen UI: status/progress badge at top-right
-            local show_badge = _plugin
+            local show_badge = in_fm and _plugin
                 and _plugin.config
                 and type(_plugin.config.browser_cover_badges) == "table"
                 and _plugin.config.browser_cover_badges.show_mosaic_progress == true
@@ -412,9 +415,9 @@ local function apply_browser_cover_badges()
                 end
             end
 
-            -- 7. Description indicator (unchanged)
+            -- 7. Description indicator (filemanager only)
             local BookInfoManager = uv("BookInfoManager")
-            if self.has_description
+            if in_fm and self.has_description
                 and BookInfoManager
                 and not BookInfoManager:getSetting("no_hint_description")
             then
@@ -441,7 +444,7 @@ local function apply_browser_cover_badges()
             end
 
             -- 8. "New" corner ribbon for never-opened books
-            local show_new_banner = _plugin
+            local show_new_banner = in_fm and _plugin
                 and _plugin.config
                 and type(_plugin.config.browser_cover_badges) == "table"
                 and _plugin.config.browser_cover_badges.show_new_banner == true

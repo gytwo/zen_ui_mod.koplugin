@@ -63,6 +63,7 @@ local function apply_navbar()
             collections = false,
             authors = false,
             series = false,
+            tags = false,
             to_be_read = false,
             search = false,
             calibre_search = false,
@@ -72,7 +73,7 @@ local function apply_navbar()
             page_right = false,
             menu = false,
         },
-        tab_order = { "page_left", "books", "manga", "news", "continue", "authors", "series", "to_be_read", "history", "favorites", "collections", "stats", "search", "calibre_search", "exit", "page_right", "menu" },
+        tab_order = { "page_left", "books", "manga", "news", "continue", "authors", "series", "tags", "to_be_read", "history", "favorites", "collections", "stats", "search", "calibre_search", "exit", "page_right", "menu" },
         show_labels = true,
         books_label = "Library",
         manga_action = "rakuyomi",
@@ -173,6 +174,11 @@ local function apply_navbar()
             id = "series",
             label = _("Series"),
             icon = "tab_series",
+        },
+        {
+            id = "tags",
+            label = _("Tags"),
+            icon = "tab_tags",
         },
         {
             id = "to_be_read",
@@ -374,6 +380,11 @@ local function apply_navbar()
         if GroupView then GroupView.showTBRView(injectStandaloneNavbar) end
     end
 
+    local function onTabTags()
+        local GroupView = zen_plugin._zen_shared and zen_plugin._zen_shared.group_view
+        if GroupView then GroupView.showTagsView(injectStandaloneNavbar) end
+    end
+
     local function onTabSearch()
         local fm = FileManager.instance
         if fm and fm.filesearcher then
@@ -456,6 +467,7 @@ local function apply_navbar()
         collections = onTabCollections,
         authors = onTabAuthors,
         series = onTabSeries,
+        tags = onTabTags,
         to_be_read = onTabTBR,
         search = onTabSearch,
         calibre_search = onTabCalibreSearch,
@@ -851,9 +863,10 @@ local function apply_navbar()
             local cb = tab_callbacks[tapped_id]
             if cb then cb() end
             -- Track active tab for all persistent views (not transient: search/stats/exit/continue/menu/page_*)
-            local track_tab = tapped_id == "books" or tapped_id == "manga"
+    local track_tab = tapped_id == "books" or tapped_id == "manga"
                 or tapped_id == "news"      or tapped_id == "authors"
-                or tapped_id == "series"    or tapped_id == "to_be_read"
+                or tapped_id == "series"    or tapped_id == "tags"
+                or tapped_id == "to_be_read"
                 or tapped_id == "history"   or tapped_id == "favorites"
                 or tapped_id == "collections"
             if track_tab and tapped_id ~= active_tab then
@@ -895,9 +908,11 @@ local function apply_navbar()
         collections = true,
         authors = true,
         series = true,
+        tags = true,
         to_be_read = true,
         authors_detail = true,
         series_detail = true,
+        tags_detail = true,
         stats = true,
         library_view = true, -- Rakuyomi
     }
@@ -1105,7 +1120,8 @@ local function apply_navbar()
             local tid = tab.id
             local track = tid == "books" or tid == "manga"
                 or tid == "news"    or tid == "authors"
-                or tid == "series"  or tid == "to_be_read"
+                or tid == "series"  or tid == "tags"
+                or tid == "to_be_read"
                 or tid == "history" or tid == "favorites"
                 or tid == "collections"
             if track and tid ~= active_tab then

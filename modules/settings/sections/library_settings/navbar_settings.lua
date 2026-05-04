@@ -62,6 +62,7 @@ function M.build(ctx)
         { id = "collections", text = _("Collections")   },
         { id = "authors",     text = _("Authors")       },
         { id = "series",      text = _("Series")        },
+        { id = "tags",        text = _("Tags")          },
         { id = "to_be_read",  text = _("To Be Read")    },
         { id = "search",         text = _("Search")          },
         { id = "calibre_search", text = _("Calibre Search")  },

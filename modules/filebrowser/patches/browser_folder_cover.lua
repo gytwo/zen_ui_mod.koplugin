@@ -603,11 +603,33 @@ local function apply_browser_folder_cover()
                 self.refresh_dimen = nil  -- force full-cell repaint to clear ancestor ghost
             end
 
+            local is_non_fm = not (self.menu and self.menu.name == "filemanager")
+
+            -- For non-FM file items (e.g. screensaver image picker): selectively allow
+            -- cover previews. Native image files (jpg/png/etc.) decode fast without CRE.
+            -- Non-image files (epub, svg, pdf...) are suppressed to avoid crengine being
+            -- invoked for every uncached file, which causes severe lag and log spam.
+            if is_non_fm and (self.entry.is_file or self.entry.file) then
+                local _path = self.entry.path or self.entry.file or ""
+                local _ext = _path:match("%.([^%.]+)$")
+                local _is_native_img = _ext and ({
+                    jpg=1, jpeg=1, png=1, gif=1, bmp=1, webp=1, tiff=1, tif=1, svg=1,
+                })[_ext:lower()] ~= nil
+                if _is_native_img then
+                    original_update(self, ...)  -- allow cover preview; no CRE involved
+                else
+                    local saved = self.do_cover_image
+                    self.do_cover_image = false
+                    original_update(self, ...)
+                    self.do_cover_image = saved
+                end
+                return
+            end
+
             local was_found = self.bookinfo_found
             local _t0_orig = os.clock()
             original_update(self, ...)
             _perf.orig_update_time = _perf.orig_update_time + (os.clock() - _t0_orig)
-            local is_non_fm = not (self.menu and self.menu.name == "filemanager")
             if self._foldercover_processed or self.menu.no_refresh_covers then return end
             -- For file items CoverBrowser must have enabled cover rendering and set mandatory.
             -- For folder items (incl. search results) we always attempt it regardless.
@@ -821,8 +843,7 @@ local function apply_browser_folder_cover()
             end
             if not dir_path then return end
 
-            -- For non-filemanager menus (PathChooser, dialogs): visual shape only,
-            -- skip the expensive recursive cover fetch and sub-item count.
+            -- PathChooser: shape + name + rounded corners only; no cover fetch, count, or badges.
             if is_non_fm then
                 self._foldercover_processed = true
                 self:_setFolderCover { no_image = true }

@@ -428,7 +428,8 @@ local function apply_context_menu()
             -- Delegate to stock KOReader dialog outside home directory (and additional home dirs).
             local home_dir = paths.getHomeDir()
             local cur_path = self_fc.path or ""
-            if home_dir then
+            -- Collection items can live anywhere; skip the home-dir gate for them.
+            if home_dir and not item._zen_collection_name then
                 if not paths.isInHomeDir(cur_path) then
                     return orig_showFileDialog(self_fc, item)
                 end
@@ -1263,24 +1264,78 @@ local function apply_context_menu()
 
             if is_file then
                 local ReadCollection = require("readcollection")
-                local default_coll   = ReadCollection.default_collection_name
-                local is_fav         = ReadCollection:isFileInCollection(file, default_coll)
 
-                table.insert(buttons, {
-                    {
-                        text = is_fav and ("\u{F04D2}  " .. _("Remove from favorites")) or ("\u{F04CE}  " .. _("Add to favorites")),
-                        align    = "left",
-                        callback = function()
-                            close_dialog()
-                            if is_fav then
-                                ReadCollection:removeItem(file, default_coll)
-                            else
-                                ReadCollection:addItem(file, default_coll)
-                            end
-                            ReadCollection:write({ [default_coll] = true })
-                        end,
-                    },
-                })
+                -- Remove from collection (only when inside a named collection view)
+                if item._zen_collection_name then
+                    local coll_name = item._zen_collection_name
+                    table.insert(buttons, {
+                        {
+                            text     = "\u{F04D2}  " .. _("Remove from collection"),
+                            align    = "left",
+                            callback = function()
+                                close_dialog()
+                                ReadCollection:removeItem(file, coll_name)
+                                ReadCollection:write({ [coll_name] = true })
+                                if item._zen_collection_refresh then
+                                    UIManager:nextTick(item._zen_collection_refresh)
+                                end
+                            end,
+                        },
+                    })
+                end
+
+                -- Add to collection: paginated Menu picker (skip when already inside a collection)
+                if not item._zen_collection_name then
+                    table.insert(buttons, {
+                        {
+                            text     = "\u{F04CE}  " .. _("Add to collection") .. "  \u{25B6}",
+                            align    = "left",
+                            callback = function()
+                                close_dialog()
+                                local Menu_cp      = require("ui/widget/menu")
+                                local default_coll = ReadCollection.default_collection_name
+                                local all_colls    = {}
+                                for cn, _v in pairs(ReadCollection.coll) do
+                                    table.insert(all_colls, cn)
+                                end
+                                table.sort(all_colls, function(a, b)
+                                    if a == default_coll then return true end
+                                    if b == default_coll then return false end
+                                    return a < b
+                                end)
+                                local items = {}
+                                for _i, cn in ipairs(all_colls) do
+                                    local display    = cn == default_coll and _("Favorites") or cn
+                                    local already_in = ReadCollection:isFileInCollection(file, cn)
+                                    table.insert(items, {
+                                        text      = display .. (already_in and "  \u{2713}" or ""),
+                                        mandatory = already_in and _("added") or nil,
+                                        dim       = already_in,
+                                        _cn       = cn,
+                                    })
+                                end
+                                local coll_picker
+                                coll_picker = Menu_cp:new{
+                                    title         = _("Add to collection"),
+                                    item_table    = items,
+                                    is_borderless = true,
+                                    is_popout     = false,
+                                    onMenuSelect  = function(self_m, item_m)
+                                        if item_m.dim then return true end
+                                        UIManager:close(coll_picker)
+                                        ReadCollection:addItem(file, item_m._cn)
+                                        ReadCollection:write({ [item_m._cn] = true })
+                                        return true
+                                    end,
+                                    close_callback = function()
+                                        UIManager:close(coll_picker)
+                                    end,
+                                }
+                                UIManager:show(coll_picker)
+                            end,
+                        },
+                    })
+                end
             end
 
             if is_file and is_not_parent_folder then

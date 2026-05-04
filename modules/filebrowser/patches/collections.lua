@@ -1052,13 +1052,33 @@ local function apply_collections()
 
         local UIManager_mod = require("ui/uimanager")
 
-        -- Guard book-item hold inside a named collection
+        -- Guard book-item hold inside a named collection; route through Zen UI context menu.
         local orig_onMenuHold = menu.onMenuHold
         menu.onMenuHold = function(self_menu, item, pos)
             local ft = zen_plugin and zen_plugin.config and zen_plugin.config.features
             local lc = zen_plugin and zen_plugin.config and zen_plugin.config.lockdown
             if type(ft) == "table" and ft.lockdown_mode == true
                     and type(lc) == "table" and lc.disable_context_menu == true then
+                return true
+            end
+            local f = item and (item.file or item.path)
+            if not f then
+                if orig_onMenuHold then return orig_onMenuHold(self_menu, item, pos) end
+                return
+            end
+            local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+            local fm = ok_fm and FM and FM.instance
+            if fm and fm.file_chooser and fm.file_chooser.showFileDialog then
+                fm.file_chooser:showFileDialog({
+                    path     = f,
+                    is_file  = true,
+                    is_go_up = false,
+                    _zen_collection_name    = raw_coll_name,
+                    _zen_collection_refresh = function()
+                        pcall(UIManager_mod.close, UIManager_mod, menu)
+                        pcall(fm_coll.onShowColl, fm_coll, raw_coll_name)
+                    end,
+                })
                 return true
             end
             if orig_onMenuHold then return orig_onMenuHold(self_menu, item, pos) end

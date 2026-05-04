@@ -93,6 +93,20 @@ function M.build(ctx)
                 end,
             },
             {
+                text = _("Show spine lines on folder covers"),
+                checked_func = function()
+                    local ok, bim = pcall(require, "bookinfomanager")
+                    if not ok then return true end
+                    return not bim:getSetting("folder_spine_lines_show")
+                end,
+                callback = function()
+                    local ok, bim = pcall(require, "bookinfomanager")
+                    if not ok then return end
+                    bim:toggleSetting("folder_spine_lines_show")
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
                 text = _("Folder name position"),
                 sub_item_table = {
                     {

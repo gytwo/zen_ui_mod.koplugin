@@ -1115,60 +1115,62 @@ local function apply_browser_folder_cover()
             local line_inset = rounded and Screen:scaleBySize(4) or 0
 
             local decoration_layer
-            if use_top_lines then
-                -- Horizontal lines above the image.
-                -- line1 (top / farther from cover): shorter.  line2 (bottom / closer): longer.
-                local line1_w = math.max(0, math.floor(dimen.w * (Folder.edge.width ^ 2)) - 2 * line_inset)
-                local line2_w = math.max(0, math.floor(dimen.w * Folder.edge.width)       - 2 * line_inset)
-                decoration_layer = TopContainer:new {
-                    dimen = { w = self.width, h = self.height },
-                    VerticalGroup:new {
-                        VerticalSpan:new { width = centered_top - top_h },
-                        CenterContainer:new {
-                            dimen = { w = self.width, h = top_h },
-                            VerticalGroup:new {
+            if not BookInfoManager:getSetting("folder_spine_lines_show") then
+                if use_top_lines then
+                    -- Horizontal lines above the image.
+                    -- line1 (top / farther from cover): shorter.  line2 (bottom / closer): longer.
+                    local line1_w = math.max(0, math.floor(dimen.w * (Folder.edge.width ^ 2)) - 2 * line_inset)
+                    local line2_w = math.max(0, math.floor(dimen.w * Folder.edge.width)       - 2 * line_inset)
+                    decoration_layer = TopContainer:new {
+                        dimen = { w = self.width, h = self.height },
+                        VerticalGroup:new {
+                            VerticalSpan:new { width = centered_top - top_h },
+                            CenterContainer:new {
+                                dimen = { w = self.width, h = top_h },
+                                VerticalGroup:new {
+                                    LineWidget:new {
+                                        background = Folder.edge.color,
+                                        dimen = { w = line1_w, h = Folder.edge.thick },
+                                    },
+                                    VerticalSpan:new { width = Folder.edge.margin },
+                                    LineWidget:new {
+                                        background = Folder.edge.color,
+                                        dimen = { w = line2_w, h = Folder.edge.thick },
+                                    },
+                                },
+                            },
+                        },
+                    }
+                else
+                    -- Vertical spine lines to the left of the cover image.
+                    -- line1 (outer / farther from cover): shorter.  line2 (inner / closer): longer.
+                    local spine_x   = math.max(0, math.floor((self.width - dimen.w) / 2))
+                    local line1_h   = math.max(0, math.floor(dimen.h * (Folder.edge.width ^ 2)) - 2 * line_inset)
+                    local line2_h   = math.max(0, math.floor(dimen.h * Folder.edge.width)       - 2 * line_inset)
+                    -- Use eff_h so spine lines center within the cover area, not the full
+                    -- cell (which includes the strip region when called via deferred refresh).
+                    decoration_layer = LeftContainer:new {
+                        dimen = { w = self.width, h = eff_h },
+                        HorizontalGroup:new {
+                            HorizontalSpan:new { width = math.max(0, spine_x - spine_gap) },
+                            CenterContainer:new {
+                                dimen = { w = Folder.edge.thick, h = eff_h },
                                 LineWidget:new {
                                     background = Folder.edge.color,
-                                    dimen = { w = line1_w, h = Folder.edge.thick },
+                                    dimen = { w = Folder.edge.thick, h = line1_h },
                                 },
-                                VerticalSpan:new { width = Folder.edge.margin },
+                            },
+                            HorizontalSpan:new { width = Folder.edge.margin },
+                            CenterContainer:new {
+                                dimen = { w = Folder.edge.thick, h = eff_h },
                                 LineWidget:new {
                                     background = Folder.edge.color,
-                                    dimen = { w = line2_w, h = Folder.edge.thick },
+                                    dimen = { w = Folder.edge.thick, h = line2_h },
                                 },
                             },
                         },
-                    },
-                }
-            else
-                -- Vertical spine lines to the left of the cover image.
-                -- line1 (outer / farther from cover): shorter.  line2 (inner / closer): longer.
-                local spine_x   = math.max(0, math.floor((self.width - dimen.w) / 2))
-                local line1_h   = math.max(0, math.floor(dimen.h * (Folder.edge.width ^ 2)) - 2 * line_inset)
-                local line2_h   = math.max(0, math.floor(dimen.h * Folder.edge.width)       - 2 * line_inset)
-                -- Use eff_h so spine lines center within the cover area, not the full
-                -- cell (which includes the strip region when called via deferred refresh).
-                decoration_layer = LeftContainer:new {
-                    dimen = { w = self.width, h = eff_h },
-                    HorizontalGroup:new {
-                        HorizontalSpan:new { width = math.max(0, spine_x - spine_gap) },
-                        CenterContainer:new {
-                            dimen = { w = Folder.edge.thick, h = eff_h },
-                            LineWidget:new {
-                                background = Folder.edge.color,
-                                dimen = { w = Folder.edge.thick, h = line1_h },
-                            },
-                        },
-                        HorizontalSpan:new { width = Folder.edge.margin },
-                        CenterContainer:new {
-                            dimen = { w = Folder.edge.thick, h = eff_h },
-                            LineWidget:new {
-                                background = Folder.edge.color,
-                                dimen = { w = Folder.edge.thick, h = line2_h },
-                            },
-                        },
-                    },
-                }
+                    }
+                end
             end
 
             local widget = OverlapGroup:new {
@@ -1499,31 +1501,33 @@ local function apply_browser_folder_cover()
                     local line2_h = math.max(0, math.floor(dimen_h *  Folder.edge.width)       - 2 * line_inset)
                     local spine_gap = Screen:scaleBySize(8)
                     self._cover_frame = wleft[1]  -- FrameContainer child; used by paintTo for rounded corners
-                    wleft = OverlapGroup:new {
-                        dimen = { w = cover_zone_w, h = dimen_h },
-                        wleft,
-                        LeftContainer:new {
+                    if not BookInfoManager:getSetting("folder_spine_lines_show") then
+                        wleft = OverlapGroup:new {
                             dimen = { w = cover_zone_w, h = dimen_h },
-                            HorizontalGroup:new {
-                                HorizontalSpan:new { width = math.max(0, spine_x - spine_gap) },
-                                CenterContainer:new {
-                                    dimen = { w = Folder.edge.thick, h = dimen_h },
-                                    LineWidget:new {
-                                        background = Folder.edge.color,
-                                        dimen = { w = Folder.edge.thick, h = line1_h },
+                            wleft,
+                            LeftContainer:new {
+                                dimen = { w = cover_zone_w, h = dimen_h },
+                                HorizontalGroup:new {
+                                    HorizontalSpan:new { width = math.max(0, spine_x - spine_gap) },
+                                    CenterContainer:new {
+                                        dimen = { w = Folder.edge.thick, h = dimen_h },
+                                        LineWidget:new {
+                                            background = Folder.edge.color,
+                                            dimen = { w = Folder.edge.thick, h = line1_h },
+                                        },
                                     },
-                                },
-                                HorizontalSpan:new { width = Folder.edge.margin },
-                                CenterContainer:new {
-                                    dimen = { w = Folder.edge.thick, h = dimen_h },
-                                    LineWidget:new {
-                                        background = Folder.edge.color,
-                                        dimen = { w = Folder.edge.thick, h = line2_h },
+                                    HorizontalSpan:new { width = Folder.edge.margin },
+                                    CenterContainer:new {
+                                        dimen = { w = Folder.edge.thick, h = dimen_h },
+                                        LineWidget:new {
+                                            background = Folder.edge.color,
+                                            dimen = { w = Folder.edge.thick, h = line2_h },
+                                        },
                                     },
                                 },
                             },
-                        },
-                    }
+                        }
+                    end
 
                     -- Right-side item count widget.
                     local pad = Screen:scaleBySize(10)

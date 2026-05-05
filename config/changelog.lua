@@ -39,6 +39,7 @@ return {
     ["1.1.1"] = {
         "Add Navbar tab for Tags",
         "Add filtering for all views",
+        "Add dim finished books (Settings > Library > Covers)",
         "Add/remove from collections via context menu",
         "Allow remove from history in context menu",
         "Better support for multiple home folders",

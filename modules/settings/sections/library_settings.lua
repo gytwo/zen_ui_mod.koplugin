@@ -286,6 +286,22 @@ function M.build(ctx)
                 },
             },
             {
+                text = _("Dim finished books"),
+                checked_func = function()
+                    return type(config.browser_cover_badges) == "table"
+                        and config.browser_cover_badges.dim_finished_books == true
+                end,
+                callback = function()
+                    if type(config.browser_cover_badges) ~= "table" then
+                        config.browser_cover_badges = {}
+                    end
+                    config.browser_cover_badges.dim_finished_books =
+                        not (config.browser_cover_badges.dim_finished_books == true)
+                    plugin:saveConfig()
+                    UIManager:setDirty(nil, "full")
+                end,
+            },
+            {
                 text = _("Rounded cover corners"),
                 checked_func = function()
                     return type(config.features) == "table"

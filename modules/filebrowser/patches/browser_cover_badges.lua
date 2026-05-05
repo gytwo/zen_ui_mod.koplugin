@@ -279,6 +279,21 @@ local function apply_browser_cover_badges()
             local _badge_scale = get_badge_scale()
             local in_fm = _is_fm
 
+            -- Dim finished books: lighten cover toward white so it visually recedes.
+            local dim_finished = in_fm and _plugin
+                and _plugin.config
+                and type(_plugin.config.browser_cover_badges) == "table"
+                and _plugin.config.browser_cover_badges.dim_finished_books == true
+                and self.status == "complete"
+            if dim_finished then
+                local cover_left = x + math.floor((self.width - target.dimen.w) / 2)
+                local cov_w = target.dimen.w - 2 * border
+                local cov_h = target.dimen.h - 2 * border
+                if cov_w > 0 and cov_h > 0 then
+                    bb:lightenRect(cover_left + border, target.dimen.y + border, cov_w, cov_h, 0.4)
+                end
+            end
+
             -- 3. Favorite star → top-left inside a circle
             local show_fav_badge = in_fm and _plugin
                 and _plugin.config
@@ -351,9 +366,9 @@ local function apply_browser_cover_badges()
                 and _plugin.config.browser_cover_badges.show_mosaic_progress == true
 
             if show_badge and self.filepath then
-                local do_check = (self.status == "complete")
+                local do_check = (self.status == "complete") and not dim_finished
                 local do_pause = (self.status == "abandoned")
-                local do_pct   = not do_check and not do_pause and self.percent_finished ~= nil
+                local do_pct   = not dim_finished and not do_check and not do_pause and self.percent_finished ~= nil
 
                 if do_check or do_pause or do_pct then
                     local eff_size = math.floor(math.max(corner_mark_size, math.floor((target.dimen.w or 0) * 0.14)) * _badge_scale)
@@ -494,6 +509,14 @@ local function apply_browser_cover_badges()
             self.do_hint_opened = false
             orig_list_paintTo(self, bb, x, y)
             self.do_hint_opened = saved
+            -- Dim finished books
+            local dim_finished = _plugin
+                and _plugin.config
+                and type(_plugin.config.browser_cover_badges) == "table"
+                and _plugin.config.browser_cover_badges.dim_finished_books == true
+            if dim_finished and self.status == "complete" and self.width and self.height then
+                bb:lightenRect(x, y, self.width, self.height, 0.3)
+            end
         end
     end
 

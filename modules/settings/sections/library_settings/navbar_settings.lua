@@ -15,7 +15,14 @@ function M.build(ctx)
     local save_and_apply = ctx.save_and_apply
     local apply_feature  = ctx.apply_feature
 
-    local function save_and_apply_navbar() save_and_apply("navbar") end
+    -- For config-only changes (visibility, styling), reinject directly so the
+    -- navbar rebuilds immediately in the widget tree and shows correct tabs as
+    -- soon as the menu closes -- no deferred polling needed.
+    local function save_and_apply_navbar()
+        ctx.plugin:saveConfig()
+        local reinject = rawget(_G, "__ZEN_UI_REINJECT_FM_NAVBAR")
+        if reinject then reinject() else save_and_apply("navbar") end
+    end
 
     local function make_enable_feature_item(feature, text)
         return utils.make_enable_feature_item(feature, text, config, save_and_apply)

@@ -1223,7 +1223,19 @@ local function show_file_dialog_with_refresh(fc, menu_self, item)
         fc.refreshPath = orig  -- restore before doing anything
         orig(self2, ...)
         local UIManager2 = require("ui/uimanager")
-        if UIManager2:isShown(menu_self) then
+        local is_shown
+        if type(UIManager2.isShown) == "function" then
+            is_shown = UIManager2:isShown(menu_self)
+        else
+            -- Fallback for older KOReader: scan window stack directly
+            is_shown = false
+            if type(UIManager2._window_stack) == "table" then
+                for _, entry in ipairs(UIManager2._window_stack) do
+                    if entry.widget == menu_self then is_shown = true; break end
+                end
+            end
+        end
+        if is_shown then
             menu_self:updateItems()
         end
     end
@@ -1439,13 +1451,19 @@ local function showDetailView(group_item, injectNavbar, tab_id)
             local fm = FileManager.instance
             if fm and fm.file_chooser and fm.file_chooser.showFileDialog then
                 fm.file_chooser:showFileDialog({
-                    _zen_group_files = files,
-                    _zen_group_name  = group_name,
-                    _zen_sort_cb     = function()
+                    _zen_group_files       = files,
+                    _zen_group_name        = group_name,
+                    _zen_is_folder_view    = true,
+                    _zen_sort_cb           = function()
                         showDetailSortDialog(group_name, tab_id, self, files)
                     end,
-                    _zen_display_cb  = function()
+                    _zen_display_cb        = function()
                         showDisplayModeDialog(self, tab_id)
+                    end,
+                    _zen_filter_refresh_cb = function()
+                        -- Rebuild item_table with new filter: close and reopen.
+                        UIManager:close(detail_menu)
+                        showDetailView(group_item, injectNavbar, tab_id)
                     end,
                 })
             end

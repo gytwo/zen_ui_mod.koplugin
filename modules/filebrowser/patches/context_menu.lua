@@ -418,6 +418,87 @@ local function apply_context_menu()
                         end,
                     }})
                 end
+                -- Filter by read status (global setting, same as library filter)
+                -- Only shown inside a specific group/collection folder, not the top-level list.
+                local function showGroupFilterDialog()
+                    local cur_st = FileChooser.show_filter and FileChooser.show_filter.status
+                    local is_all = cur_st == nil
+                    local filter_dialog
+                    local function setGlobalFilter(new_status)
+                        if not FileChooser.show_filter then FileChooser.show_filter = {} end
+                        FileChooser.show_filter.status = new_status
+                        local gs = rawget(_G, "G_reader_settings")
+                        if gs then
+                            gs:saveSetting("show_filter", FileChooser.show_filter)
+                            pcall(gs.flush, gs)
+                        end
+                        self_fc:refreshPath()
+                        if item._zen_filter_refresh_cb then item._zen_filter_refresh_cb() end
+                    end
+                    local STATUS_OPTS = {
+                        { key = "new",       icon = icons.status,   label = _("Unread")     },
+                        { key = "reading",   icon = icons.reading,  label = _("Reading")    },
+                        { key = "abandoned", icon = icons.tbr,      label = _("To Be Read") },
+                        { key = "complete",  icon = icons.finished, label = _("Finished")   },
+                    }
+                    local fbts = {}
+                    table.insert(fbts, {{
+                        text     = _("All") .. (is_all and "  " .. icons.check or ""),
+                        align    = "left",
+                        enabled  = not is_all,
+                        callback = function()
+                            UIManager:close(filter_dialog)
+                            setGlobalFilter(nil)
+                        end,
+                    }})
+                    for _i, st in ipairs(STATUS_OPTS) do
+                        local is_active = cur_st and cur_st[st.key] == true
+                        table.insert(fbts, {{
+                            text     = st.icon .. "  " .. st.label
+                                .. (is_active and "  " .. icons.check or ""),
+                            align    = "left",
+                            callback = function()
+                                UIManager:close(filter_dialog)
+                                local new_st = {}
+                                if cur_st then
+                                    for _k, v in pairs(cur_st) do new_st[_k] = v end
+                                end
+                                if new_st[st.key] then new_st[st.key] = nil
+                                else new_st[st.key] = true end
+                                local n = 0
+                                for _k, v in pairs(new_st) do if v then n = n + 1 end end
+                                -- n==0 or all 4 selected collapses back to nil (All)
+                                if n == 0 or n == 4 then setGlobalFilter(nil)
+                                else setGlobalFilter(new_st) end
+                                UIManager:nextTick(showGroupFilterDialog)
+                            end,
+                        }})
+                    end
+                    filter_dialog = ButtonDialog:new{
+                        title       = _("Filter by status"),
+                        title_align = "center",
+                        buttons     = fbts,
+                    }
+                    UIManager:show(filter_dialog)
+                end
+                if item._zen_is_folder_view then
+                    local n_gf = 0
+                    if FileChooser.show_filter and FileChooser.show_filter.status then
+                        for _k, v in pairs(FileChooser.show_filter.status) do
+                            if v then n_gf = n_gf + 1 end
+                        end
+                    end
+                    table.insert(buttons, {{
+                        text     = icons.filter .. "  " .. _("Filter")
+                            .. (n_gf > 0 and " (" .. n_gf .. ")" or "")
+                            .. "  \u{25B8}",
+                        align    = "left",
+                        callback = function()
+                            UIManager:close(self_fc.file_dialog)
+                            UIManager:nextTick(showGroupFilterDialog)
+                        end,
+                    }})
+                end
                 -- Caller-supplied extra buttons (e.g. collection-specific actions)
                 if item._zen_extra_buttons then
                     for _, row in ipairs(item._zen_extra_buttons) do
@@ -1408,11 +1489,10 @@ local function apply_context_menu()
             -- ── Sort (folders only) ───────────────────────────────────────────────────
             if not is_file and is_not_parent_folder then
                 local SORT_OPTIONS = {
-                    { key = "title",    text = "\u{F04BB}  " .. _("Title")         },
-                    { key = "authors",  text = "\u{F0013}  " .. _("Authors")       },
-                    { key = "series",   text = "\u{F0436}  " .. _("Series")        },
-                    { key = "access",   text = "\u{F02DA}  " .. _("Recently read") },
-                    { key = "keywords", text = "\u{F12F7}  " .. _("Keywords")      },
+                    { key = "title",   text = "\u{F04BB}  " .. _("Title")         },
+                    { key = "authors", text = "\u{F0013}  " .. _("Authors")       },
+                    { key = "series",  text = "\u{F0436}  " .. _("Series")        },
+                    { key = "access",  text = "\u{F02DA}  " .. _("Recently read") },
                 }
 
                 if is_home_dir then
@@ -1592,7 +1672,6 @@ local function apply_context_menu()
                             align    = "left",
                             callback = function()
                                 UIManager:close(filter_dialog)
-                                -- Copy current set (nil = all shown) then toggle the key.
                                 local new_st = {}
                                 if cur_st then
                                     for k, v in pairs(cur_st) do new_st[k] = v end
@@ -1604,8 +1683,9 @@ local function apply_context_menu()
                                 end
                                 local n = 0
                                 for _, v in pairs(new_st) do if v then n = n + 1 end end
-                                -- collapse to nil when no statuses or all 4 are selected
-                                setFilter((n == 0 or n == 4) and nil or new_st)
+                                -- n==0 or all 4 selected collapses back to nil (All)
+                                if n == 0 or n == 4 then setFilter(nil)
+                                else setFilter(new_st) end
                                 UIManager:nextTick(showFilterDialog)
                             end,
                         }})
@@ -1629,7 +1709,7 @@ local function apply_context_menu()
                     {
                         text     = icons.filter .. "  " .. _("Filter")
                             .. (n_active > 0 and " (" .. n_active .. ")" or "")
-                            .. "  " .. icons.arrow_right,
+                            .. "  ▶",
                         align    = "left",
                         callback = function()
                             close_dialog()

@@ -845,15 +845,19 @@ local function apply_collections()
         local fm = ok_fm and FM and FM.instance
         if fm and fm.file_chooser and fm.file_chooser.showFileDialog then
             fm.file_chooser:showFileDialog({
-                _zen_group_files    = files,
-                _zen_group_name     = display_name,
-                _zen_group_subtitle = book_count == 1 and _("1 book")
-                                      or (tostring(book_count) .. " " .. _("books")),
+                _zen_group_files       = files,
+                _zen_group_name        = display_name,
+                _zen_group_subtitle    = book_count == 1 and _("1 book")
+                                         or (tostring(book_count) .. " " .. _("books")),
+                _zen_is_folder_view    = true,
                 -- context_menu.lua closes the dialog before invoking these callbacks
-                _zen_sort_cb        = function()
+                _zen_sort_cb           = function()
                     show_coll_sort_submenu(raw_coll_name, function() end, reopen_collection)
                 end,
-                _zen_display_cb     = showDisplaySubmenu,
+                _zen_display_cb        = showDisplaySubmenu,
+                _zen_filter_refresh_cb = function()
+                    reopen_collection()
+                end,
             })
         else
             -- Fallback: plain button dialog

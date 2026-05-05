@@ -221,7 +221,12 @@ local function apply_browser_cover_badges()
         local _badges_log_done = false
         local _badges_target_log_done = false
         function MosaicMenuItem:paintTo(bb, x, y)
-            local _is_fm = self.menu and self.menu.name == "filemanager"
+            -- _zen_tab_id: group view detail menus; _zen_coll_list: collections; history by name.
+            local _is_fm = self.menu and (
+                self.menu.name == "filemanager"
+                or self.menu.name == "history"
+                or self.menu._zen_tab_id
+                or self.menu._zen_coll_list)
             -- Clear the full cell to white before painting so that portrait
             -- covers (which are narrower than the cell) don't leave ghost pixels
             -- from a previously painted full-width placeholder in the margins.

@@ -503,13 +503,11 @@ local function apply_browser_folder_cover()
         end
 
         --- Recursively collect book covers from dir_path and its subdirectories.
-        --- @return table covers     List of {data=bb, w=number, h=number}
-        --- @return number book_count Total book files found (recursive)
+        --- @return table covers  List of {data=bb, w=number, h=number}
         local function collectCoversFromDir(dir_path, chooser, max_covers, max_depth, copy_bb, entries)
-            local _is_top = (entries ~= nil) == false and max_depth ~= nil  -- top-level call has no entries arg
             local t0_collect = _perf.collect_calls == 0 and os.clock() or nil
-            _perf.collect_calls = _perf.collect_calls + 1            local covers = {}
-            local book_count = 0
+            _perf.collect_calls = _perf.collect_calls + 1
+            local covers = {}
             local subdirs = {}
 
             if not entries then
@@ -517,11 +515,10 @@ local function apply_browser_folder_cover()
                 entries = chooser:genItemTableFromPath(dir_path)
                 chooser._dummy = false
             end
-            if not entries then return covers, book_count end
+            if not entries then return covers end
 
             for _, entry in ipairs(entries) do
                 if entry.is_file or entry.file then
-                    book_count = book_count + 1
                     if #covers < max_covers then
                         local bookinfo, found_at = getBookInfoWithFallback(entry.path)
                         if bookinfo and bookinfo.cover_bb
@@ -542,11 +539,10 @@ local function apply_browser_folder_cover()
             if max_depth > 0 then
                 for _, sub_path in ipairs(subdirs) do
                     local remaining = max_covers - #covers
-                    local sub_covers, sub_count = collectCoversFromDir(
+                    local sub_covers = collectCoversFromDir(
                         sub_path, chooser,
                         remaining > 0 and remaining or 0,
                         max_depth - 1, copy_bb)
-                    book_count = book_count + sub_count
                     for _, c in ipairs(sub_covers) do
                         if #covers < max_covers then
                             table.insert(covers, c)
@@ -560,7 +556,7 @@ local function apply_browser_folder_cover()
             if t0_collect then
                 _perf.collect_time = _perf.collect_time + (os.clock() - t0_collect)
             end
-            return covers, book_count
+            return covers
         end
 
         -- setting
@@ -603,7 +599,13 @@ local function apply_browser_folder_cover()
                 self.refresh_dimen = nil  -- force full-cell repaint to clear ancestor ghost
             end
 
-            local is_non_fm = not (self.menu and self.menu.name == "filemanager")
+            -- Group view detail menus (_zen_tab_id), collections (_zen_coll_list), and
+            -- history (name=="history") all contain real book items; treat like filemanager.
+            local is_non_fm = not (self.menu and (
+                self.menu.name == "filemanager"
+                or self.menu.name == "history"
+                or self.menu._zen_tab_id
+                or self.menu._zen_coll_list))
 
             -- For non-FM file items (e.g. screensaver image picker): selectively allow
             -- cover previews. Native image files (jpg/png/etc.) decode fast without CRE.
@@ -889,11 +891,11 @@ local function apply_browser_folder_cover()
             -- Collect covers recursively (bubbles up from child folders).
             local is_gallery = settings.gallery_mode.get()
             local max_covers = is_gallery and 4 or 1
-            local covers, book_count = collectCoversFromDir(dir_path, _chooser, max_covers, 2, is_gallery, entries)
+            local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, is_gallery, entries)
 
             if is_gallery then
                 if #covers > 0 then self._foldercover_processed = true end
-                self:_setFolderCover { gallery = covers, book_count = book_count }
+                self:_setFolderCover { gallery = covers }
                 if not self._foldercover_processed and self.menu and not self._zen_pending_refresh then
                     self._zen_pending_refresh = true
                     local pending = pending_folders_by_menu[self.menu]
@@ -906,11 +908,11 @@ local function apply_browser_folder_cover()
             else
                 if #covers > 0 then
                     self._foldercover_processed = true
-                    self:_setFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h, book_count = book_count }
+                    self:_setFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h }
                 else
                     -- Do NOT set _foldercover_processed here: leave it nil so the
                     -- next updateItems() re-scans once cover extraction completes.
-                    self:_setFolderCover { no_image = true, book_count = book_count }
+                    self:_setFolderCover { no_image = true }
                     -- Register for deferred refresh; guard prevents re-registration while already pending.
                     if self.menu and not self._zen_pending_refresh then
                         self._zen_pending_refresh = true
@@ -1064,8 +1066,14 @@ local function apply_browser_folder_cover()
             -- centered_top is computed against eff_h (usable area, strip excluded) so
             -- the badge lands on the cover image rather than inside the strip.
             self._zen_cover_top = math.floor((eff_h - dimen.h) / 2)
-            self._zen_folder_count = (settings.show_item_count.get() and img.book_count and img.book_count > 0)
-                and img.book_count or nil
+            -- Parse file count from KOReader's mandatory string (e.g. "2 <folder_icon> 5 <file_icon>").
+            -- U+F016 (file icon, \xef\x80\x96) always follows the file count; anchoring on it
+            -- correctly skips the leading subdir count when both dirs and files are present.
+            -- mandatory may be a number (e.g. book count) in collections/group-view context.
+            local _file_count = type(self.mandatory) == "string"
+                and (tonumber(self.mandatory:match("(%d+)%s*\xef\x80\x96")) or 0) or 0
+            self._zen_folder_count = (settings.show_item_count.get() and _file_count > 0)
+                and _file_count or nil
             local directory = self:_getTextBoxes { w = size.w, h = size.h }
 
             local folder_name_widget
@@ -1262,16 +1270,22 @@ local function apply_browser_folder_cover()
                     bold      = true,
                 }
             else
-                -- Could not fit on one line even at min_font_size; allow wrap +
-                -- ellipsis so very long names are still legible.
+                -- Could not fit on one line even at min_font_size; allow up to 2 lines
+                -- then ellipsis so very long names (e.g. group view) are clipped cleanly.
                 if probe then probe:free() end
+                local line_probe = TextWidget:new {
+                    text = "Ag", face = Font:getFace("cfont", min_font_size),
+                    bold = true, padding = 0,
+                }
+                local two_line_h = math.min(available_height, 2 * line_probe:getSize().h)
+                line_probe:free()
                 directory = TextBoxWidget:new {
                     text      = text,
                     face      = Font:getFace("cfont", min_font_size),
                     width     = dimen.w,
                     alignment = "center",
                     bold      = true,
-                    height    = available_height,
+                    height    = two_line_h,
                     height_adjust = true,
                     height_overflow_show_ellipsis = true,
                 }
@@ -1333,17 +1347,17 @@ local function apply_browser_folder_cover()
                     -- Collect covers recursively (bubbles up from child folders).
                     local is_gallery = settings.gallery_mode.get()
                     local max_covers = is_gallery and 4 or 1
-                    local covers, book_count_l = collectCoversFromDir(dir_path, _chooser, max_covers, 2, is_gallery, entries)
+                    local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, is_gallery, entries)
 
                     if is_gallery then
                         if #covers > 0 then self._foldercover_processed = true end
-                        self:_setListFolderCover { gallery = covers, book_count = book_count_l }
+                        self:_setListFolderCover { gallery = covers }
                     else
                         self._foldercover_processed = true
                         if #covers > 0 then
-                            self:_setListFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h, book_count = book_count_l }
+                            self:_setListFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h }
                         else
-                            self:_setListFolderCover { no_image = true, book_count = book_count_l }
+                            self:_setListFolderCover { no_image = true }
                         end
                     end
                 end
@@ -1529,22 +1543,22 @@ local function apply_browser_folder_cover()
                         }
                     end
 
-                    -- Right-side item count widget.
+                    -- Right-side count column: folder count on top, file count below.
                     local pad = Screen:scaleBySize(10)
                     local wmain_left_pad = Screen:scaleBySize(5) -- narrower padding when cover present
-                    -- Use entry-counted books when available; fall back to mandatory parsing
-                    -- for custom-cover items that skip entry enumeration.
-                    local count_num = img.book_count ~= nil and img.book_count
-                        or tonumber((self.mandatory or "0"):match("^%s*(%d+)")) or 0
+                    -- mandatory format: "N <\uF114> M <\uF016>" or just "M <\uF016>"
+                    local _file_count = tonumber((self.mandatory or ""):match("(%d+)%s*\xef\x80\x96")) or 0
+                    local _dir_count  = tonumber((self.mandatory or ""):match("(%d+)%s*\xef\x84\x94")) or 0
                     local fs_right = _fontSize(16, 20)
-                    local label_str = tostring(count_num) .. " " .. (count_num == 1 and _("Book") or _("Books"))
-                    local wright = TextWidget:new{
-                        text = label_str,
-                        face = Font:getFace("cfont", fs_right),
-                        padding = 0,
-                    }
-                    local wright_w = wright:getWidth()
+                    local file_label = tostring(_file_count) .. " " .. (_file_count == 1 and _("Book") or _("Books"))
+                    local dir_label  = tostring(_dir_count)  .. " " .. (_dir_count  == 1 and _("Folder") or _("Folders"))
+                    local wfile = TextWidget:new{ text = file_label, face = Font:getFace("cfont", fs_right), padding = 0 }
+                    local wdir  = TextWidget:new{ text = dir_label,  face = Font:getFace("cfont", fs_right), padding = 0 }
+                    local wright_w = math.max(wfile:getWidth(), _dir_count > 0 and wdir:getWidth() or 0)
                     local wright_right_pad = pad
+                    local wright = VerticalGroup:new{}
+                    if _dir_count > 0 then table.insert(wright, wdir) end
+                    table.insert(wright, wfile)
 
                     -- Folder name widget (middle area).
                     local text = self.text

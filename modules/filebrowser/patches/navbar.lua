@@ -75,7 +75,7 @@ local function apply_navbar()
         },
         tab_order = { "page_left", "books", "manga", "news", "continue", "authors", "series", "tags", "to_be_read", "history", "favorites", "collections", "stats", "search", "calibre_search", "exit", "page_right", "menu" },
         show_labels = true,
-        books_label = "Library",
+        books_label = "",  -- empty = auto-translated "Library"
         manga_action = "rakuyomi",
         manga_folder = "",
         news_action = "quickrss",
@@ -117,6 +117,8 @@ local function apply_navbar()
                 end
             end
         end
+        -- migrate old hard-coded English default
+        if config.books_label == "Library" then config.books_label = "" end
         zen_plugin.config.navbar = config
         return config
     end
@@ -126,7 +128,7 @@ local function apply_navbar()
     -- === Tab definitions ===
 
     local function getBooksLabel()
-        return config.books_label ~= "" and config.books_label or "Books"
+        return config.books_label ~= "" and config.books_label or _("Library")
     end
 
     local tabs = {

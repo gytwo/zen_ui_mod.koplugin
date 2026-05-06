@@ -651,9 +651,8 @@ local function apply_collections()
                 fm.file_chooser:showSortOrderDialog({
                     current_reverse = cur_rev,
                     on_select       = function(reverse)
-                        if coll_settings then
-                            coll_settings.collate_reverse = reverse or nil
-                        end
+                        coll_settings.collate_reverse = reverse or nil
+                        ReadCollection:write({ [coll_name] = true })
                         if on_sort_applied then on_sort_applied() end
                     end,
                 })
@@ -765,7 +764,9 @@ local function apply_collections()
     ---------------------------------------------------------------------------
     -- Blank-space context menu inside a NAMED collection's book list
     ---------------------------------------------------------------------------
-    local function show_named_coll_blank_menu(fm_coll, menu, raw_coll_name, display_name)
+    -- fav_navbar: true when this is the favorites collection opened from the navbar.
+    -- Controls reopen target (nil vs explicit name) and which display setting is saved.
+    local function show_named_coll_blank_menu(fm_coll, menu, raw_coll_name, display_name, fav_navbar)
         local ft = zen_plugin and zen_plugin.config and zen_plugin.config.features
         local lc = zen_plugin and zen_plugin.config and zen_plugin.config.lockdown
         if type(ft) == "table" and ft.lockdown_mode == true
@@ -793,17 +794,23 @@ local function apply_collections()
 
         local function reopen_collection()
             if menu then UIManager_nb:close(menu) end
-            fm_coll:onShowColl(raw_coll_name)
+            -- fav_navbar: pass nil so favorites.lua's wrapper sees navbar open (no back button).
+            -- Cannot use `fav_navbar and nil or raw_coll_name` — Lua `and/or` ternary breaks
+            -- when the truthy-branch value is nil (nil is falsy, so `or` always takes the rhs).
+            if fav_navbar then
+                fm_coll:onShowColl(nil)
+            else
+                fm_coll:onShowColl(raw_coll_name)
+            end
         end
 
         -- Display submenu (caller must close the parent dialog first)
+        -- Favorites and named collections share collection_display_mode.
         local function showDisplaySubmenu()
             local ok_bim, bim = pcall(require, "bookinfomanager")
             local cur_mode
             if ok_bim and bim then
-                local ok3, m = pcall(function()
-                    return bim:getSetting("collection_display_mode")
-                end)
+                local ok3, m = pcall(bim.getSetting, bim, "collection_display_mode")
                 if ok3 then cur_mode = m end
             end
             local function apply_mode(mode)
@@ -959,6 +966,11 @@ local function apply_collections()
                 end,
             }},
             {{
+                text     = "\u{F06D0}  " .. _("Display") .. "  \u{25B8}",
+                align    = "left",
+                callback = showDisplaySubmenu,
+            }},
+            {{
                 text     = "\u{F04BF}  " .. _("Arrange"),
                 align    = "left",
                 callback = function()
@@ -973,11 +985,6 @@ local function apply_collections()
                     UIManager_bm:close(button_dialog)
                     fm_coll:onShowCollectionsSearchDialog()
                 end,
-            }},
-            {{
-                text     = "\u{F06D0}  " .. _("Display") .. "  \u{25B8}",
-                align    = "left",
-                callback = showDisplaySubmenu,
             }},
         }
         button_dialog = ButtonDialog:new{
@@ -1264,6 +1271,35 @@ local function apply_collections()
         if not is_enabled() then return end
 
         if is_favorites and collection_name == nil then
+            -- Favorites accessed from the navbar: favorites.lua owns clean_nav,
+            -- but still wire up the blank-space hold so it shows the same
+            -- context menu as a named collection's blank-space hold.
+            local menu = self.booklist_menu
+            if menu and is_enabled() then
+                local _ = require("gettext")
+                local fav_display = _("Favorites")
+                local raw_fav = resolved_name
+                local fm_coll = self
+                local Device_fav = require("device")
+                if Device_fav:isTouchDevice() then
+                    local GestureRange_fav = require("ui/gesturerange")
+                    local Geom_fav         = require("ui/geometry")
+                    if not menu.ges_events then menu.ges_events = {} end
+                    menu.ges_events.ZenNamedCollBlankHold = {
+                        GestureRange_fav:new{
+                            ges   = "hold",
+                            range = Geom_fav:new{
+                                x = 0, y = 0,
+                                w = Device_fav.screen:getWidth(),
+                                h = Device_fav.screen:getHeight(),
+                            },
+                        },
+                    }
+                    menu.onZenNamedCollBlankHold = function()
+                        return show_named_coll_blank_menu(fm_coll, menu, raw_fav, fav_display, true)
+                    end
+                end
+            end
             return
         end
 

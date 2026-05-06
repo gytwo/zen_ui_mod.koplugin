@@ -460,10 +460,24 @@ function ZenUI:init()
     if self.ui and self.ui.menu and self.ui.menu.registerToMainMenu then
         self.ui.menu:registerToMainMenu(self)
     end
+
+    -- Trigger background update check on fresh startup too, not only on resume.
+    zen_updater.schedule_wakeup_check()
 end
 
 -- addToMainMenu is a no-op; tab injection is done via the FileManagerMenu patch.
 function ZenUI:addToMainMenu(menu_items) -- luacheck: ignore
+end
+
+-- On resume: schedule a background update check (if due + network up).
+-- Also called from init() so a fresh KOReader start triggers the same check.
+function ZenUI:onResume()
+    zen_updater.schedule_wakeup_check()
+end
+
+-- On suspend: cancel the pending timer so checks don't run while asleep.
+function ZenUI:onSuspend()
+    zen_updater.cancel_wakeup_check()
 end
 
 function ZenUI:onCloseWidget()

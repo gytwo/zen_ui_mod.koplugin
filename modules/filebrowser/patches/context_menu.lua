@@ -398,16 +398,6 @@ local function apply_context_menu()
                         table.insert(buttons, row)
                     end
                 end
-                if sort_cb then
-                    table.insert(buttons, {{
-                        text     = "\u{F04BF}  " .. _("Sort") .. "  \u{25B8}",
-                        align    = "left",
-                        callback = function()
-                            UIManager:close(self_fc.file_dialog)
-                            sort_cb()
-                        end,
-                    }})
-                end
                 if display_cb then
                     table.insert(buttons, {{
                         text     = "\u{F06D0}  " .. _("Display") .. "  \u{25B8}",
@@ -415,6 +405,16 @@ local function apply_context_menu()
                         callback = function()
                             UIManager:close(self_fc.file_dialog)
                             display_cb()
+                        end,
+                    }})
+                end
+                if sort_cb then
+                    table.insert(buttons, {{
+                        text     = "\u{F04BF}  " .. _("Sort") .. "  \u{25B8}",
+                        align    = "left",
+                        callback = function()
+                            UIManager:close(self_fc.file_dialog)
+                            sort_cb()
                         end,
                     }})
                 end
@@ -1486,6 +1486,61 @@ local function apply_context_menu()
                 })
             end
 
+            -- ── Display mode (current dir only) ──────────────────────────────────────
+            if item._is_current_dir then
+                local function showViewSubmenu()
+                    close_dialog()
+                    local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
+                    local fm          = ok_fm and FM and FM.instance
+                    local ok_bim, bim = pcall(require, "bookinfomanager")
+                    local cur_mode
+                    if ok_bim and bim then
+                        local ok3, m = pcall(function()
+                            return bim:getSetting("filemanager_display_mode")
+                        end)
+                        if ok3 then cur_mode = m end
+                    end
+                    local function apply_mode(mode)
+                        if fm and type(fm.onSetDisplayMode) == "function" then
+                            pcall(fm.onSetDisplayMode, fm, mode)
+                        elseif ok_bim and bim then
+                            pcall(bim.saveSetting, bim, "filemanager_display_mode", mode)
+                        end
+                    end
+                    local view_dialog
+                    local function viewBtn(label, icon, mode)
+                        local active = cur_mode == mode
+                        return {{
+                            text     = icon .. "  " .. label .. (active and "  \u{2713}" or ""),
+                            align    = "left",
+                            enabled  = not active,
+                            callback = function()
+                                UIManager:close(view_dialog)
+                                apply_mode(mode)
+                            end,
+                        }}
+                    end
+                    view_dialog = ButtonDialog:new{
+                        title       = _("Display mode"),
+                        title_align = "center",
+                        buttons     = {
+                            viewBtn(_("Mosaic"),          "\u{F11D9}", "mosaic_image"),
+                            viewBtn(_("List (detailed)"), "\u{F148B}", "list_image_meta"),
+                            viewBtn(_("List (basic)"),    "\u{F0279}", "list_image_filename"),
+                        },
+                    }
+                    UIManager:show(view_dialog)
+                end
+
+                table.insert(buttons, {
+                    {
+                        text     = "\u{F06D0}  " .. _("Display") .. "  ▶",
+                        align    = "left",
+                        callback = showViewSubmenu,
+                    },
+                })
+            end
+
             -- ── Sort (folders only) ───────────────────────────────────────────────────
             if not is_file and is_not_parent_folder then
                 local SORT_OPTIONS = {
@@ -1715,61 +1770,6 @@ local function apply_context_menu()
                             close_dialog()
                             UIManager:nextTick(showFilterDialog)
                         end,
-                    },
-                })
-            end
-
-            -- ── Display mode (current dir only) ──────────────────────────────────────
-            if item._is_current_dir then
-                local function showViewSubmenu()
-                    close_dialog()
-                    local ok_fm, FM = pcall(require, "apps/filemanager/filemanager")
-                    local fm          = ok_fm and FM and FM.instance
-                    local ok_bim, bim = pcall(require, "bookinfomanager")
-                    local cur_mode
-                    if ok_bim and bim then
-                        local ok3, m = pcall(function()
-                            return bim:getSetting("filemanager_display_mode")
-                        end)
-                        if ok3 then cur_mode = m end
-                    end
-                    local function apply_mode(mode)
-                        if fm and type(fm.onSetDisplayMode) == "function" then
-                            pcall(fm.onSetDisplayMode, fm, mode)
-                        elseif ok_bim and bim then
-                            pcall(bim.saveSetting, bim, "filemanager_display_mode", mode)
-                        end
-                    end
-                    local view_dialog
-                    local function viewBtn(label, icon, mode)
-                        local active = cur_mode == mode
-                        return {{
-                            text     = icon .. "  " .. label .. (active and "  \u{2713}" or ""),
-                            align    = "left",
-                            enabled  = not active,
-                            callback = function()
-                                UIManager:close(view_dialog)
-                                apply_mode(mode)
-                            end,
-                        }}
-                    end
-                    view_dialog = ButtonDialog:new{
-                        title       = _("Display mode"),
-                        title_align = "center",
-                        buttons     = {
-                            viewBtn(_("Mosaic"),          "\u{F11D9}", "mosaic_image"),
-                            viewBtn(_("List (detailed)"), "\u{F148B}", "list_image_meta"),
-                            viewBtn(_("List (basic)"),    "\u{F0279}", "list_image_filename"),
-                        },
-                    }
-                    UIManager:show(view_dialog)
-                end
-
-                table.insert(buttons, {
-                    {
-                        text     = "\u{F06D0}  " .. _("Display") .. "  ▶",
-                        align    = "left",
-                        callback = showViewSubmenu,
                     },
                 })
             end

@@ -117,6 +117,16 @@ local function apply_navbar()
                 end
             end
         end
+        -- Add custom tab IDs to tab_order if not already present
+        if type(config.custom_tabs) == "table" then
+            local ct_order_set = {}
+            for _, v in ipairs(config.tab_order) do ct_order_set[v] = true end
+            for _i, ct in ipairs(config.custom_tabs) do
+                if type(ct.id) == "string" and not ct_order_set[ct.id] then
+                    table.insert(config.tab_order, ct.id)
+                end
+            end
+        end
         -- migrate old hard-coded English default
         if config.books_label == "Library" then config.books_label = "" end
         zen_plugin.config.navbar = config
@@ -480,6 +490,11 @@ local function apply_navbar()
         menu = onTabMenu,
     }
 
+    -- Custom tabs are synced dynamically in createNavBar() so they appear immediately
+    -- after being added without needing a full patch re-apply.
+
+    local ok_disp_ct, Dispatcher_ct = pcall(require, "dispatcher")
+
     -- === Color text support ===
     -- TextWidget.colorblitFrom converts to grayscale; colorblitFromRGB32 needed for color.
 
@@ -764,6 +779,39 @@ local function apply_navbar()
         -- Update books tab label from config
         tabs_by_id["books"].label = getBooksLabel()
 
+        -- Sync custom tabs from config so add/remove/edit takes effect on every reinject
+        local known_custom = {}
+        if type(config.custom_tabs) == "table" then
+            for _i, ct in ipairs(config.custom_tabs) do
+                if type(ct.id) == "string" then
+                    known_custom[ct.id] = true
+                    local entry = tabs_by_id[ct.id]
+                    if not entry then
+                        entry = { id = ct.id }
+                        table.insert(tabs, entry)
+                        tabs_by_id[ct.id] = entry
+                    end
+                    entry.label = (ct.label ~= nil and ct.label ~= "") and ct.label or _("Custom")
+                    entry.icon  = ct.icon or "zen_ui"
+                    if ok_disp_ct and ct.action and next(ct.action) then
+                        local action = ct.action
+                        tab_callbacks[ct.id] = function() Dispatcher_ct:execute(action) end
+                    else
+                        tab_callbacks[ct.id] = function() end
+                    end
+                end
+            end
+        end
+        -- Remove tabs that were deleted from config
+        for i = #tabs, 1, -1 do
+            local t = tabs[i]
+            if t.id:sub(1, 3) == "ct_" and not known_custom[t.id] then
+                tabs_by_id[t.id] = nil
+                tab_callbacks[t.id] = nil
+                table.remove(tabs, i)
+            end
+        end
+
         local visible_tabs = getVisibleTabs()
         if #visible_tabs == 0 then return nil end
 
@@ -865,18 +913,21 @@ local function apply_navbar()
             local cb = tab_callbacks[tapped_id]
             if cb then cb() end
             -- Track active tab for all persistent views (not transient: search/stats/exit/continue/menu/page_*)
-    local track_tab = tapped_id == "books" or tapped_id == "manga"
+            -- Custom tabs (ct_ prefix) are always tracked so they get the active underline styling.
+            local track_tab = tapped_id == "books" or tapped_id == "manga"
                 or tapped_id == "news"      or tapped_id == "authors"
                 or tapped_id == "series"    or tapped_id == "tags"
                 or tapped_id == "to_be_read"
                 or tapped_id == "history"   or tapped_id == "favorites"
                 or tapped_id == "collections"
+                or tapped_id:sub(1, 3) == "ct_"
             if track_tab and tapped_id ~= active_tab then
                 active_tab = tapped_id
                 -- Only repaint the FM navbar for tabs that render inside it (not overlay views)
                 local stays_in_browser = tapped_id == "books"
                     or (tapped_id == "manga" and config.manga_action == "folder" and config.manga_folder ~= "")
                     or (tapped_id == "news" and config.news_action == "folder" and config.news_folder ~= "")
+                    or tapped_id:sub(1, 3) == "ct_"
                 if stays_in_browser then
                     local fm = FileManager.instance
                     if fm then injectNavbar(fm); UIManager:setDirty(fm, "full") end

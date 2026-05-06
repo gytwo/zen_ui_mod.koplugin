@@ -135,6 +135,7 @@ local defaults = {
         show_native_progress_bar = false,
         show_new_banner = true,
         badge_size = "compact",
+        dim_finished_books = false,
     },
     browser_page_count = {
         show_page_count = false,
@@ -162,6 +163,7 @@ local defaults = {
     },
     reader_footer = {
         verbose_chapter_time = false,
+        hide_in_cbz = false,
         backup_preset = nil,
     },
     highlight_lookup = {

@@ -345,8 +345,10 @@ function M.getGroupedByTags()
                 goto continue
             end
 
-            -- Split comma-separated tags and trim whitespace
-            for tag in kw:gmatch("[^,]+") do
+            -- Split newline-separated tags (KOReader default) and also handle comma-separated.
+            -- Replace commas with newlines so one gmatch handles both formats.
+            local normalized = kw:gsub(",", "\n")
+            for tag in normalized:gmatch("[^\n]+") do
                 local trimmed = tag:match("^%s*(.-)%s*$")
                 if trimmed and trimmed ~= "" then
                     if not tag_map[trimmed] then

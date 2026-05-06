@@ -1743,13 +1743,6 @@ function M.showTagsView(injectNavbar)
     showGroupView("tags", injectNavbar, groups)
 end
 
-function M.showTagsView(injectNavbar)
-    local ok, db = pcall(require, "common/db_bookinfo")
-    if not ok then return end
-    local groups = db.getGroupedByTags()
-    showGroupView("tags", injectNavbar, groups)
-end
-
 -------------------------------------------------------------------------------
 -- M.showTBRView: flat book list filtered to "To Be Read" (abandoned) status
 -------------------------------------------------------------------------------

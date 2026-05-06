@@ -38,6 +38,7 @@ return {
     },
     ["1.2.0"] = {
         "Add Tags to Navbar (Settings > Navbar)",
+        "Add custom tabs to Navbar (Settings > Navbar)",
         "Add filtering for all views",
         "Add dim finished books (Library > Covers)",
         "Add/remove from collections via context menu",

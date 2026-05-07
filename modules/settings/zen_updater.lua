@@ -22,6 +22,7 @@ M._dl_url           = nil   -- download URL for release.zip
 M._banner_loaded    = false -- true after init_banner() has run
 M._wakeup_timer     = nil   -- pending UIManager scheduled function (for unschedule)
 M._check_cancelled  = false -- set to true by cancel_wakeup_check to abort mid-poll
+M._on_update_found  = nil   -- optional callback fired when background check detects a new update
 
 -- ---------------------------------------------------------------------------
 -- Helpers
@@ -187,6 +188,7 @@ local NET_SETTLE_DELAY      = 15         -- seconds after resume before first ne
 local NET_RETRY_DELAY       = 2 * 60    -- seconds to wait before retrying when no network
 local NET_ERROR_BASE_DELAY  = 30         -- first retry delay (s) after API failure; doubles each retry
 local NET_ERROR_MAX_RETRIES = 2          -- max error retries: 30s, 60s
+local INSTALL_TIMEOUT       = 120        -- max seconds for download + apply
 local GS_KEY_TIME    = "zen_ui_last_update_check"
 local GS_KEY_AVAIL   = "zen_ui_update_available"
 local GS_KEY_VER     = "zen_ui_latest_version"
@@ -298,6 +300,34 @@ local function do_network_check()
     return true
 end
 
+--- Run do_network_check() in a non-blocking subprocess via Trapper.
+--- setup_fn(_co) -- optional; called with the coroutine so the caller can wire
+---                   a cancel button via coroutine.resume(_co, false).
+--- on_done(net_ok) -- called when the subprocess completes.
+--- on_cancelled()  -- called when dismissed before completion; may be nil.
+local function network_check_async(trap_widget, setup_fn, on_done, on_cancelled)
+    local Trapper = require("ui/trapper")
+    Trapper:wrap(function()
+        local _co = coroutine.running()
+        if setup_fn then setup_fn(_co) end
+        local completed, net_ok, has_upd, latest_ver, dl_url =
+            Trapper:dismissableRunInSubprocess(function()
+                local ok = do_network_check()
+                return ok, M._has_update, M._latest_ver, M._dl_url
+            end, trap_widget)
+        if completed and net_ok then
+            M._has_update = has_upd
+            M._latest_ver = latest_ver
+            M._dl_url     = dl_url
+        end
+        if not completed then
+            if on_cancelled then on_cancelled() end
+        else
+            on_done(net_ok)
+        end
+    end)
+end
+
 --- Load persisted banner state once per session; never makes network calls.
 --- Called from zen_settings.lua so the update banner appears from cached data.
 function M.init_banner()
@@ -345,26 +375,37 @@ function M.schedule_wakeup_check()
     end
 
     -- Run the network check; on failure retry with exponential backoff.
+    -- Uses a subprocess so the UI thread is never blocked.
     local function run_check_with_retry(retry_count, error_delay)
         if M._check_cancelled then return end
         logger.info("ZenUpdater: starting background network check")
-        if do_network_check() then
-            persist_state(os.time())
-            M._banner_loaded = true
-            logger.info("ZenUpdater: background check done, has_update=", tostring(M._has_update))
-        elseif retry_count < NET_ERROR_MAX_RETRIES then
-            logger.warn("ZenUpdater: check failed, retry", retry_count + 1, "of", NET_ERROR_MAX_RETRIES, "in", error_delay, "s")
-            local next_count = retry_count + 1
-            local next_delay = error_delay * 2
-            local function error_retry()
-                M._wakeup_timer = nil
-                run_check_with_retry(next_count, next_delay)
+        network_check_async(
+            nil,  -- invisible trap: taps pass through normally
+            nil,
+            function(net_ok)
+                if M._check_cancelled then return end
+                if net_ok then
+                    persist_state(os.time())
+                    M._banner_loaded = true
+                    logger.info("ZenUpdater: background check done, has_update=", tostring(M._has_update))
+                    if M._has_update and type(M._on_update_found) == "function" then
+                        M._on_update_found()
+                    end
+                elseif retry_count < NET_ERROR_MAX_RETRIES then
+                    logger.warn("ZenUpdater: check failed, retry", retry_count + 1, "of", NET_ERROR_MAX_RETRIES, "in", error_delay, "s")
+                    local next_count = retry_count + 1
+                    local next_delay = error_delay * 2
+                    local function error_retry()
+                        M._wakeup_timer = nil
+                        run_check_with_retry(next_count, next_delay)
+                    end
+                    M._wakeup_timer = error_retry
+                    UIManager:scheduleIn(error_delay, error_retry)
+                else
+                    logger.warn("ZenUpdater: background check failed after", NET_ERROR_MAX_RETRIES, "retries, giving up")
+                end
             end
-            M._wakeup_timer = error_retry
-            UIManager:scheduleIn(error_delay, error_retry)
-        else
-            logger.warn("ZenUpdater: background check failed after", NET_ERROR_MAX_RETRIES, "retries, giving up")
-        end
+        )
     end
 
     -- Deferred so the HTTPS call never blocks the onResume/init handler directly.
@@ -444,6 +485,12 @@ end
 --- Download, unpack, and reboot using an existing ZenScreen for all UI feedback.
 local function _do_install(screen, plugin_root, plugins_dir)
     local UIManager = require("ui/uimanager")
+    local Trapper   = require("ui/trapper")
+    local ok_nm, NetworkMgr = pcall(require, "ui/network/manager")
+
+    local function has_network()
+        return ok_nm and NetworkMgr and NetworkMgr:isWifiOn()
+    end
 
     if not is_valid_asset_url(M._dl_url) then
         do_network_check()
@@ -453,38 +500,94 @@ local function _do_install(screen, plugin_root, plugins_dir)
         return
     end
 
+    if not has_network() then
+        screen:update{ subtitle = _("Update failed: network connection lost."), button = _("OK"), dismissable = true }
+        return
+    end
+
     local zip_path = plugins_dir .. "/zen_ui_update.zip"
-    local ok, err = https_download(M._dl_url, zip_path)
-    if not ok then
-        screen:update{ subtitle = _("Download failed: ") .. (err or _("unknown error")), button = _("OK"), dismissable = true }
-        return
-    end
 
-    local rm_rc = os.execute(string.format("rm -rf %q", plugin_root))
-    if rm_rc ~= 0 and rm_rc ~= true then
+    -- Trapper:wrap() runs the function as a coroutine so UIManager stays alive.
+    Trapper:wrap(function()
+        local _co = coroutine.running()
+        local timed_out = false
+        local cancelled = false
+
+        -- Show Cancel button now that _co is available to receive the abort signal.
+        -- Passing screen as trap_widget keeps ZenScreen on top (no invisible TrapWidget
+        -- is stacked above it), so taps reach _on_button_action normally.
+        screen._on_button_action = function()
+            cancelled = true
+            coroutine.resume(_co, false)
+        end
+        screen:update{ button = _("Cancel"), later_button = false, dismissable = false }
+        UIManager:forceRePaint()
+
+        local timeout_cb = function()
+            timed_out = true
+            coroutine.resume(_co, false)
+        end
+        UIManager:scheduleIn(INSTALL_TIMEOUT, timeout_cb)
+
+        local completed, ok, err = Trapper:dismissableRunInSubprocess(function()
+            return https_download(M._dl_url, zip_path)
+        end, screen)
+
+        UIManager:unschedule(timeout_cb)
+        screen._on_button_action = nil  -- prevent stale cancel action on subsequent button states
+
+        if not completed then
+            os.remove(zip_path)
+            if cancelled then
+                screen:onClose()
+            elseif timed_out then
+                screen:update{ subtitle = _("Update failed: timed out."), button = _("OK"), dismissable = true }
+            elseif not has_network() then
+                screen:update{ subtitle = _("Update failed: network connection lost."), button = _("OK"), dismissable = true }
+            else
+                screen:update{ subtitle = _("Update cancelled."), button = _("OK"), dismissable = true }
+            end
+            return
+        end
+
+        if not ok then
+            if not has_network() then
+                screen:update{ subtitle = _("Update failed: network connection lost."), button = _("OK"), dismissable = true }
+            else
+                screen:update{ subtitle = _("Download failed: ") .. (err or _("unknown error")), button = _("OK"), dismissable = true }
+            end
+            return
+        end
+
+        screen:update{ subtitle = _("Installing…"), button = false }
+        UIManager:forceRePaint()
+
+        local rm_rc = os.execute(string.format("rm -rf %q", plugin_root))
+        if rm_rc ~= 0 and rm_rc ~= true then
+            os.remove(zip_path)
+            screen:update{ subtitle = _("Failed to remove existing plugin."), button = _("OK"), dismissable = true }
+            return
+        end
+
+        local unzip_rc = os.execute(string.format("unzip -q %q -d %q", zip_path, plugins_dir))
         os.remove(zip_path)
-        screen:update{ subtitle = _("Failed to remove existing plugin."), button = _("OK"), dismissable = true }
-        return
-    end
+        if unzip_rc ~= 0 and unzip_rc ~= true then
+            screen:update{ subtitle = _("Failed to unpack update."), button = _("OK"), dismissable = true }
+            return
+        end
 
-    local unzip_rc = os.execute(string.format("unzip -q %q -d %q", zip_path, plugins_dir))
-    os.remove(zip_path)
-    if unzip_rc ~= 0 and unzip_rc ~= true then
-        screen:update{ subtitle = _("Failed to unpack update."), button = _("OK"), dismissable = true }
-        return
-    end
+        clear_update_state()
+        local gs2 = get_gs()
+        if gs2 then
+            gs2:saveSetting("zen_ui_just_updated", M._latest_ver or "")
+            pcall(gs2.flush, gs2)
+        end
 
-    clear_update_state()
-    local gs2 = get_gs()
-    if gs2 then
-        gs2:saveSetting("zen_ui_just_updated", M._latest_ver or "")
-        pcall(gs2.flush, gs2)
-    end
-
-    screen:update{ subtitle = _("Rebooting…"), button = false }
-    UIManager:forceRePaint()
-    UIManager:scheduleIn(1, function()
-        UIManager:broadcastEvent(require("ui/event"):new("Restart"))
+        screen:update{ subtitle = _("Rebooting…"), button = false }
+        UIManager:forceRePaint()
+        UIManager:scheduleIn(1, function()
+            UIManager:broadcastEvent(require("ui/event"):new("Restart"))
+        end)
     end)
 end
 
@@ -508,7 +611,7 @@ local function _show_update_screen_and_install(plugin)
         dismissable  = true,
     }
     screen._on_button_action = function()
-        screen:update{ subtitle = _("Updating…"), button = false, later_button = false, dismissable = false }
+        screen:update{ subtitle = _("Downloading…"), button = false, later_button = false, dismissable = false }
         UIManager:forceRePaint()
         UIManager:scheduleIn(0.1, function()
             _do_install(screen, plugin_root, plugins_dir)
@@ -575,33 +678,53 @@ function M.build_update_now_item(plugin)
             local function run_check()
                 local screen
                 screen = ZenScreen:new{
-                    subtitle    = _("Checking for updates…"),
-                    button      = false,
-                    dismissable = false,
+                    subtitle     = _("Checking for updates…"),
+                    button       = _("Cancel"),
+                    later_button = false,
+                    dismissable  = false,
                 }
                 UIManager:show(screen)
                 UIManager:forceRePaint()
-
                 UIManager:scheduleIn(0.1, function()
-                    local status = M.check_for_update()
-
-                    if status == "error" then
-                        screen:update{
-                            subtitle    = _("Could not reach update server. Check your internet connection."),
-                            button      = _("OK"),
-                            dismissable = true,
-                        }
-                    elseif M._has_update then
-                        screen:update{ dismissable = true }
-                        UIManager:close(screen)
-                        _show_update_screen_and_install(plugin)
-                    else
-                        screen:update{
-                            subtitle    = _("Zen UI is up to date."),
-                            button      = _("OK"),
-                            dismissable = true,
-                        }
-                    end
+                    network_check_async(
+                        screen,
+                        function(_co)
+                            screen._on_button_action = function()
+                                screen._on_button_action = nil
+                                coroutine.resume(_co, false)
+                            end
+                        end,
+                        function(net_ok)
+                            screen._on_button_action = nil
+                            if net_ok then
+                                M._checked = true
+                                persist_state(os.time())
+                            else
+                                load_cached_state()
+                            end
+                            if not net_ok then
+                                screen:update{
+                                    subtitle    = _("Could not reach update server. Check your internet connection."),
+                                    button      = _("OK"),
+                                    dismissable = true,
+                                }
+                            elseif M._has_update then
+                                screen:update{ dismissable = true }
+                                UIManager:close(screen)
+                                _show_update_screen_and_install(plugin)
+                            else
+                                screen:update{
+                                    subtitle    = _("Zen UI is up to date."),
+                                    button      = _("OK"),
+                                    dismissable = true,
+                                }
+                            end
+                        end,
+                        function()
+                            screen._on_button_action = nil
+                            screen:onClose()
+                        end
+                    )
                 end)
             end
 

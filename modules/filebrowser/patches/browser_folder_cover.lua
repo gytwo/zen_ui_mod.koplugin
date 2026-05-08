@@ -17,6 +17,7 @@ local function apply_browser_folder_cover()
     local LeftContainer = require("ui/widget/container/leftcontainer")
     local LineWidget = require("ui/widget/linewidget")
     local OverlapGroup = require("ui/widget/overlapgroup")
+    local RenderText = require("ui/rendertext")
     local RightContainer = require("ui/widget/container/rightcontainer")
     local Size = require("ui/size")
     local TextBoxWidget = require("ui/widget/textboxwidget")
@@ -28,6 +29,7 @@ local function apply_browser_folder_cover()
     local util = require("util")
     local paths = require("common/paths")
     local utils = require("common/utils")
+    local IconWidget = require("ui/widget/iconwidget")
 
     local _ = require("gettext")
     local Screen = Device.screen
@@ -284,6 +286,12 @@ local function apply_browser_folder_cover()
                 return value
             end
         end
+    end
+
+    local function getCornerRadius()
+        local cfg = _plugin and _plugin.config
+        local r = cfg and cfg.corner_radius or 12
+        return Screen:scaleBySize(r)
     end
 
     local function patchCoverBrowser(plugin)
@@ -581,7 +589,36 @@ local function apply_browser_folder_cover()
             show_folder_name = BooleanSetting(_("Show folder name"), "folder_name_show", true),
             show_item_count = BooleanSetting(_("Show item count on folder covers"), "folder_item_count_show", true),
             name_opaque = BooleanSetting(_("Folder name opaque background"), "folder_name_opaque", true),
-            gallery_mode = BooleanSetting(_("Gallery view"), "folder_gallery_mode"),
+            gallery_mode = {
+    text = _("Gallery view (4-grid)"),
+    get = function() return G_reader_settings:isTrue("folder_gallery_mode") end,
+    toggle = function()
+        G_reader_settings:flipNilOrFalse("folder_gallery_mode")
+        -- 互斥：开启画廊时关闭堆叠
+        if G_reader_settings:isTrue("folder_gallery_mode") then
+            G_reader_settings:saveSetting("folder_stack_mode", false)
+        end
+        local ui = require("apps/filemanager/filemanager").instance
+        if ui and ui.file_chooser then
+            ui.file_chooser:updateItems()
+        end
+    end,
+},
+stack_mode = {
+    text = _("Stack effect (overlapping covers)"),
+    get = function() return G_reader_settings:isTrue("folder_stack_mode") end,
+    toggle = function()
+        G_reader_settings:flipNilOrFalse("folder_stack_mode")
+        -- 互斥：开启堆叠时关闭画廊
+        if G_reader_settings:isTrue("folder_stack_mode") then
+            G_reader_settings:saveSetting("folder_gallery_mode", false)
+        end
+        local ui = require("apps/filemanager/filemanager").instance
+        if ui and ui.file_chooser then
+            ui.file_chooser:updateItems()
+        end
+    end,
+},
         }
 
         -- cover item
@@ -751,20 +788,137 @@ local function apply_browser_folder_cover()
                 end
                 if bookinfo and bookinfo.cover_fetched
                         and (bookinfo.ignore_cover or not bookinfo.has_cover) then
-                    local border     = Folder.face.border_size
-                    local max_w      = self.width  - 2 * border
-                    local bh         = self.height - 2 * border
+                    local border = Folder.face.border_size
+                    local max_w = self.width - 2 * border
+                    local bh = self.height - 2 * border
+                    
+                    -- 从配置读取比例
+                    local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
+                    local num, den = ratio_str:match("(%d+):(%d+)")
+                    local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
+                    
                     local portrait_w, portrait_h
-                    if bh * 2 <= max_w * 3 then
+                    if bh * target_ratio <= max_w then
                         portrait_h = bh
-                        portrait_w = math.floor(bh * 2 / 3)
+                        portrait_w = math.floor(bh * target_ratio)
                     else
                         portrait_w = max_w
-                        portrait_h = math.min(math.floor(max_w * 3 / 2), bh)
+                        portrait_h = math.floor(max_w / target_ratio)
                     end
-                    local dimen        = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
+                    
+                    local dimen = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
                     local centered_top = math.floor((self.height - dimen.h) / 2)
-                    -- Placeholder square — text goes in the overlay below, not inside.
+                    
+                    -- 获取书籍信息
+                    local title = bookinfo.title or ""
+                    local authors = bookinfo.authors or ""
+                    if authors and authors:find("\n") then
+                        authors = authors:match("^([^\n]+)")
+                    end
+                    
+                    -- 如果标题为空，从文件名提取
+                    if title == "" then
+                        local fname = self.text or ""
+                        if fname:match("/$") then fname = fname:sub(1, -2) end
+                        title = fname:gsub("%.[^%.]+$", "")
+                    end
+                    if title == "" then
+                        title = _("Unknown")
+                    end
+                    if authors == "" then
+                        authors = _("Unknown Author")
+                    end
+                    
+                    -- 创建画布
+                    local final_bb = Blitbuffer.new(portrait_w, portrait_h, Blitbuffer.TYPE_BBRGB32)
+                    
+                    -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
+                    local split_y = math.floor(portrait_h * 2 / 3)
+                    local lighter_color = Blitbuffer.ColorRGB32(212, 220, 243, 255)
+                    local darker_color = Blitbuffer.ColorRGB32(130, 159, 227, 255)
+                    
+                    for y = 0, split_y - 1 do
+                        for x = 0, portrait_w - 1 do
+                            final_bb:setPixel(x, y, lighter_color)
+                        end
+                    end
+                    for y = split_y, portrait_h - 1 do
+                        for x = 0, portrait_w - 1 do
+                            final_bb:setPixel(x, y, darker_color)
+                        end
+                    end
+                    
+                    -- 字体大小
+                   local title_font_size = math.min(math.max(portrait_w / 12, 14), 20)
+                   local authors_font_size = math.min(math.max(portrait_w / 15, 12), 16)
+                    
+                    local title_face = Font:getFace("ffont", title_font_size)
+                    local authors_face = Font:getFace("ffont", authors_font_size)
+                    
+                    local title_color = Blitbuffer.ColorRGB32(1, 68, 142, 255)
+                    local authors_color = Blitbuffer.ColorRGB32(8, 51, 93, 255)
+                    
+                    local function getTextWidth(face, text)
+                        return RenderText:sizeUtf8Text(0, false, face, text, true, false).x
+                    end
+                    
+                    -- 按字符换行
+                    local function wrapTextByChar(text, face, max_width)
+                        local chars = util.splitToChars(text)
+                        local lines = {}
+                        local current_line = ""
+                        for _, ch in ipairs(chars) do
+                            local test_line = current_line .. ch
+                            if getTextWidth(face, test_line) > max_width and current_line ~= "" then
+                                table.insert(lines, current_line)
+                                current_line = ch
+                            else
+                                current_line = test_line
+                            end
+                        end
+                        if current_line ~= "" then
+                            table.insert(lines, current_line)
+                        end
+                        if #lines == 0 and #chars > 0 then
+                            for _, ch in ipairs(chars) do
+                                table.insert(lines, ch)
+                            end
+                        end
+                        return lines
+                    end
+                    
+                    local line_height = title_face.size + 4
+                    local max_text_width = portrait_w - 16
+                    
+                    -- 绘制标题
+                    local title_lines = wrapTextByChar(title, title_face, max_text_width)
+                    local title_height = #title_lines * line_height
+                    local title_y = math.floor((split_y - title_height) / 2)
+                    if title_y < 8 then title_y = 8 end
+                    
+                    local y_pos = title_y
+                    for _, line in ipairs(title_lines) do
+                        local line_width = getTextWidth(title_face, line)
+                        local line_x = math.floor((portrait_w - line_width) / 2)
+                        RenderText:renderUtf8Text(final_bb, line_x, y_pos + title_face.size, title_face, line, true, false, title_color)
+                        y_pos = y_pos + line_height
+                    end
+                    
+                    -- 绘制作者
+                    local author_lines = wrapTextByChar(authors, authors_face, max_text_width)
+                    local author_height = #author_lines * line_height
+                    local author_y = split_y + math.floor((portrait_h - split_y - author_height) / 2)
+                    if author_y < split_y + 4 then author_y = split_y + 4 end
+                    
+                    y_pos = author_y
+                    for _, line in ipairs(author_lines) do
+                        local line_width = getTextWidth(authors_face, line)
+                        local line_x = math.floor((portrait_w - line_width) / 2)
+                        RenderText:renderUtf8Text(final_bb, line_x, y_pos + authors_face.size, authors_face, line, true, false, authors_color)
+                        y_pos = y_pos + line_height
+                    end
+                    
+                    -- 使用原始 gray_frame 结构，替换内部内容为图片
                     local gray_frame = FrameContainer:new {
                         padding       = 0,
                         bordersize    = border,
@@ -772,46 +926,19 @@ local function apply_browser_folder_cover()
                         height        = dimen.h,
                         background    = placeholderBg(),
                         overlap_align = "center",
-                        CenterContainer:new {
+                          CenterContainer:new {
                             dimen = { w = portrait_w, h = portrait_h },
-                            VerticalSpan:new { width = 1 },
+                            ImageWidget:new {
+                                image = final_bb,
+                                width = portrait_w,
+                                height = portrait_h,
+                            },
                         },
                     }
-                    -- Filename overlay — mirrors folder_name_widget in _setFolderCover.
-                    -- Uses self.text (filename + extension) at a small font size so it
-                    -- fits comfortably inside portrait covers even on tight grids.
-                    -- Respects the same "centered / bottom" and "opaque background"
-                    -- Zen settings that control folder name display.
-                    local fname = self.text or ""
-                    if fname:match("/$") then fname = fname:sub(1, -2) end
-                    local name_fs = math.min(13, math.max(8, math.floor(portrait_h / 6)))
-                    local NameContainer = settings.name_centered.get() and CenterContainer or BottomContainer
-                    local name_text = TextBoxWidget:new {
-                        text      = fname,
-                        face      = Font:getFace("cfont", name_fs),
-                        width     = portrait_w,
-                        alignment = "center",
-                        height    = math.floor(portrait_h / 3),
-                        height_adjust = true,
-                        height_overflow_show_ellipsis = true,
-                    }
-                    local name_bg = FrameContainer:new {
-                        padding    = 0,
-                        bordersize = Folder.face.border_size,
-                        background = Blitbuffer.COLOR_WHITE,
-                        name_text,
-                    }
-                    local filename_widget = NameContainer:new {
-                        dimen = dimen,
-                        settings.name_opaque.get()
-                            and name_bg
-                            or AlphaContainer:new { alpha = Folder.face.alpha, name_bg },
-                        overlap_align = "center",
-                    }
-                    -- Use the same OverlapGroup → VerticalGroup → CenterContainer → OverlapGroup{dimen}
-                    -- nesting as _setFolderCover so that find_cover_frame in
-                    -- browser_cover_rounded_corners can locate and mask the FrameContainer
-                    -- when the rounded corners feature is enabled.
+                    
+                    
+                    -- 放入单元格（不显示文件名，只显示图片）
+                    self._cover_frame = gray_frame
                     local widget = OverlapGroup:new {
                         dimen = { w = self.width, h = self.height },
                         VerticalGroup:new {
@@ -821,7 +948,6 @@ local function apply_browser_folder_cover()
                                 OverlapGroup:new {
                                     dimen = dimen,
                                     gray_frame,
-                                    filename_widget,
                                 },
                             },
                         },
@@ -838,11 +964,69 @@ local function apply_browser_folder_cover()
             local dir_path = self.entry and self.entry.path
             -- is_go_up items from group_view detail menus have no path; check before
             -- the dir_path guard so they still get the themed folder cover.
-            if self.entry.is_go_up then
-                self._foldercover_processed = true
-                self:_setFolderCover { no_image = true }
-                return
-            end
+if self.entry.is_go_up then
+    self._foldercover_processed = true
+    local border = Folder.face.border_size
+    local max_w = self.width - 2 * border
+    local bh = self.height - 2 * border
+    local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
+    local num, den = ratio_str:match("(%d+):(%d+)")
+    local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
+    local portrait_w, portrait_h
+    if bh * target_ratio <= max_w then
+        portrait_h = bh
+        portrait_w = math.floor(bh * target_ratio)
+    else
+        portrait_w = max_w
+        portrait_h = math.floor(max_w / target_ratio)
+    end
+    local dimen = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
+    local centered_top = math.floor((self.height - dimen.h) / 2)
+    
+    local arrow_size = math.min(portrait_w, portrait_h) * 0.25
+    local arrow_text = TextWidget:new{
+        text = "↑",
+        face = Font:getFace("cfont", math.floor(arrow_size)),
+        fgcolor = Blitbuffer.COLOR_BLACK,
+    }
+    
+    local gray_frame = FrameContainer:new {
+        padding = 0,
+        bordersize = border,
+        width = dimen.w, height = dimen.h,
+        background = placeholderBg(),
+        CenterContainer:new {
+            dimen = { w = portrait_w, h = portrait_h },
+            CenterContainer:new {
+                dimen = { w = portrait_w, h = portrait_h },
+                arrow_text,
+            },
+        },
+        overlap_align = "center",
+    }
+    
+    self._cover_frame = gray_frame
+    
+    local widget = OverlapGroup:new {
+        dimen = { w = self.width, h = self.height },
+        VerticalGroup:new {
+            VerticalSpan:new { width = centered_top },
+            CenterContainer:new {
+                dimen = { w = self.width, h = dimen.h },
+                OverlapGroup:new {
+                    dimen = dimen,
+                    gray_frame,
+                },
+            },
+        },
+    }
+    if self._underline_container[1] then
+        self._underline_container[1]:free()
+    end
+    self._underline_container[1] = widget
+    return
+end
+
             if not dir_path then return end
 
             -- PathChooser: shape + name + rounded corners only; no cover fetch, count, or badges.
@@ -888,10 +1072,22 @@ local function apply_browser_folder_cover()
                 return
             end
 
-            -- Collect covers recursively (bubbles up from child folders).
-            local is_gallery = settings.gallery_mode.get()
-            local max_covers = is_gallery and 4 or 1
-            local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, is_gallery, entries)
+            -- Collect covers based on mode
+            local is_gallery = G_reader_settings:isTrue("folder_gallery_mode")
+            local is_stack = G_reader_settings:isTrue("folder_stack_mode")
+            local max_covers
+            local copy_bb
+            if is_gallery then
+                max_covers = 4
+                copy_bb = true
+            elseif is_stack then
+                max_covers = 3
+                copy_bb = true
+            else
+                max_covers = 1
+                copy_bb = false
+            end
+            local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, copy_bb, entries)
 
             if is_gallery then
                 if #covers > 0 then self._foldercover_processed = true end
@@ -903,6 +1099,16 @@ local function apply_browser_folder_cover()
                         pending = {}
                         pending_folders_by_menu[self.menu] = pending
                     end
+                    pending[#pending + 1] = self
+                end
+            elseif is_stack then
+                if #covers > 0 then
+                    self._foldercover_processed = true
+                    self:_setFolderCover { stack = covers }
+                elseif not self._zen_pending_refresh then
+                    self._zen_pending_refresh = true
+                    local pending = pending_folders_by_menu[self.menu]
+                    if not pending then pending = {} pending_folders_by_menu[self.menu] = pending end
                     pending[#pending + 1] = self
                 end
             else
@@ -951,16 +1157,17 @@ local function apply_browser_folder_cover()
             local bh          = eff_h - 2 * border
             local available_h = bh
             local portrait_w, portrait_h
-            if available_h * 2 <= max_w * 3 then
-                -- Height-constrained: cell is wide enough for a 2:3 portrait box.
-                portrait_h = available_h
-                portrait_w = math.floor(available_h * 2 / 3)
-            else
-                -- Width-constrained: cell is narrower than portrait; clamp to width.
-                portrait_w = max_w
-                portrait_h = math.min(math.floor(max_w * 3 / 2), available_h)
-            end
+            local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
+            local num, den = ratio_str:match("(%d+):(%d+)")
+            local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
 
+            if available_h * target_ratio <= max_w then
+                portrait_h = available_h
+                portrait_w = math.floor(available_h * target_ratio)
+            else
+                portrait_w = max_w
+                portrait_h = math.floor(max_w / target_ratio)
+            end
             local size  = { w = portrait_w, h = portrait_h }
             local dimen = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
 
@@ -1027,6 +1234,83 @@ local function apply_browser_folder_cover()
                     },
                     overlap_align = "center",
                 }
+            elseif img.stack then
+                -- Stack effect (overlapping covers) from v68 patch
+                local covers = img.stack
+                local stack_count = #covers
+                if stack_count == 0 then
+                    image_widget = FrameContainer:new {
+                        padding = 0,
+                        bordersize = border,
+                        width = dimen.w, height = dimen.h,
+                        background = placeholderBg(),
+                        CenterContainer:new {
+                            dimen = { w = portrait_w, h = portrait_h },
+                            VerticalSpan:new { width = 1 },
+                        },
+                        overlap_align = "center",
+                    }
+                else
+                    -- Create canvas for stacked covers
+                    local final_bb = Blitbuffer.new(portrait_w, portrait_h)
+                    final_bb:fill(Blitbuffer.COLOR_WHITE)
+                    
+                    local book_width = portrait_w * 0.85
+                    local book_height = book_width * (portrait_h / portrait_w)
+                    local base_x = math.floor((portrait_w - book_width) / 2)
+                    local base_y = math.floor((portrait_h - book_height) / 2)
+                    
+                    -- Calculate offsets based on cover count
+                    local offsets
+                    if stack_count == 1 then
+                        offsets = { { x = 0, y = 6 } }
+                    elseif stack_count == 2 then
+                        offsets = { { x = 8, y = 0 }, { x = -8, y = 12 } }
+                    else
+                        offsets = { { x = 12, y = 0 }, { x = 0, y = 6 }, { x = -12, y = 12 } }
+                    end
+                    
+                    -- Draw from bottom layer up
+                    for i = math.min(stack_count, 3), 1, -1 do
+                        local cover = covers[i]
+                        local offset_idx = math.min(stack_count - i + 1, #offsets)
+                        local offset = offsets[offset_idx] or { x = 0, y = 0 }
+                        local img_widget = ImageWidget:new {
+                            image = cover.data,
+                            width = book_width,
+                            height = book_height,
+                        }
+                        img_widget:paintTo(final_bb, base_x + offset.x, base_y + offset.y)
+                    end
+                    
+                    -- Draw folder icon overlay (bottom)
+                    local plugin_root = require("common/plugin_root")
+                    local folder_icon_width = portrait_w
+                    local folder_icon_height = folder_icon_width * 0.65
+                    local folder_icon = ImageWidget:new{
+                        file = plugin_root .. "/icons/folder.png",
+                        width = folder_icon_width,
+                        height = folder_icon_height,
+                        alpha = true,
+                    }
+                    folder_icon:paintTo(final_bb, 0, portrait_h - folder_icon_height)
+                    
+                    image_widget = FrameContainer:new {
+                        padding = 0,
+                        bordersize = border,
+                        width = dimen.w, height = dimen.h,
+                        background = placeholderBg(),
+                        CenterContainer:new {
+                            dimen = { w = portrait_w, h = portrait_h },
+                            ImageWidget:new {
+                                image = final_bb,
+                                width = portrait_w,
+                                height = portrait_h,
+                            },
+                        },
+                        overlap_align = "center",
+                    }
+                end
             elseif img.no_image then
                 image_widget = FrameContainer:new {
                     padding = 0,
@@ -1340,24 +1624,52 @@ local function apply_browser_folder_cover()
                     local entries = _chooser:genItemTableFromPath(dir_path)
                     _chooser._dummy = false
                     if not entries then
-                        self._foldercover_processed = true
-                        return
+                        self._foldercover_processed = true                        return
                     end
 
-                    -- Collect covers recursively (bubbles up from child folders).
-                    local is_gallery = settings.gallery_mode.get()
-                    local max_covers = is_gallery and 4 or 1
-                    local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, is_gallery, entries)
+                    -- Collect covers based on mode
+                    local is_gallery = G_reader_settings:isTrue("folder_gallery_mode")
+                   local is_stack = G_reader_settings:isTrue("folder_stack_mode")
+                    local max_covers
+                    local copy_bb
+                    if is_gallery then
+                        max_covers = 4
+                        copy_bb = true
+                    elseif is_stack then
+                        max_covers = 3
+                        copy_bb = true
+                    else
+                        max_covers = 1
+                        copy_bb = false
+                    end
+                    local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, copy_bb, entries)
 
                     if is_gallery then
                         if #covers > 0 then self._foldercover_processed = true end
                         self:_setListFolderCover { gallery = covers }
-                    else
-                        self._foldercover_processed = true
+                    elseif is_stack then
                         if #covers > 0 then
-                            self:_setListFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h }
+                            self._foldercover_processed = true
+                            self:_setListFolderCover { stack = covers }
                         else
                             self:_setListFolderCover { no_image = true }
+                            if self.menu and not self._zen_pending_refresh then
+                                self._zen_pending_refresh = true
+                                local pending = pending_folders_by_menu[self.menu]
+                                if not pending then pending = {} pending_folders_by_menu[self.menu] = pending end
+                                pending[#pending + 1] = self
+                            end
+                        end
+                    elseif #covers > 0 then
+                        self._foldercover_processed = true
+                        self:_setListFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h }
+                    else
+                        self:_setListFolderCover { no_image = true }
+                        if self.menu and not self._zen_pending_refresh then
+                            self._zen_pending_refresh = true
+                            local pending = pending_folders_by_menu[self.menu]
+                            if not pending then pending = {} pending_folders_by_menu[self.menu] = pending end
+                            pending[#pending + 1] = self
                         end
                     end
                 end
@@ -1385,7 +1697,10 @@ local function apply_browser_folder_cover()
                     if img.gallery then
                         local covers = img.gallery
                         local gall_h = max_img
-                        local gall_w = math.floor(max_img * 2 / 3)  -- 2:3 portrait, matches book covers in list mode
+                       local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
+                       local num, den = ratio_str:match("(%d+):(%d+)")
+                       local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
+                       local gall_w = math.floor(max_img * target_ratio)
                         local cover_w = gall_w + 2 * border_size
                         local cover_h = gall_h + 2 * border_size
                         spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
@@ -1460,8 +1775,94 @@ local function apply_browser_folder_cover()
                                 },
                             }
                         end
+                    elseif img.stack then
+                        -- Stack effect for list mode
+                        local covers = img.stack
+                        local gall_h = max_img
+                        local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
+                        local num, den = ratio_str:match("(%d+):(%d+)")
+                        local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
+                        local gall_w = math.floor(max_img * target_ratio)
+                        local cover_w = gall_w + 2 * border_size
+                        local cover_h = gall_h + 2 * border_size
+                        spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
+                        
+                        if #covers == 0 then
+                            wleft = CenterContainer:new {
+                                dimen = { w = cover_zone_w, h = dimen_h },
+                                FrameContainer:new {
+                                    width = cover_w, height = cover_h,
+                                    margin = 0, padding = 0, bordersize = border_size,
+                                    background = Blitbuffer.COLOR_LIGHT_GRAY,
+                                    CenterContainer:new {
+                                        dimen = { w = gall_w, h = gall_h },
+                                        VerticalSpan:new { width = 1 },
+                                    },
+                                },
+                            }
+                        else
+                            -- Create canvas for stacked covers
+                            local final_bb = Blitbuffer.new(gall_w, gall_h)
+                            final_bb:fill(Blitbuffer.COLOR_WHITE)
+                            
+                            local book_width = gall_w * 0.85
+                            local book_height = book_width * (gall_h / gall_w)
+                            local base_x = math.floor((gall_w - book_width) / 2)
+                            local base_y = math.floor((gall_h - book_height) / 2)
+                            
+                            local stack_count = #covers
+                            local offsets
+                            if stack_count == 1 then
+                                offsets = { { x = 0, y = 6 } }
+                            elseif stack_count == 2 then
+                                offsets = { { x = 8, y = 0 }, { x = -8, y = 12 } }
+                            else
+                                offsets = { { x = 12, y = 0 }, { x = 0, y = 6 }, { x = -12, y = 12 } }
+                            end
+                            
+                            for i = math.min(stack_count, 3), 1, -1 do
+                                local cover = covers[i]
+                                local offset_idx = math.min(stack_count - i + 1, #offsets)
+                                local offset = offsets[offset_idx] or { x = 0, y = 0 }
+                                local img_widget = ImageWidget:new {
+                                    image = cover.data,
+                                    width = book_width,
+                                    height = book_height,
+                                }
+                                img_widget:paintTo(final_bb, base_x + offset.x, base_y + offset.y)
+                            end
+                            
+                            -- Draw folder icon overlay (bottom)
+                            local plugin_root = require("common/plugin_root")
+                            local folder_icon_width = gall_w
+                            local folder_icon_height = folder_icon_width * 0.65
+                            local folder_icon = ImageWidget:new{
+                                file = plugin_root .. "/icons/folder.png",
+                                width = folder_icon_width,
+                                height = folder_icon_height,
+                                alpha = true,
+                            }
+                            folder_icon:paintTo(final_bb, 0, gall_h - folder_icon_height)
+                            
+                            wleft = CenterContainer:new {
+                                dimen = { w = cover_zone_w, h = dimen_h },
+                                FrameContainer:new {
+                                    width = cover_w, height = cover_h,
+                                    margin = 0, padding = 0, bordersize = border_size,
+                                    background = Blitbuffer.COLOR_LIGHT_GRAY,
+                                    CenterContainer:new {
+                                        dimen = { w = gall_w, h = gall_h },
+                                        ImageWidget:new {
+                                            image = final_bb,
+                                            width = gall_w,
+                                            height = gall_h,
+                                        },
+                                    },
+                                },
+                            }
+                        end
                     elseif img.no_image then
-                        local portrait_w = math.floor(max_img * 2 / 3)  -- 2:3, matches gallery and book covers
+                        local portrait_w = math.floor(max_img * target_ratio)
                         local cover_w = portrait_w + 2 * border_size
                         spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
                         wleft = CenterContainer:new {

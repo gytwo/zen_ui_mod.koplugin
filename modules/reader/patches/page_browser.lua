@@ -41,6 +41,10 @@ local function apply_page_browser()
         return true
     end
 
+    local function is_substring_enabled()
+        return G_reader_settings:isTrue("substring_search")
+    end
+
     -- -----------------------------------------------------------------------
     -- Zen UI customisations applied once to PageBrowserWidget
     -- -----------------------------------------------------------------------
@@ -1553,7 +1557,8 @@ local function apply_page_browser()
 
         local _orig_rs_search = ReaderSearch.search
         function ReaderSearch:search(pattern, origin, regex, case_insensitive)
-            if self._zen_whole_word then
+            -- Only use whole-word regex when substring mode is NOT enabled
+            if not is_substring_enabled() then
                 pattern = make_whole_word_regex(pattern)
                 regex = true
             end
@@ -1562,7 +1567,8 @@ local function apply_page_browser()
 
         local _orig_rs_findAllText = ReaderSearch.findAllText
         function ReaderSearch:findAllText(search_text)
-            if self._zen_whole_word then
+            -- Only use whole-word regex when substring mode is NOT enabled
+            if not is_substring_enabled() then
                 search_text = make_whole_word_regex(search_text)
                 self.use_regex = true
             end
@@ -1588,13 +1594,8 @@ local function apply_page_browser()
         -- the full screen.  A flashui setDirty then schedules a full e-ink refresh.
         local _orig_onShowFindAllResults = ReaderSearch.onShowFindAllResults
         ReaderSearch.onShowFindAllResults = function(self, not_cached)
-            -- Whole-word post-filter: crengine populates matched_word_prefix /
-            -- matched_word_suffix with the word characters that sit inside the
-            -- same "word" as the match but before/after it.  Both being empty
-            -- means the match sits exactly at a word boundary.  We use this
-            -- rather than \b regex because the embedded SRELL version does not
-            -- reliably honour \b.
-            if self._zen_whole_word and not_cached and self.findall_results then
+            -- Only apply whole-word filtering when substring mode is NOT enabled
+            if not is_substring_enabled() and self._zen_whole_word and not_cached and self.findall_results then
                 local filtered = {}
                 for _, item in ipairs(self.findall_results) do
                     local pre = item.matched_word_prefix or ""

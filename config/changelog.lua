@@ -56,6 +56,7 @@ return {
         "Fix search in different languages",
         "Fix unread status not fully resetting status",
         "Fix hide list borders not applying immediately",
+        "Fix mosaic covers not showing in TBR",
         "Fix a rare issue where duplicate items could show in status bar/navbar",
         "Bug fixes and performance improvements",
     },

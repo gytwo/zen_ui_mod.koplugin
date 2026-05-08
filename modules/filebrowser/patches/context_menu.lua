@@ -999,7 +999,7 @@ local function apply_context_menu()
                                         dialog_cover_widget = LeftContainer2:new{
                                             dimen = Geom2:new{ w = avail_w, h = framed_h },
                                             HorizontalGroup2:new{
-                                                align = "top",
+                                                align = "center",
                                                 framed_gallery,
                                                 HorizontalSpan2:new{ width = gap },
                                                 vstack,

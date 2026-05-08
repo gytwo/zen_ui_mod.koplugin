@@ -29,26 +29,42 @@ M._on_update_found  = nil   -- optional callback fired when background check det
 -- ---------------------------------------------------------------------------
 
 --- Parse major/minor/patch integers from version strings like "v1.2.3",
---- "1.2.3", or "1.2.3-beta1". Returns nums + a boolean for pre-release so
---- that stable "1.2.3" compares greater than "1.2.3-beta1".
+--- "1.2.3", or "1.2.3-beta1". Returns nums + a boolean for pre-release and
+--- the trailing integer from the pre-release label (e.g. 3 for "beta3") so
+--- that "1.2.1-beta3" compares greater than "1.2.1-beta2".
 local function parse_semver(v)
     v = (v or ""):match("^v?(.+)$") or ""
     local base = v:match("^([%d%.]+)") or ""
-    local is_pre = v:find("[-+]") ~= nil
+    local pre_str = v:match("^[%d%.]+[-+](.+)$") or ""
+    local is_pre = pre_str ~= ""
+    local pre_num = tonumber(pre_str:match("(%d+)$")) or 0
     local maj, min, pat = base:match("^(%d+)%.(%d+)%.?(%d*)$")
-    return tonumber(maj) or 0, tonumber(min) or 0, tonumber(pat) or 0, is_pre
+    return tonumber(maj) or 0, tonumber(min) or 0, tonumber(pat) or 0, is_pre, pre_num
+end
+
+--- Returns true when a's M.m.p base is strictly greater than b's (ignores pre-release label).
+--- Used for channel selection: prefer stable when base versions are equal (graduation path).
+local function semver_base_gt(a, b)
+    local a1, a2, a3 = parse_semver(a)
+    local b1, b2, b3 = parse_semver(b)
+    if a1 ~= b1 then return a1 > b1 end
+    if a2 ~= b2 then return a2 > b2 end
+    return a3 > b3
 end
 
 --- Returns true when version string a is strictly greater than b.
 --- Stable "1.2.3" > pre-release "1.2.3-beta1" per semver precedence rules.
+--- Among pre-releases with the same base, compares trailing number (beta3 > beta2).
 local function semver_gt(a, b)
-    local a1, a2, a3, a_pre = parse_semver(a)
-    local b1, b2, b3, b_pre = parse_semver(b)
+    local a1, a2, a3, a_pre, a_pn = parse_semver(a)
+    local b1, b2, b3, b_pre, b_pn = parse_semver(b)
     if a1 ~= b1 then return a1 > b1 end
     if a2 ~= b2 then return a2 > b2 end
     if a3 ~= b3 then return a3 > b3 end
     -- same numbers: stable beats pre-release
     if a_pre ~= b_pre then return not a_pre end
+    -- both pre-release: compare trailing number (e.g. beta3 > beta2)
+    if a_pre then return a_pn > b_pn end
     return false
 end
 
@@ -278,7 +294,9 @@ local function do_network_check()
     logger.dbg("ZenUpdater: stable=", stable_tag, "beta=", beta_tag)
 
     local tag, dl_url
-    if channel == "beta" and beta_tag and semver_gt(beta_tag, stable_tag or "0.0.0") then
+    -- On beta channel: use beta only when its base version (M.m.p) is strictly newer
+    -- than stable's. If stable has the same or newer base, prefer stable (graduation path).
+    if channel == "beta" and beta_tag and semver_base_gt(beta_tag, stable_tag or "0.0.0") then
         tag    = beta_tag
         dl_url = beta_url
     elseif stable_tag then

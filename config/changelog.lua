@@ -55,6 +55,7 @@ return {
         "Show a notification dot on Zen Settings icon when an update is available",
         "Adjust Zen cover image for screensaver",
         "Fix search (revert whole word searching)",
+        "Fix Navbar tabs not showing after updating settings",
         "Fix unread status not fully resetting status",
         "Fix hide list borders not applying immediately",
         "Fix mosaic covers not showing in TBR",

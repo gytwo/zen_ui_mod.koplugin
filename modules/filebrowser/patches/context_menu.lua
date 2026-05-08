@@ -999,7 +999,7 @@ local function apply_context_menu()
                                         dialog_cover_widget = LeftContainer2:new{
                                             dimen = Geom2:new{ w = avail_w, h = framed_h },
                                             HorizontalGroup2:new{
-                                                align = "top",
+                                                align = "center",
                                                 framed_gallery,
                                                 HorizontalSpan2:new{ width = gap },
                                                 vstack,
@@ -1025,60 +1025,254 @@ local function apply_context_menu()
                     local TextWidget2      = require("ui/widget/textwidget")
                     local VerticalGroup2   = require("ui/widget/verticalgroup")
                     local VerticalSpan2    = require("ui/widget/verticalspan")
+                    local ImageWidget2 = require("ui/widget/imagewidget")
+                    local util2            = require("util")
 
-                    local ph_w    = cover_max_w
-                    local ph_h    = cover_max_h
+                    local ph_w = cover_max_w
+                    local ph_h = math.floor(ph_w * 4 / 3)
                     local framed_h = ph_h + 2 * border
-                    local Widget2  = require("ui/widget/widget")
+
+                    -- 获取标题和作者
+                    local title_str = nil
+                    local authors_str = nil
+                    if is_file then
+                        local ok, BookInfoManager2 = pcall(require, "bookinfomanager")
+                        if ok then
+                            local bookinfo = BookInfoManager2:getBookInfo(file, true)
+                            if bookinfo and not bookinfo.ignore_meta then
+                                title_str = bookinfo.title
+                                authors_str = bookinfo.authors
+                                if authors_str and authors_str:find("\n") then
+                                    authors_str = authors_str:match("^([^\n]+)")
+                                end
+                            end
+                        end
+                        -- 如果标题为空，从文件名提取
+                        if not title_str or title_str == "" then
+                            local fname = (file:match("([^/]+)$") or file):gsub("%.[^%.]+$", "")
+                            title_str = fname
+                        end
+                    else
+                        -- 文件夹：使用文件夹名作为标题
+                        local fname = (file:match("([^/]+)/?$") or file):gsub("/$", "")
+                        title_str = BD.directory(fname)
+                        local n_books = 0
+                        -- 简单统计文件夹内书籍数量（可选）
+                        authors_str = nil
+                    end
+
+                    if not title_str or title_str == "" then
+                        title_str = _("Unknown")
+                    end
+                    if not authors_str or authors_str == "" then
+                        authors_str = _("Unknown Author")
+                    end
+
+                    -- 创建画布
+                    local final_bb = Blitbuffer2.new(ph_w, ph_h, Blitbuffer2.TYPE_BBRGB32)
+
+                    -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
+                    local split_y = math.floor(ph_h * 2 / 3)
+                    local lighter_color = Blitbuffer2.ColorRGB32(212, 220, 243, 255)
+                    local darker_color = Blitbuffer2.ColorRGB32(130, 159, 227, 255)
+
+                    for y = 0, split_y - 1 do
+                        for x = 0, ph_w - 1 do
+                            final_bb:setPixel(x, y, lighter_color)
+                        end
+                    end
+                    for y = split_y, ph_h - 1 do
+                        for x = 0, ph_w - 1 do
+                            final_bb:setPixel(x, y, darker_color)
+                        end
+                    end
+
+                    -- 字体大小
+                    local title_font_size = math.min(math.max(ph_w / 10, 16), 24)
+                    local authors_font_size = math.min(math.max(ph_w / 14, 12), 18)
+
+                    local title_face = Font2:getFace("ffont", title_font_size)
+                    local authors_face = Font2:getFace("ffont", authors_font_size)
+
+                    local title_color = Blitbuffer2.ColorRGB32(1, 68, 142, 255)
+                    local authors_color = Blitbuffer2.ColorRGB32(8, 51, 93, 255)
+
+                    local function getTextWidth(face, text)
+                        return RenderText2:sizeUtf8Text(0, false, face, text, true, false).x
+                    end
+
+                    -- 按字符换行
+                    local function wrapTextByChar(text, face, max_width)
+                        local chars = util2.splitToChars(text)
+                        local lines = {}
+                        local current_line = ""
+                        for _, ch in ipairs(chars) do
+                            local test_line = current_line .. ch
+                            if getTextWidth(face, test_line) > max_width and current_line ~= "" then
+                                table.insert(lines, current_line)
+                                current_line = ch
+                            else
+                                current_line = test_line
+                            end
+                        end
+                        if current_line ~= "" then
+                            table.insert(lines, current_line)
+                        end
+                        if #lines == 0 and #chars > 0 then
+                            for _, ch in ipairs(chars) do
+                                table.insert(lines, ch)
+                            end
+                        end
+                        return lines
+                    end
+
+                    local line_height = title_face.size + 4
+                    local max_text_width = ph_w - 16
+
+                    -- 绘制标题
+                    local title_lines = wrapTextByChar(title_str, title_face, max_text_width)
+                    local title_height = #title_lines * line_height
+                    local title_y = math.floor((split_y - title_height) / 2)
+                    if title_y < 8 then title_y = 8 end
+
+                    local y_pos = title_y
+                    for _, line in ipairs(title_lines) do
+                        local line_width = getTextWidth(title_face, line)
+                        local line_x = math.floor((ph_w - line_width) / 2)
+                        RenderText2:renderUtf8Text(final_bb, line_x, y_pos + title_face.size, title_face, line, true, false, title_color)
+                        y_pos = y_pos + line_height
+                    end
+
+                    -- 绘制作者
+                    local author_lines = wrapTextByChar(authors_str, authors_face, max_text_width)
+                    local author_height = #author_lines * line_height
+                    local author_y = split_y + math.floor((ph_h - split_y - author_height) / 2)
+                    if author_y < split_y + 4 then author_y = split_y + 4 end
+
+                    y_pos = author_y
+                    for _, line in ipairs(author_lines) do
+                        local line_width = getTextWidth(authors_face, line)
+                        local line_x = math.floor((ph_w - line_width) / 2)
+                        RenderText2:renderUtf8Text(final_bb, line_x, y_pos + authors_face.size, authors_face, line, true, false, authors_color)
+                        y_pos = y_pos + line_height
+                    end
+
+                    -- 创建图片控件
+                    local cover_img = ImageWidget2:new{
+                        image = final_bb,
+                        width = ph_w,
+                        height = ph_h,
+                    }
+
                     local ph_frame = FrameContainer2:new{
                         padding    = 0,
                         bordersize = border,
-                        background = Blitbuffer2.COLOR_LIGHT_GRAY,
-                        Widget2:new{ dimen = Geom2:new{ w = ph_w, h = ph_h } },
+                        width      = ph_w + 2 * border,
+                        height     = ph_h + 2 * border,
+                        background = Blitbuffer2.COLOR_WHITE,
+                        CenterContainer2:new{
+                            dimen = Geom2:new{ w = ph_w, h = ph_h },
+                            cover_img,
+                        },
                     }
-                    _zen_apply_rounded_cover(ph_frame, border)
+
+                    -- 应用圆角
+                    local function apply_rounded(widget, bsz)
+                        local plug = zen_plugin or rawget(_G, "__ZEN_UI_PLUGIN")
+                        if not (plug and type(plug.config) == "table"
+                            and type(plug.config.features) == "table"
+                            and plug.config.features.browser_cover_rounded_corners == true)
+                        then
+                            return
+                        end
+                        local r = Screen:scaleBySize(6)
+                        local r_inner = r - bsz
+                        local orig_pt = widget.paintTo
+                        widget.paintTo = function(self, bb, x, y)
+                            orig_pt(self, bb, x, y)
+                            if not (self.dimen and self.dimen.x) then return end
+                            local tx, ty = self.dimen.x, self.dimen.y
+                            local tw, th = self.dimen.w, self.dimen.h
+                            local wh = Blitbuffer2.COLOR_WHITE
+                            local blk = Blitbuffer2.COLOR_BLACK
+                            for j = 0, r - 1 do
+                                local inner = math.sqrt(r * r - (r - j) * (r - j))
+                                local cut = math.ceil(r - inner)
+                                if cut > 0 then
+                                    bb:paintRect(tx, ty + j, cut, 1, wh)
+                                    bb:paintRect(tx + tw - cut, ty + j, cut, 1, wh)
+                                    bb:paintRect(tx, ty + th - 1 - j, cut, 1, wh)
+                                    bb:paintRect(tx + tw - cut, ty + th - 1 - j, cut, 1, wh)
+                                end
+                            end
+                            for j = 0, r - 1 do
+                                for c = 0, r - 1 do
+                                    local dx = r - c - 0.5
+                                    local dy = r - j - 0.5
+                                    local dist = math.sqrt(dx * dx + dy * dy)
+                                    if dist >= r_inner and dist <= r then
+                                        bb:paintRect(tx + c, ty + j, 1, 1, blk)
+                                        bb:paintRect(tx + tw - 1 - c, ty + j, 1, 1, blk)
+                                        bb:paintRect(tx + c, ty + th - 1 - j, 1, 1, blk)
+                                        bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j, 1, 1, blk)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    apply_rounded(ph_frame, border)
+
                     local text_col_w = math.max(
                         avail_w - ph_w - 2 * border - gap,
                         Screen:scaleBySize(60))
                     local vstack = VerticalGroup2:new{ align = "left" }
-                    -- Use the already-computed dialog_title as the text column content.
+
+                    -- 使用已有的 dialog_title 或构建标题
                     local title_line, sub_line = dialog_title, nil
                     if dialog_title then
                         local nl = dialog_title:find("\n")
                         if nl then
                             title_line = dialog_title:sub(1, nl - 1)
-                            sub_line   = dialog_title:sub(nl + 1)
+                            sub_line = dialog_title:sub(nl + 1)
                         end
                     end
+                    if not title_line then
+                        title_line = title_str
+                    end
+                    if not sub_line and authors_str and authors_str ~= "" then
+                        sub_line = authors_str
+                    end
+
                     if title_line then
                         table.insert(vstack, TextWidget2:new{
-                            text      = title_line,
-                            face      = Font2:getFace("cfont", 20),
-                            bold      = true,
+                            text = title_line,
+                            face = Font2:getFace("cfont", 20),
+                            bold = true,
                             max_width = text_col_w,
                         })
                     end
                     if sub_line then
                         table.insert(vstack, VerticalSpan2:new{ width = Screen:scaleBySize(2) })
                         table.insert(vstack, TextWidget2:new{
-                            text      = sub_line,
-                            face      = Font2:getFace("cfont", 17),
+                            text = sub_line,
+                            face = Font2:getFace("cfont", 17),
                             max_width = text_col_w,
                         })
                     end
                     if pages_str then
                         table.insert(vstack, VerticalSpan2:new{ width = Screen:scaleBySize(3) })
                         table.insert(vstack, TextWidget2:new{
-                            text      = pages_str,
-                            face      = Font2:getFace("cfont", 14),
-                            fgcolor   = Blitbuffer2.COLOR_GRAY_3,
+                            text = pages_str,
+                            face = Font2:getFace("cfont", 14),
+                            fgcolor = Blitbuffer2.COLOR_GRAY_3,
                             max_width = text_col_w,
                         })
                     end
+
                     dialog_cover_widget = LeftContainer2:new{
                         dimen = Geom2:new{ w = avail_w, h = framed_h },
                         HorizontalGroup2:new{
-                            align = "top",
+                            align = "center",
                             ph_frame,
                             HorizontalSpan2:new{ width = gap },
                             vstack,

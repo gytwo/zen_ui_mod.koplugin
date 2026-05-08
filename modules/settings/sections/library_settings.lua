@@ -36,20 +36,43 @@ function M.build(ctx)
                     save_and_apply("browser_hide_up_folder")
                 end,
             },
-            {
-                text = _("Show folder covers as gallery"),
-                checked_func = function()
-                    local ok, bim = pcall(require, "bookinfomanager")
-                    if not ok then return false end
-                    return bim:getSetting("folder_gallery_mode") ~= nil
-                end,
-                callback = function()
-                    local ok, bim = pcall(require, "bookinfomanager")
-                    if not ok then return end
-                    bim:toggleSetting("folder_gallery_mode")
-                    UIManager:setDirty(nil, "full")
-                end,
-            },
+{
+    text = _("Show folder covers as gallery"),
+    checked_func = function()
+        return G_reader_settings:isTrue("folder_gallery_mode")
+    end,
+    callback = function()
+        local is_gallery = G_reader_settings:isTrue("folder_gallery_mode")
+        if not is_gallery then
+            -- 开启画廊模式时，关闭堆叠模式
+            G_reader_settings:saveSetting("folder_stack_mode", false)
+        end
+        G_reader_settings:flipNilOrFalse("folder_gallery_mode")
+        local ui = require("apps/filemanager/filemanager").instance
+        if ui and ui.file_chooser then
+            ui.file_chooser:updateItems()
+        end
+    end,
+},
+{
+    text = _("Stack effect (overlapping covers)"),
+    checked_func = function()
+        return G_reader_settings:isTrue("folder_stack_mode")
+    end,
+    callback = function()
+        local is_stack = G_reader_settings:isTrue("folder_stack_mode")
+        if not is_stack then
+            -- 开启堆叠模式时，关闭画廊模式
+            G_reader_settings:saveSetting("folder_gallery_mode", false)
+        end
+        G_reader_settings:flipNilOrFalse("folder_stack_mode")
+        local ui = require("apps/filemanager/filemanager").instance
+        if ui and ui.file_chooser then
+            ui.file_chooser:updateItems()
+        end
+    end,
+},
+
             {
                 text = _("Show folder name on cover"),
                 checked_func = function()
@@ -329,6 +352,34 @@ function M.build(ctx)
                     settings_apply.prompt_restart()
                 end,
             },
+            {
+    text = _("Uniform cover ratio"),
+    sub_item_table = {
+        {
+            text = "2:3 (standard)",
+            checked_func = function()
+                return G_reader_settings:readSetting("uniform_cover_ratio") == "2:3"
+            end,
+            callback = function()
+                G_reader_settings:saveSetting("uniform_cover_ratio", "2:3")
+                local ui = require("apps/filemanager/filemanager").instance
+                if ui and ui.file_chooser then ui.file_chooser:updateItems() end
+            end,
+        },
+        {
+            text = "3:4 (Kindle)",
+            checked_func = function()
+                return G_reader_settings:readSetting("uniform_cover_ratio") == "3:4"
+            end,
+            callback = function()
+                G_reader_settings:saveSetting("uniform_cover_ratio", "3:4")
+                local ui = require("apps/filemanager/filemanager").instance
+                if ui and ui.file_chooser then ui.file_chooser:updateItems() end
+            end,
+        },
+    },
+},
+
             {
                 text = _("Show title below cover (mosaic)"),
                 checked_func = function()

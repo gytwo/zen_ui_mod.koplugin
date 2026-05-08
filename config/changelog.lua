@@ -50,4 +50,13 @@ return {
         "Fixed reader menu not opening on some devices",
         "Bug fixes and performance improvements",
     },
+    ["1.2.1"] = {
+        "Adjust Zen cover image for screensaver",
+        "Update flow enhancements (abort/prompt for network)",
+        "Fix search in different languages",
+        "Fix unread status not fully resetting status",
+        "Fix hide list borders not applying immediately",
+        "Fix a rare issue where duplicate items could show in status bar/navbar",
+        "Bug fixes and performance improvements",
+    },
 }

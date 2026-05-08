@@ -999,7 +999,7 @@ local function apply_context_menu()
                                         dialog_cover_widget = LeftContainer2:new{
                                             dimen = Geom2:new{ w = avail_w, h = framed_h },
                                             HorizontalGroup2:new{
-                                                align = "center",
+                                                align = "top",
                                                 framed_gallery,
                                                 HorizontalSpan2:new{ width = gap },
                                                 vstack,
@@ -1022,6 +1022,7 @@ local function apply_context_menu()
                     local HorizontalGroup2 = require("ui/widget/horizontalgroup")
                     local HorizontalSpan2  = require("ui/widget/horizontalspan")
                     local LeftContainer2   = require("ui/widget/container/leftcontainer")
+                    local RenderText2      = require("ui/rendertext")
                     local TextWidget2      = require("ui/widget/textwidget")
                     local VerticalGroup2   = require("ui/widget/verticalgroup")
                     local VerticalSpan2    = require("ui/widget/verticalspan")

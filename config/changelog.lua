@@ -51,8 +51,9 @@ return {
         "Bug fixes and performance improvements",
     },
     ["1.2.1"] = {
-        "Adjust Zen cover image for screensaver",
         "Update flow enhancements (abort/prompt for network)",
+        "Show a notification dot on Zen Settings icon when an update is available",
+        "Adjust Zen cover image for screensaver",
         "Fix search (revert whole word searching)",
         "Fix unread status not fully resetting status",
         "Fix hide list borders not applying immediately",

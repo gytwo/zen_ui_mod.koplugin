@@ -53,7 +53,7 @@ return {
     ["1.2.1"] = {
         "Adjust Zen cover image for screensaver",
         "Update flow enhancements (abort/prompt for network)",
-        "Fix search in different languages",
+        "Fix search (revert whole word searching)",
         "Fix unread status not fully resetting status",
         "Fix hide list borders not applying immediately",
         "Fix mosaic covers not showing in TBR",

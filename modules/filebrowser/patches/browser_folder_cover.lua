@@ -622,7 +622,13 @@ stack_mode = {
         }
 
         -- cover item
-        local function _zen_update_impl(self, ...)
+            local function _zen_update_impl(self, ...)
+             -- ========== ADD THIS BLOCK ==========
+             -- Skip all folder cover logic for search results
+             if self.menu and self.menu.name == "filesearcher" then
+                 return original_update(self, ...)
+             end
+             -- ========== END OF ADDED BLOCK ==========
             -- Guard: block update() while ancestor cover is shown but bookinfo isn't
             -- in the DB yet, to prevent dimension mismatches and ghost pixels.
             if self._zen_ancestor_cover then

@@ -942,6 +942,11 @@ stack_mode = {
                         },
                     }
                     
+                    -- Handle selected state in multi-select mode (dim the cover)
+                    -- References the native KOReader FrameContainer.dim mechanism
+                    if self.dim or (self.entry and self.entry.dim) then
+                        gray_frame.dim = true
+                    end
                     
                     -- 放入单元格（不显示文件名，只显示图片）
                     self._cover_frame = gray_frame

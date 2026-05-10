@@ -510,6 +510,143 @@ local function apply_browser_folder_cover()
             end)
         end
 
+-- ========== 在这里添加辅助函数 ==========
+-- 生成无封面书籍的占位图 blitbuffer
+local function generatePlaceholderCover(book_title, book_authors, width, height)
+    -- 创建画布
+    local final_bb = Blitbuffer.new(width, height, Blitbuffer.TYPE_BBRGB32)
+    
+    -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
+    local split_y = math.floor(height * 2 / 3)
+    local lighter_color = Blitbuffer.ColorRGB32(212, 220, 243, 255)
+    local darker_color = Blitbuffer.ColorRGB32(130, 159, 227, 255)
+    
+    for y = 0, split_y - 1 do
+        for x = 0, width - 1 do
+            final_bb:setPixel(x, y, lighter_color)
+        end
+    end
+    for y = split_y, height - 1 do
+        for x = 0, width - 1 do
+            final_bb:setPixel(x, y, darker_color)
+        end
+    end
+    
+    local title_area_h = split_y - 10
+    local author_area_h = height - split_y - 10
+    local max_text_width = width - 16
+    
+    local title_color = Blitbuffer.ColorRGB32(1, 68, 142, 255)
+    local authors_color = Blitbuffer.ColorRGB32(8, 51, 93, 255)
+    
+    local title = book_title or ""
+    if title == "" then title = _("Unknown") end
+    if book_authors == nil or book_authors == "" then
+        book_authors = _("Unknown Author")
+    end
+    local authors = book_authors
+    if authors and authors:find("\n") then
+        authors = authors:match("^([^\n]+)")
+    end
+    
+    -- 标题 TextBoxWidget
+    local title_font_size = 20
+    local min_title_font = 10
+    local title_widget = nil
+    
+    while title_font_size >= min_title_font do
+        if title_widget then title_widget:free() end
+        local face = Font:getFace("ffont", title_font_size)
+        title_widget = TextBoxWidget:new{
+            text = title,
+            face = face,
+            width = max_text_width,
+            alignment = "center",
+            bold = true,
+            fgcolor = title_color,
+            bgcolor = lighter_color,
+        }
+        if title_widget:getSize().h <= title_area_h then
+            break
+        end
+        title_font_size = title_font_size - 1
+    end
+    
+    if title_widget:getSize().h > title_area_h then
+        title_widget:free()
+        local face = Font:getFace("ffont", min_title_font)
+        title_widget = TextBoxWidget:new{
+            text = title,
+            face = face,
+            width = max_text_width,
+            alignment = "center",
+            bold = true,
+            fgcolor = title_color,
+            bgcolor = lighter_color,
+            height = title_area_h,
+            height_adjust = true,
+            height_overflow_show_ellipsis = true,
+        }
+    end
+    title_widget.handleEvent = function() return false end
+    
+    -- 作者 TextBoxWidget
+    local authors_font_size = 16
+    local min_authors_font = 6
+    local authors_widget = nil
+    
+    while authors_font_size >= min_authors_font do
+        if authors_widget then authors_widget:free() end
+        local face = Font:getFace("ffont", authors_font_size)
+        authors_widget = TextBoxWidget:new{
+            text = authors,
+            face = face,
+            width = max_text_width,
+            alignment = "center",
+            fgcolor = authors_color,
+            bgcolor = darker_color,
+        }
+        if authors_widget:getSize().h <= author_area_h then
+            break
+        end
+        authors_font_size = authors_font_size - 1
+    end
+    
+    if authors_widget and authors_widget:getSize().h > author_area_h then
+        authors_widget:free()
+        local face = Font:getFace("ffont", min_authors_font)
+        authors_widget = TextBoxWidget:new{
+            text = authors,
+            face = face,
+            width = max_text_width,
+            alignment = "center",
+            fgcolor = authors_color,
+            bgcolor = darker_color,
+            height = author_area_h,
+            height_adjust = true,
+            height_overflow_show_ellipsis = true,
+        }
+    end
+    if authors_widget then
+        authors_widget.handleEvent = function() return false end
+    end
+    
+    -- 绘制标题
+    local title_y = math.max(5, (split_y - title_widget:getSize().h) / 2)
+    title_widget:paintTo(final_bb, math.max(0, (width - title_widget:getSize().w) / 2), title_y)
+    title_widget:free()
+    
+    -- 绘制作者
+    if authors_widget then
+        local authors_y = split_y + math.max(5, (author_area_h - authors_widget:getSize().h) / 2)
+        authors_widget:paintTo(final_bb, math.max(0, (width - authors_widget:getSize().w) / 2), authors_y)
+        authors_widget:free()
+    end
+    
+    return final_bb
+end
+-- ========== 辅助函数添加结束 ==========
+
         --- Recursively collect book covers from dir_path and its subdirectories.
         --- @return table covers  List of {data=bb, w=number, h=number}
         local function collectCoversFromDir(dir_path, chooser, max_covers, max_depth, copy_bb, entries)
@@ -525,41 +662,47 @@ local function apply_browser_folder_cover()
             end
             if not entries then return covers end
 
-            for _, entry in ipairs(entries) do
-                if entry.is_file or entry.file then
-                    if #covers < max_covers then
-                        local bookinfo, found_at = getBookInfoWithFallback(entry.path)
-                        if bookinfo and bookinfo.cover_bb
-                                and bookinfo.has_cover and bookinfo.cover_fetched
-                                and not bookinfo.ignore_cover then
-                            if found_at ~= entry.path then
-                                tryMigrateBookInfoPath(found_at, entry.path)
-                            end
-                            local bb = copy_bb and bookinfo.cover_bb:copy() or bookinfo.cover_bb
-                            table.insert(covers, { data = bb, w = bookinfo.cover_w, h = bookinfo.cover_h })
-                        end
-                    end
-                elseif entry.path and not entry.is_go_up and not entry.path:match("/%.$") then
-                    table.insert(subdirs, entry.path)
+for __, entry in ipairs(entries) do
+    if entry.is_file or entry.file then
+        if #covers < max_covers then
+            local bookinfo, found_at = getBookInfoWithFallback(entry.path)
+            local cover_bb = nil
+            local cover_w, cover_h = nil, nil
+            
+            if bookinfo and bookinfo.cover_bb and bookinfo.has_cover
+                    and bookinfo.cover_fetched and not bookinfo.ignore_cover then
+                -- 有封面，直接使用
+                cover_bb = copy_bb and bookinfo.cover_bb:copy() or bookinfo.cover_bb
+                cover_w = bookinfo.cover_w
+                cover_h = bookinfo.cover_h
+            else
+                -- 没有封面，生成占位图
+                -- 获取书籍标题和作者
+                local props = BookInfoManager:getDocProps(entry.path) or {}
+                local title = props.title or ""
+                local authors = props.authors or ""
+                
+                -- 从文件名提取标题
+                if title == "" then
+                    local fname = entry.text or ""
+                    if fname:match("/$") then fname = fname:sub(1, -2) end
+                    title = fname:gsub("%.[^%.]+$", "")
                 end
+                if title == "" then title = _("Unknown") end
+                if authors == "" then authors = _("Unknown Author") end
+                
+                -- 生成占位图（使用默认尺寸，后续会缩放）
+                cover_bb = generatePlaceholderCover(title, authors, 200, 300)
+                cover_w = 200
+                cover_h = 300
             end
-
-            if max_depth > 0 then
-                for _, sub_path in ipairs(subdirs) do
-                    local remaining = max_covers - #covers
-                    local sub_covers = collectCoversFromDir(
-                        sub_path, chooser,
-                        remaining > 0 and remaining or 0,
-                        max_depth - 1, copy_bb)
-                    for _, c in ipairs(sub_covers) do
-                        if #covers < max_covers then
-                            table.insert(covers, c)
-                        elseif copy_bb and c.data and c.data.free then
-                            c.data:free()
-                        end
-                    end
-                end
+            
+            if cover_bb then
+                table.insert(covers, { data = cover_bb, w = cover_w, h = cover_h })
             end
+        end
+    end
+end
 
             if t0_collect then
                 _perf.collect_time = _perf.collect_time + (os.clock() - t0_collect)
@@ -835,124 +978,8 @@ stack_mode = {
                         authors = _("Unknown Author")
                     end
                     
-                        -- 创建画布
-                        local final_bb = Blitbuffer.new(portrait_w, portrait_h, Blitbuffer.TYPE_BBRGB32)
-    
-                        -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
-                        local split_y = math.floor(portrait_h * 2 / 3)
-                        local lighter_color = Blitbuffer.ColorRGB32(212, 220, 243, 255)
-                        local darker_color = Blitbuffer.ColorRGB32(130, 159, 227, 255)
-    
-                        for y = 0, split_y - 1 do
-                            for x = 0, portrait_w - 1 do
-                                final_bb:setPixel(x, y, lighter_color)
-                            end
-                        end
-                        for y = split_y, portrait_h - 1 do
-                            for x = 0, portrait_w - 1 do
-                                final_bb:setPixel(x, y, darker_color)
-                            end
-                        end
-    
-                        -- 计算各区域高度
-                        local title_area_h = split_y - 10
-                        local author_area_h = portrait_h - split_y - 10
-                        local max_text_width = portrait_w - 16
-    
-                        local title_color = Blitbuffer.ColorRGB32(1, 68, 142, 255)
-                        local authors_color = Blitbuffer.ColorRGB32(8, 51, 93, 255)
-    
-                        -- 动态调整标题字体大小（和原始 FakeCover 一致，最小字号 10）
-                        local title_font_size = 20
-                        local min_title_font = 10
-                        local title_widget = nil
-    
-                        while title_font_size >= min_title_font do
-                            if title_widget then title_widget:free() end
-                            local face = Font:getFace("ffont", title_font_size)
-                            title_widget = TextBoxWidget:new{
-                                text = title,
-                                face = face,
-                                width = max_text_width,
-                                alignment = "center",
-                                bold = true,
-                                fgcolor = title_color,
-                                bgcolor = lighter_color,
-                            }
-                            if title_widget:getSize().h <= title_area_h then
-                                break
-                            end
-                            title_font_size = title_font_size - 1
-                        end
-    
-                        -- 降到最小字号仍然溢出时，强制限制高度并显示省略号
-                        if title_widget:getSize().h > title_area_h then
-                            title_widget:free()
-                            local face = Font:getFace("ffont", min_title_font)
-                            title_widget = TextBoxWidget:new{
-                                text = title,
-                                face = face,
-                                width = max_text_width,
-                                alignment = "center",
-                                bold = true,
-                                fgcolor = title_color,
-                                bgcolor = lighter_color,
-                                height = title_area_h,
-                                height_adjust = true,
-                                height_overflow_show_ellipsis = true,
-                            }
-                        end
-    
-                        -- 动态调整作者字体大小（和原始 FakeCover 一致，最小字号 6）
-                        local authors_font_size = 16
-                        local min_authors_font = 6
-                        local authors_widget = nil
-    
-                        while authors_font_size >= min_authors_font do
-                            if authors_widget then authors_widget:free() end
-                           local face = Font:getFace("ffont", authors_font_size)
-                            authors_widget = TextBoxWidget:new{
-                                text = authors,
-                                face = face,
-                                width = max_text_width,
-                                alignment = "center",
-                                fgcolor = authors_color,
-                                bgcolor = darker_color, 
-                            }
-                            if authors_widget:getSize().h <= author_area_h then
-                                break
-                            end
-                            authors_font_size = authors_font_size - 1
-                        end
-    
-                        -- 降到最小字号仍然溢出时，强制限制高度并显示省略号
-                        if authors_widget and authors_widget:getSize().h > author_area_h then
-                            authors_widget:free()
-                            local face = Font:getFace("ffont", min_authors_font)
-                            authors_widget = TextBoxWidget:new{
-                                text = authors,
-                                face = face,
-                                width = max_text_width,
-                                alignment = "center",
-                                fgcolor = authors_color,
-                                bgcolor = darker_color,
-                                height = author_area_h,
-                                height_adjust = true,
-                                height_overflow_show_ellipsis = true,
-                            }
-                        end
-    
-                        -- 绘制标题
-                        local title_y = math.max(5, (split_y - title_widget:getSize().h) / 2)
-                        title_widget:paintTo(final_bb, math.max(0, (portrait_w - title_widget:getSize().w) / 2), title_y)
-                        title_widget:free()
-    
-                        -- 绘制作者
-                        if authors_widget then
-                            local authors_y = split_y + math.max(5, (author_area_h - authors_widget:getSize().h) / 2)
-                            authors_widget:paintTo(final_bb, math.max(0, (portrait_w - authors_widget:getSize().w) / 2), authors_y)
-                            authors_widget:free()
-                        end
+                       -- 生成占位图
+                       local final_bb = generatePlaceholderCover(title, authors, portrait_w, portrait_h)
                     
                     -- 使用原始 gray_frame 结构，替换内部内容为图片
                     local gray_frame = FrameContainer:new {
@@ -1131,8 +1158,12 @@ end
             local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, copy_bb, entries)
 
             if is_gallery then
-                if #covers > 0 then self._foldercover_processed = true end
-                self:_setFolderCover { gallery = covers }
+                if #covers == 0 then
+                    self:_setFolderCover { no_image = true }
+                else
+                    self._foldercover_processed = true
+                    self:_setFolderCover { gallery = covers }
+                end
                 if not self._foldercover_processed and self.menu and not self._zen_pending_refresh then
                     self._zen_pending_refresh = true
                     local pending = pending_folders_by_menu[self.menu]
@@ -1143,13 +1174,19 @@ end
                     pending[#pending + 1] = self
                 end
             elseif is_stack then
-                if #covers > 0 then
+                if #covers == 0 then
+                    self:_setFolderCover { no_image = true }
+                else
                     self._foldercover_processed = true
                     self:_setFolderCover { stack = covers }
-                elseif not self._zen_pending_refresh then
+                end
+                if not self._foldercover_processed and self.menu and not self._zen_pending_refresh then
                     self._zen_pending_refresh = true
                     local pending = pending_folders_by_menu[self.menu]
-                    if not pending then pending = {} pending_folders_by_menu[self.menu] = pending end
+                    if not pending then
+                        pending = {}
+                        pending_folders_by_menu[self.menu] = pending
+                    end
                     pending[#pending + 1] = self
                 end
             else
@@ -1352,18 +1389,77 @@ end
                         overlap_align = "center",
                     }
                 end
-            elseif img.no_image then
-                image_widget = FrameContainer:new {
-                    padding = 0,
-                    bordersize = border,
-                    width = dimen.w, height = dimen.h,
-                    background = placeholderBg(),
-                    CenterContainer:new {
-                        dimen = { w = portrait_w, h = portrait_h },
-                        VerticalSpan:new { width = 1 },
-                    },
-                    overlap_align = "center",
-                }
+elseif img.no_image then
+    -- 获取文件夹名称
+    local folder_name = self.text:gsub("/$", "")
+    folder_name = BD.directory(folder_name)
+    
+    -- 创建画布
+    local final_bb = Blitbuffer.new(portrait_w, portrait_h, Blitbuffer.TYPE_BBRGB32)
+    final_bb:fill(Blitbuffer.COLOR_WHITE)
+    
+    -- 动态调整字体大小
+    local font_size = 20
+    local min_font = 10
+    local text_widget = nil
+    
+    while font_size >= min_font do
+        if text_widget then text_widget:free() end
+        local face = Font:getFace("cfont", font_size)
+        text_widget = TextBoxWidget:new{
+            text = folder_name,
+            face = face,
+            width = portrait_w - 16,
+            alignment = "center",
+            bold = true,
+            fgcolor = Blitbuffer.COLOR_BLACK,
+            bgcolor = Blitbuffer.COLOR_WHITE,
+        }
+        if text_widget:getSize().h <= portrait_h - 10 then
+            break
+        end
+        font_size = font_size - 1
+    end
+    
+    text_widget.handleEvent = function() return false end
+    
+    if text_widget:getSize().h > portrait_h - 10 then
+        text_widget:free()
+        local face = Font:getFace("cfont", min_font)
+        text_widget = TextBoxWidget:new{
+            text = folder_name,
+            face = face,
+            width = portrait_w - 16,
+            alignment = "center",
+            bold = true,
+            fgcolor = Blitbuffer.COLOR_BLACK,
+            bgcolor = Blitbuffer.COLOR_WHITE,
+            height = portrait_h - 10,
+            height_adjust = true,
+            height_overflow_show_ellipsis = true,
+        }
+        text_widget.handleEvent = function() return false end
+    end
+    
+    local y = (portrait_h - text_widget:getSize().h) / 2
+    text_widget:paintTo(final_bb, (portrait_w - text_widget:getSize().w) / 2, y)
+    text_widget:free()
+    
+    image_widget = FrameContainer:new {
+        padding = 0,
+        bordersize = border,
+        width = dimen.w, height = dimen.h,
+        background = placeholderBg(),
+        CenterContainer:new {
+            dimen = { w = portrait_w, h = portrait_h },
+            ImageWidget:new {
+                image = final_bb,
+                width = portrait_w,
+                height = portrait_h,
+            },
+        },
+        overlap_align = "center",
+    }
             else
                 image_widget = FrameContainer:new {
                     padding = 0,
@@ -1669,6 +1765,7 @@ end
                     end
 
                     -- Collect covers based on mode
+                    -- Collect covers based on mode
                     local is_gallery = G_reader_settings:isTrue("folder_gallery_mode")
                    local is_stack = G_reader_settings:isTrue("folder_stack_mode")
                     local max_covers
@@ -1686,31 +1783,25 @@ end
                     local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, copy_bb, entries)
 
                     if is_gallery then
-                        if #covers > 0 then self._foldercover_processed = true end
-                        self:_setListFolderCover { gallery = covers }
+                        if #covers == 0 then
+                            self:_setListFolderCover { no_image = true }
+                        else
+                            self._foldercover_processed = true
+                            self:_setListFolderCover { gallery = covers }
+                        end
                     elseif is_stack then
-                        if #covers > 0 then
+                        if #covers == 0 then
+                            self:_setListFolderCover { no_image = true }
+                        else
                             self._foldercover_processed = true
                             self:_setListFolderCover { stack = covers }
+                        end
+                    else
+                        if #covers > 0 then
+                            self._foldercover_processed = true
+                            self:_setListFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h }
                         else
                             self:_setListFolderCover { no_image = true }
-                            if self.menu and not self._zen_pending_refresh then
-                                self._zen_pending_refresh = true
-                                local pending = pending_folders_by_menu[self.menu]
-                                if not pending then pending = {} pending_folders_by_menu[self.menu] = pending end
-                                pending[#pending + 1] = self
-                            end
-                        end
-                    elseif #covers > 0 then
-                        self._foldercover_processed = true
-                        self:_setListFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h }
-                    else
-                        self:_setListFolderCover { no_image = true }
-                        if self.menu and not self._zen_pending_refresh then
-                            self._zen_pending_refresh = true
-                            local pending = pending_folders_by_menu[self.menu]
-                            if not pending then pending = {} pending_folders_by_menu[self.menu] = pending end
-                            pending[#pending + 1] = self
                         end
                     end
                 end
@@ -1902,23 +1993,86 @@ end
                                 },
                             }
                         end
-                    elseif img.no_image then
-                        local portrait_w = math.floor(max_img * target_ratio)
-                        local cover_w = portrait_w + 2 * border_size
-                        spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
-                        wleft = CenterContainer:new {
-                            dimen = { w = cover_zone_w, h = dimen_h },
-                            FrameContainer:new {
-                                width = cover_w,
-                                height = max_img + 2 * border_size,
-                                margin = 0, padding = 0, bordersize = border_size,
-                                background = Blitbuffer.COLOR_LIGHT_GRAY,
-                                CenterContainer:new {
-                                    dimen = { w = portrait_w, h = max_img },
-                                    VerticalSpan:new { width = 1 },
-                                },
-                            },
-                        }
+elseif img.no_image then
+    local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
+    local num, den = ratio_str:match("(%d+):(%d+)")
+    local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
+    local portrait_w = math.floor(max_img * target_ratio)
+    local cover_w = portrait_w + 2 * border_size
+    spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
+    
+    -- 创建画布
+    local final_bb = Blitbuffer.new(portrait_w, max_img, Blitbuffer.TYPE_BBRGB32)
+    final_bb:fill(Blitbuffer.COLOR_WHITE)
+    
+    -- 获取文件夹名称
+    local folder_name = self.text:gsub("/$", "")
+    folder_name = BD.directory(folder_name)
+    
+    -- 动态调整字体大小
+    local font_size = 20
+    local min_font = 10
+    local text_widget = nil
+    
+    while font_size >= min_font do
+        if text_widget then text_widget:free() end
+        local face = Font:getFace("cfont", font_size)
+        text_widget = TextBoxWidget:new{
+            text = folder_name,
+            face = face,
+            width = portrait_w - 16,
+            alignment = "center",
+            bold = true,
+            fgcolor = Blitbuffer.COLOR_BLACK,
+            bgcolor = Blitbuffer.COLOR_WHITE,
+        }
+        if text_widget:getSize().h <= max_img - 10 then
+            break
+        end
+        font_size = font_size - 1
+    end
+    
+    text_widget.handleEvent = function() return false end
+    
+    if text_widget:getSize().h > max_img - 10 then
+        text_widget:free()
+        local face = Font:getFace("cfont", min_font)
+        text_widget = TextBoxWidget:new{
+            text = folder_name,
+            face = face,
+            width = portrait_w - 16,
+            alignment = "center",
+            bold = true,
+            fgcolor = Blitbuffer.COLOR_BLACK,
+            bgcolor = Blitbuffer.COLOR_WHITE,
+            height = max_img - 10,
+            height_adjust = true,
+            height_overflow_show_ellipsis = true,
+        }
+        text_widget.handleEvent = function() return false end
+    end
+    
+    local y = (max_img - text_widget:getSize().h) / 2
+    text_widget:paintTo(final_bb, (portrait_w - text_widget:getSize().w) / 2, y)
+    text_widget:free()
+    
+    wleft = CenterContainer:new {
+        dimen = { w = cover_zone_w, h = dimen_h },
+        FrameContainer:new {
+            width = cover_w,
+            height = max_img + 2 * border_size,
+            margin = 0, padding = 0, bordersize = border_size,
+            background = Blitbuffer.COLOR_LIGHT_GRAY,
+            CenterContainer:new {
+                dimen = { w = portrait_w, h = max_img },
+                ImageWidget:new {
+                    image = final_bb,
+                    width = portrait_w,
+                    height = max_img,
+                },
+            },
+        },
+    }
                     else
                         local img_options = { file = img.file, image = img.data }
                         if img.scale_to_fit then

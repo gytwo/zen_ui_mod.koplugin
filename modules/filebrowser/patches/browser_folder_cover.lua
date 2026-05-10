@@ -835,94 +835,124 @@ stack_mode = {
                         authors = _("Unknown Author")
                     end
                     
-                    -- 创建画布
-                    local final_bb = Blitbuffer.new(portrait_w, portrait_h, Blitbuffer.TYPE_BBRGB32)
-                    
-                    -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
-                    local split_y = math.floor(portrait_h * 2 / 3)
-                    local lighter_color = Blitbuffer.ColorRGB32(212, 220, 243, 255)
-                    local darker_color = Blitbuffer.ColorRGB32(130, 159, 227, 255)
-                    
-                    for y = 0, split_y - 1 do
-                        for x = 0, portrait_w - 1 do
-                            final_bb:setPixel(x, y, lighter_color)
-                        end
-                    end
-                    for y = split_y, portrait_h - 1 do
-                        for x = 0, portrait_w - 1 do
-                            final_bb:setPixel(x, y, darker_color)
-                        end
-                    end
-                    
-                    -- 字体大小
-                   local title_font_size = math.min(math.max(portrait_w / 12, 14), 20)
-                   local authors_font_size = math.min(math.max(portrait_w / 15, 12), 16)
-                    
-                    local title_face = Font:getFace("ffont", title_font_size)
-                    local authors_face = Font:getFace("ffont", authors_font_size)
-                    
-                    local title_color = Blitbuffer.ColorRGB32(1, 68, 142, 255)
-                    local authors_color = Blitbuffer.ColorRGB32(8, 51, 93, 255)
-                    
-                    local function getTextWidth(face, text)
-                        return RenderText:sizeUtf8Text(0, false, face, text, true, false).x
-                    end
-                    
-                    -- 按字符换行
-                    local function wrapTextByChar(text, face, max_width)
-                        local chars = util.splitToChars(text)
-                        local lines = {}
-                        local current_line = ""
-                        for _, ch in ipairs(chars) do
-                            local test_line = current_line .. ch
-                            if getTextWidth(face, test_line) > max_width and current_line ~= "" then
-                                table.insert(lines, current_line)
-                                current_line = ch
-                            else
-                                current_line = test_line
+                        -- 创建画布
+                        local final_bb = Blitbuffer.new(portrait_w, portrait_h, Blitbuffer.TYPE_BBRGB32)
+    
+                        -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
+                        local split_y = math.floor(portrait_h * 2 / 3)
+                        local lighter_color = Blitbuffer.ColorRGB32(212, 220, 243, 255)
+                        local darker_color = Blitbuffer.ColorRGB32(130, 159, 227, 255)
+    
+                        for y = 0, split_y - 1 do
+                            for x = 0, portrait_w - 1 do
+                                final_bb:setPixel(x, y, lighter_color)
                             end
                         end
-                        if current_line ~= "" then
-                            table.insert(lines, current_line)
-                        end
-                        if #lines == 0 and #chars > 0 then
-                            for _, ch in ipairs(chars) do
-                                table.insert(lines, ch)
+                        for y = split_y, portrait_h - 1 do
+                            for x = 0, portrait_w - 1 do
+                                final_bb:setPixel(x, y, darker_color)
                             end
                         end
-                        return lines
-                    end
-                    
-                    local line_height = title_face.size + 4
-                    local max_text_width = portrait_w - 16
-                    
-                    -- 绘制标题
-                    local title_lines = wrapTextByChar(title, title_face, max_text_width)
-                    local title_height = #title_lines * line_height
-                    local title_y = math.floor((split_y - title_height) / 2)
-                    if title_y < 8 then title_y = 8 end
-                    
-                    local y_pos = title_y
-                    for _, line in ipairs(title_lines) do
-                        local line_width = getTextWidth(title_face, line)
-                        local line_x = math.floor((portrait_w - line_width) / 2)
-                        RenderText:renderUtf8Text(final_bb, line_x, y_pos + title_face.size, title_face, line, true, false, title_color)
-                        y_pos = y_pos + line_height
-                    end
-                    
-                    -- 绘制作者
-                    local author_lines = wrapTextByChar(authors, authors_face, max_text_width)
-                    local author_height = #author_lines * line_height
-                    local author_y = split_y + math.floor((portrait_h - split_y - author_height) / 2)
-                    if author_y < split_y + 4 then author_y = split_y + 4 end
-                    
-                    y_pos = author_y
-                    for _, line in ipairs(author_lines) do
-                        local line_width = getTextWidth(authors_face, line)
-                        local line_x = math.floor((portrait_w - line_width) / 2)
-                        RenderText:renderUtf8Text(final_bb, line_x, y_pos + authors_face.size, authors_face, line, true, false, authors_color)
-                        y_pos = y_pos + line_height
-                    end
+    
+                        -- 计算各区域高度
+                        local title_area_h = split_y - 10
+                        local author_area_h = portrait_h - split_y - 10
+                        local max_text_width = portrait_w - 16
+    
+                        local title_color = Blitbuffer.ColorRGB32(1, 68, 142, 255)
+                        local authors_color = Blitbuffer.ColorRGB32(8, 51, 93, 255)
+    
+                        -- 动态调整标题字体大小（和原始 FakeCover 一致，最小字号 10）
+                        local title_font_size = 20
+                        local min_title_font = 10
+                        local title_widget = nil
+    
+                        while title_font_size >= min_title_font do
+                            if title_widget then title_widget:free() end
+                            local face = Font:getFace("ffont", title_font_size)
+                            title_widget = TextBoxWidget:new{
+                                text = title,
+                                face = face,
+                                width = max_text_width,
+                                alignment = "center",
+                                bold = true,
+                                fgcolor = title_color,
+                                bgcolor = lighter_color,
+                            }
+                            if title_widget:getSize().h <= title_area_h then
+                                break
+                            end
+                            title_font_size = title_font_size - 1
+                        end
+    
+                        -- 降到最小字号仍然溢出时，强制限制高度并显示省略号
+                        if title_widget:getSize().h > title_area_h then
+                            title_widget:free()
+                            local face = Font:getFace("ffont", min_title_font)
+                            title_widget = TextBoxWidget:new{
+                                text = title,
+                                face = face,
+                                width = max_text_width,
+                                alignment = "center",
+                                bold = true,
+                                fgcolor = title_color,
+                                bgcolor = lighter_color,
+                                height = title_area_h,
+                                height_adjust = true,
+                                height_overflow_show_ellipsis = true,
+                            }
+                        end
+    
+                        -- 动态调整作者字体大小（和原始 FakeCover 一致，最小字号 6）
+                        local authors_font_size = 16
+                        local min_authors_font = 6
+                        local authors_widget = nil
+    
+                        while authors_font_size >= min_authors_font do
+                            if authors_widget then authors_widget:free() end
+                           local face = Font:getFace("ffont", authors_font_size)
+                            authors_widget = TextBoxWidget:new{
+                                text = authors,
+                                face = face,
+                                width = max_text_width,
+                                alignment = "center",
+                                fgcolor = authors_color,
+                                bgcolor = darker_color, 
+                            }
+                            if authors_widget:getSize().h <= author_area_h then
+                                break
+                            end
+                            authors_font_size = authors_font_size - 1
+                        end
+    
+                        -- 降到最小字号仍然溢出时，强制限制高度并显示省略号
+                        if authors_widget and authors_widget:getSize().h > author_area_h then
+                            authors_widget:free()
+                            local face = Font:getFace("ffont", min_authors_font)
+                            authors_widget = TextBoxWidget:new{
+                                text = authors,
+                                face = face,
+                                width = max_text_width,
+                                alignment = "center",
+                                fgcolor = authors_color,
+                                bgcolor = darker_color,
+                                height = author_area_h,
+                                height_adjust = true,
+                                height_overflow_show_ellipsis = true,
+                            }
+                        end
+    
+                        -- 绘制标题
+                        local title_y = math.max(5, (split_y - title_widget:getSize().h) / 2)
+                        title_widget:paintTo(final_bb, math.max(0, (portrait_w - title_widget:getSize().w) / 2), title_y)
+                        title_widget:free()
+    
+                        -- 绘制作者
+                        if authors_widget then
+                            local authors_y = split_y + math.max(5, (author_area_h - authors_widget:getSize().h) / 2)
+                            authors_widget:paintTo(final_bb, math.max(0, (portrait_w - authors_widget:getSize().w) / 2), authors_y)
+                            authors_widget:free()
+                        end
                     
                     -- 使用原始 gray_frame 结构，替换内部内容为图片
                     local gray_frame = FrameContainer:new {

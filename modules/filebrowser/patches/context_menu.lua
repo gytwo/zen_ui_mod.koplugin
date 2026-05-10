@@ -17,6 +17,166 @@ local function apply_context_menu()
     local icons        = require("common/inline_icon_map")
     local zen_plugin   = rawget(_G, "__ZEN_UI_PLUGIN")
 
+-- 生成无封面书籍的占位图 blitbuffer（接受文件路径）
+local function generatePlaceholderCoverFromPath(filepath, width, height)
+    local Blitbuffer = require("ffi/blitbuffer")
+    local Font = require("ui/font")
+    local TextBoxWidget = require("ui/widget/textboxwidget")
+    local BD = require("ui/bidi")
+    
+    -- 获取书籍信息
+    local ok, BookInfoManager = pcall(require, "bookinfomanager")
+    local title = ""
+    local authors = ""
+    
+    if ok then
+        local bookinfo = BookInfoManager:getBookInfo(filepath, true)
+        if bookinfo and not bookinfo.ignore_meta then
+            title = bookinfo.title or ""
+            authors = bookinfo.authors or ""
+            if authors and authors:find("\n") then
+                authors = authors:match("^([^\n]+)")
+            end
+        end
+    end
+    
+    -- 如果标题为空，从文件名提取
+    if title == "" then
+        local fname = filepath:match("([^/]+)$") or ""
+        -- 如果是文件夹，去掉末尾斜杠
+        fname = fname:gsub("/$", "")
+        -- 去除文件扩展名
+        fname = fname:gsub("%.[^%.]+$", "")
+        title = fname
+    end
+    
+    -- 设置默认值
+    if title == "" then title = _("Unknown") end
+    if authors == "" then authors = _("Unknown Author") end
+    
+    -- 创建画布
+    local final_bb = Blitbuffer.new(width, height, Blitbuffer.TYPE_BBRGB32)
+    
+    -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
+    local split_y = math.floor(height * 2 / 3)
+    local lighter_color = Blitbuffer.ColorRGB32(212, 220, 243, 255)
+    local darker_color = Blitbuffer.ColorRGB32(130, 159, 227, 255)
+    
+    for y = 0, split_y - 1 do
+        for x = 0, width - 1 do
+            final_bb:setPixel(x, y, lighter_color)
+        end
+    end
+    for y = split_y, height - 1 do
+        for x = 0, width - 1 do
+            final_bb:setPixel(x, y, darker_color)
+        end
+    end
+    
+    local title_area_h = split_y - 10
+    local author_area_h = height - split_y - 10
+    local max_text_width = width - 16
+    
+    local title_color = Blitbuffer.ColorRGB32(1, 68, 142, 255)
+    local authors_color = Blitbuffer.ColorRGB32(8, 51, 93, 255)
+    
+    -- 标题 TextBoxWidget（动态字体大小）
+    local title_font_size = 20
+    local min_title_font = 10
+    local title_widget = nil
+    
+    while title_font_size >= min_title_font do
+        if title_widget then title_widget:free() end
+        local face = Font:getFace("ffont", title_font_size)
+        title_widget = TextBoxWidget:new{
+            text = title,
+            face = face,
+            width = max_text_width,
+            alignment = "center",
+            bold = true,
+            fgcolor = title_color,
+            bgcolor = lighter_color,
+        }
+        if title_widget:getSize().h <= title_area_h then
+            break
+        end
+        title_font_size = title_font_size - 1
+    end
+    
+    if title_widget:getSize().h > title_area_h then
+        title_widget:free()
+        local face = Font:getFace("ffont", min_title_font)
+        title_widget = TextBoxWidget:new{
+            text = title,
+            face = face,
+            width = max_text_width,
+            alignment = "center",
+            bold = true,
+            fgcolor = title_color,
+            bgcolor = lighter_color,
+            height = title_area_h,
+            height_adjust = true,
+            height_overflow_show_ellipsis = true,
+        }
+    end
+    title_widget.handleEvent = function() return false end
+    
+    -- 作者 TextBoxWidget（动态字体大小）
+    local authors_font_size = 16
+    local min_authors_font = 6
+    local authors_widget = nil
+    
+    while authors_font_size >= min_authors_font do
+        if authors_widget then authors_widget:free() end
+        local face = Font:getFace("ffont", authors_font_size)
+        authors_widget = TextBoxWidget:new{
+            text = authors,
+            face = face,
+            width = max_text_width,
+            alignment = "center",
+            fgcolor = authors_color,
+            bgcolor = darker_color,
+        }
+        if authors_widget:getSize().h <= author_area_h then
+            break
+        end
+        authors_font_size = authors_font_size - 1
+    end
+    
+    if authors_widget and authors_widget:getSize().h > author_area_h then
+        authors_widget:free()
+        local face = Font:getFace("ffont", min_authors_font)
+        authors_widget = TextBoxWidget:new{
+            text = authors,
+            face = face,
+            width = max_text_width,
+            alignment = "center",
+            fgcolor = authors_color,
+            bgcolor = darker_color,
+            height = author_area_h,
+            height_adjust = true,
+            height_overflow_show_ellipsis = true,
+        }
+    end
+    if authors_widget then
+        authors_widget.handleEvent = function() return false end
+    end
+    
+    -- 绘制标题
+    local title_y = math.max(5, (split_y - title_widget:getSize().h) / 2)
+    title_widget:paintTo(final_bb, math.max(0, (width - title_widget:getSize().w) / 2), title_y)
+    title_widget:free()
+    
+    -- 绘制作者
+    if authors_widget then
+        local authors_y = split_y + math.max(5, (author_area_h - authors_widget:getSize().h) / 2)
+        authors_widget:paintTo(final_bb, math.max(0, (width - authors_widget:getSize().w) / 2), authors_y)
+        authors_widget:free()
+    end
+    
+    return final_bb
+end
+
     -- ── MoveChooser ──────────────────────────────────────────────────────────
     -- PathChooser subclass for picking a move destination.
     --   • Cover-browser rendering applies automatically when the coverbrowser
@@ -209,13 +369,13 @@ local function apply_context_menu()
             -- Never show a context menu for the up-folder item.
             if item.is_go_up then return end
 
-            -- Lockdown: block context menu across all views (filebrowser, groups, collections, etc.)
-            if zen_plugin then
-              local lc = zen_plugin.config and zen_plugin.config.lockdown
-              if type(lc) == "table" and lc.disable_context_menu == true then
-                 return orig_showFileDialog(self_fc, item)
-                end
-            end
+        -- Lockdown: block context menu across all views (filebrowser, groups, collections, etc.)
+       if zen_plugin then
+           local lc = zen_plugin.config and zen_plugin.config.lockdown
+           if type(lc) == "table" and lc.disable_context_menu == true then
+               return orig_showFileDialog(self_fc, item)
+           end
+       end
 
             -- ── Group context menu (authors/series views) ─────────────────────────────
             -- Check this before the home-dir gate: these items always come from Zen UI
@@ -885,11 +1045,22 @@ local function apply_context_menu()
                                     -- Collect up to 4 covers.
                                     local covers = {}
                                     for _, fpath in ipairs(all_book_files) do
+                                        if #covers >= 4 then break end
                                         local bi = BookInfoManager:getBookInfo(fpath, true)
-                                        if bi and bi.has_cover and bi.cover_bb
-                                                and not bi.ignore_cover then
-                                            table.insert(covers, { data = bi.cover_bb:copy() })
-                                            if #covers >= 4 then break end
+                                        local cover_bb = nil
+                                        local cover_w, cover_h = nil, nil
+                                        
+                                        if bi and bi.cover_bb and bi.has_cover and bi.cover_fetched and not bi.ignore_cover then
+                                            cover_bb = bi.cover_bb:copy()
+                                            cover_w = bi.cover_w
+                                            cover_h = bi.cover_h
+                                        else
+                                        cover_bb =generatePlaceholderCoverFromPath(fpath, cover_max_w, cover_max_h)
+                                        cover_w = cover_max_w
+                                        cover_h = cover_max_h
+                                    end                                        
+                                        if cover_bb then
+                                            table.insert(covers, { data = cover_bb, w = cover_w, h = cover_h })
                                         end
                                     end
                                     if #covers > 0 then
@@ -972,7 +1143,6 @@ local function apply_context_menu()
                                             },
                                         }
                                         _zen_apply_rounded_cover(framed_gallery, border)
-                                        -- Side-by-side layout: gallery left, text right.
                                         local framed_h   = cover_max_h + 2 * border
                                         local text_col_w = math.max(
                                             avail_w - cover_max_w - 2 * border - gap,
@@ -1032,161 +1202,7 @@ local function apply_context_menu()
                     local ph_h = math.floor(ph_w * 4 / 3)
                     local framed_h = ph_h + 2 * border
 
-                    -- 获取标题和作者
-                    local title_str = nil
-                    local authors_str = nil
-                    if is_file then
-                        local ok, BookInfoManager2 = pcall(require, "bookinfomanager")
-                        if ok then
-                            local bookinfo = BookInfoManager2:getBookInfo(file, true)
-                            if bookinfo and not bookinfo.ignore_meta then
-                                title_str = bookinfo.title
-                                authors_str = bookinfo.authors
-                                if authors_str and authors_str:find("\n") then
-                                    authors_str = authors_str:match("^([^\n]+)")
-                                end
-                            end
-                        end
-                        -- 如果标题为空，从文件名提取
-                        if not title_str or title_str == "" then
-                            local fname = (file:match("([^/]+)$") or file):gsub("%.[^%.]+$", "")
-                            title_str = fname
-                        end
-                    else
-                        -- 文件夹：使用文件夹名作为标题
-                        local fname = (file:match("([^/]+)/?$") or file):gsub("/$", "")
-                        title_str = BD.directory(fname)
-                        local n_books = 0
-                        -- 简单统计文件夹内书籍数量（可选）
-                        authors_str = nil
-                    end
-
-                    if not title_str or title_str == "" then
-                        title_str = _("Unknown")
-                    end
-                    if not authors_str or authors_str == "" then
-                        authors_str = _("Unknown Author")
-                    end
-
-                    -- 创建画布
-                    local final_bb = Blitbuffer2.new(ph_w, ph_h, Blitbuffer2.TYPE_BBRGB32)
-
-                    -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
-                    local split_y = math.floor(ph_h * 2 / 3)
-                    local lighter_color = Blitbuffer2.ColorRGB32(212, 220, 243, 255)
-                    local darker_color = Blitbuffer2.ColorRGB32(130, 159, 227, 255)
-
-                    for y = 0, split_y - 1 do
-                        for x = 0, ph_w - 1 do
-                            final_bb:setPixel(x, y, lighter_color)
-                        end
-                    end
-                    for y = split_y, ph_h - 1 do
-                        for x = 0, ph_w - 1 do
-                            final_bb:setPixel(x, y, darker_color)
-                        end
-                    end
-
-                    -- 计算各区域高度
-                    local title_area_h = split_y - 10
-                    local author_area_h = ph_h - split_y - 10
-                    local max_text_width = ph_w - 16
-
-                    local title_color = Blitbuffer2.ColorRGB32(1, 68, 142, 255)
-                    local authors_color = Blitbuffer2.ColorRGB32(8, 51, 93, 255)
-
-                    -- 标题 TextBoxWidget（动态字体大小 + 背景匹配）
-                    local title_font_size = 20
-                    local min_title_font = 10
-                    local title_widget = nil
-
-                    while title_font_size >= min_title_font do
-                        if title_widget then title_widget:free() end
-                        local face = Font2:getFace("ffont", title_font_size)
-                        title_widget = TextBoxWidget:new{
-                            text = title_str,
-                            face = face,
-                            width = max_text_width,
-                            alignment = "center",
-                            bold = true,
-                            fgcolor = title_color,
-                            bgcolor = lighter_color,
-                        }
-                       if title_widget:getSize().h <= title_area_h then
-                            break
-                        end
-                        title_font_size = title_font_size - 1
-                    end
-
-                    -- 降到最小字号仍然溢出时，强制限制高度并显示省略号
-                    if title_widget:getSize().h > title_area_h then
-                        title_widget:free()
-                        local face = Font2:getFace("ffont", min_title_font)
-                        title_widget = TextBoxWidget:new{
-                            text = title_str,
-                            face = face,
-                            width = max_text_width,
-                            alignment = "center",
-                            bold = true,
-                            fgcolor = title_color,
-                            bgcolor = lighter_color,
-                            height = title_area_h,
-                            height_adjust = true,
-                            height_overflow_show_ellipsis = true,
-                        }
-                    end
-
-                    -- 作者 TextBoxWidget
-                    local authors_font_size = 16
-                    local min_authors_font = 6
-                    local authors_widget = nil
-
-                    while authors_font_size >= min_authors_font do
-                        if authors_widget then authors_widget:free() end
-                        local face = Font2:getFace("ffont", authors_font_size)
-                        authors_widget = TextBoxWidget:new{
-                            text = authors_str,
-                            face = face,
-                            width = max_text_width,
-                            alignment = "center",
-                            fgcolor = authors_color,
-                            bgcolor = darker_color,
-                        }
-                        if authors_widget:getSize().h <= author_area_h then
-                            break
-                        end
-                        authors_font_size = authors_font_size - 1
-                    end
-
-                    -- 降到最小字号仍然溢出时，强制限制高度并显示省略号
-                    if authors_widget and authors_widget:getSize().h > author_area_h then
-                        authors_widget:free()
-                        local face = Font2:getFace("ffont", min_authors_font)
-                        authors_widget = TextBoxWidget:new{
-                            text = authors_str,
-                            face = face,
-                            width = max_text_width,
-                            alignment = "center",
-                            fgcolor = authors_color,
-                            bgcolor = darker_color,
-                            height = author_area_h,
-                            height_adjust = true,
-                            height_overflow_show_ellipsis = true,
-                        }
-                    end
-
-                    -- 绘制标题
-                    local title_y = math.max(5, (split_y - title_widget:getSize().h) / 2)
-                    title_widget:paintTo(final_bb, math.max(0, (ph_w - title_widget:getSize().w) / 2), title_y)
-                    title_widget:free()
-
-                    -- 绘制作者
-                    if authors_widget then
-                        local authors_y = split_y + math.max(5, (author_area_h - authors_widget:getSize().h) / 2)
-                        authors_widget:paintTo(final_bb, math.max(0, (ph_w - authors_widget:getSize().w) / 2), authors_y)
-                        authors_widget:free()
-                    end
-
+                    local final_bb = generatePlaceholderCoverFromPath(file, ph_w, ph_h)
                     -- 创建图片控件
                     local cover_img = ImageWidget2:new{
                         image = final_bb,
@@ -1503,7 +1519,7 @@ local function apply_context_menu()
                             local chooser = MoveChooser:new{
                                 select_directory = true,
                                 select_file      = false,
-                                show_files       = false,
+                                show_files       = true,
                                 title            = _("Move to…"),
                                 path             = home_dir,
                                 src_dir          = src_dir,

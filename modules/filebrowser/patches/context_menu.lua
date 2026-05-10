@@ -1027,6 +1027,7 @@ local function apply_context_menu()
                     local VerticalGroup2   = require("ui/widget/verticalgroup")
                     local VerticalSpan2    = require("ui/widget/verticalspan")
                     local ImageWidget2 = require("ui/widget/imagewidget")
+                    local TextBoxWidget = require("ui/widget/textboxwidget") 
                     local util2            = require("util")
 
                     local ph_w = cover_max_w
@@ -1088,74 +1089,104 @@ local function apply_context_menu()
                         end
                     end
 
-                    -- 字体大小
-                    local title_font_size = math.min(math.max(ph_w / 10, 16), 24)
-                    local authors_font_size = math.min(math.max(ph_w / 14, 12), 18)
-
-                    local title_face = Font2:getFace("ffont", title_font_size)
-                    local authors_face = Font2:getFace("ffont", authors_font_size)
+                    -- 计算各区域高度
+                    local title_area_h = split_y - 10
+                    local author_area_h = ph_h - split_y - 10
+                    local max_text_width = ph_w - 16
 
                     local title_color = Blitbuffer2.ColorRGB32(1, 68, 142, 255)
                     local authors_color = Blitbuffer2.ColorRGB32(8, 51, 93, 255)
 
-                    local function getTextWidth(face, text)
-                        return RenderText2:sizeUtf8Text(0, false, face, text, true, false).x
+                    -- 标题 TextBoxWidget（动态字体大小 + 背景匹配）
+                    local title_font_size = 20
+                    local min_title_font = 10
+                    local title_widget = nil
+
+                    while title_font_size >= min_title_font do
+                        if title_widget then title_widget:free() end
+                        local face = Font2:getFace("ffont", title_font_size)
+                        title_widget = TextBoxWidget:new{
+                            text = title_str,
+                            face = face,
+                            width = max_text_width,
+                            alignment = "center",
+                            bold = true,
+                            fgcolor = title_color,
+                            bgcolor = lighter_color,
+                        }
+                       if title_widget:getSize().h <= title_area_h then
+                            break
+                        end
+                        title_font_size = title_font_size - 1
                     end
 
-                    -- 按字符换行
-                    local function wrapTextByChar(text, face, max_width)
-                        local chars = util2.splitToChars(text)
-                        local lines = {}
-                        local current_line = ""
-                        for _, ch in ipairs(chars) do
-                            local test_line = current_line .. ch
-                            if getTextWidth(face, test_line) > max_width and current_line ~= "" then
-                                table.insert(lines, current_line)
-                                current_line = ch
-                            else
-                                current_line = test_line
-                            end
-                        end
-                        if current_line ~= "" then
-                            table.insert(lines, current_line)
-                        end
-                        if #lines == 0 and #chars > 0 then
-                            for _, ch in ipairs(chars) do
-                                table.insert(lines, ch)
-                            end
-                        end
-                        return lines
+                    -- 降到最小字号仍然溢出时，强制限制高度并显示省略号
+                    if title_widget:getSize().h > title_area_h then
+                        title_widget:free()
+                        local face = Font2:getFace("ffont", min_title_font)
+                        title_widget = TextBoxWidget:new{
+                            text = title_str,
+                            face = face,
+                            width = max_text_width,
+                            alignment = "center",
+                            bold = true,
+                            fgcolor = title_color,
+                            bgcolor = lighter_color,
+                            height = title_area_h,
+                            height_adjust = true,
+                            height_overflow_show_ellipsis = true,
+                        }
                     end
 
-                    local line_height = title_face.size + 4
-                    local max_text_width = ph_w - 16
+                    -- 作者 TextBoxWidget
+                    local authors_font_size = 16
+                    local min_authors_font = 6
+                    local authors_widget = nil
+
+                    while authors_font_size >= min_authors_font do
+                        if authors_widget then authors_widget:free() end
+                        local face = Font2:getFace("ffont", authors_font_size)
+                        authors_widget = TextBoxWidget:new{
+                            text = authors_str,
+                            face = face,
+                            width = max_text_width,
+                            alignment = "center",
+                            fgcolor = authors_color,
+                            bgcolor = darker_color,
+                        }
+                        if authors_widget:getSize().h <= author_area_h then
+                            break
+                        end
+                        authors_font_size = authors_font_size - 1
+                    end
+
+                    -- 降到最小字号仍然溢出时，强制限制高度并显示省略号
+                    if authors_widget and authors_widget:getSize().h > author_area_h then
+                        authors_widget:free()
+                        local face = Font2:getFace("ffont", min_authors_font)
+                        authors_widget = TextBoxWidget:new{
+                            text = authors_str,
+                            face = face,
+                            width = max_text_width,
+                            alignment = "center",
+                            fgcolor = authors_color,
+                            bgcolor = darker_color,
+                            height = author_area_h,
+                            height_adjust = true,
+                            height_overflow_show_ellipsis = true,
+                        }
+                    end
 
                     -- 绘制标题
-                    local title_lines = wrapTextByChar(title_str, title_face, max_text_width)
-                    local title_height = #title_lines * line_height
-                    local title_y = math.floor((split_y - title_height) / 2)
-                    if title_y < 8 then title_y = 8 end
-
-                    local y_pos = title_y
-                    for _, line in ipairs(title_lines) do
-                        local line_width = getTextWidth(title_face, line)
-                        local line_x = math.floor((ph_w - line_width) / 2)
-                        RenderText2:renderUtf8Text(final_bb, line_x, y_pos + title_face.size, title_face, line, true, false, title_color)
-                        y_pos = y_pos + line_height
-                    end
+                    local title_y = math.max(5, (split_y - title_widget:getSize().h) / 2)
+                    title_widget:paintTo(final_bb, math.max(0, (ph_w - title_widget:getSize().w) / 2), title_y)
+                    title_widget:free()
 
                     -- 绘制作者
-                    local author_lines = wrapTextByChar(authors_str, authors_face, max_text_width)
-                    local author_height = #author_lines * line_height
-                    local author_y = split_y + math.floor((ph_h - split_y - author_height) / 2)
-                    if author_y < split_y + 4 then author_y = split_y + 4 end
-
-                    y_pos = author_y
-                    for _, line in ipairs(author_lines) do
-                        local line_width = getTextWidth(authors_face, line)
-                        local line_x = math.floor((ph_w - line_width) / 2)
-                        RenderText2:renderUtf8Text(final_bb, line_x, y_pos + authors_face.size, authors_face, line, true, false, authors_color)
-                        y_pos = y_pos + line_height
+                    if authors_widget then
+                        local authors_y = split_y + math.max(5, (author_area_h - authors_widget:getSize().h) / 2)
+                        authors_widget:paintTo(final_bb, math.max(0, (ph_w - authors_widget:getSize().w) / 2), authors_y)
+                        authors_widget:free()
                     end
 
                     -- 创建图片控件

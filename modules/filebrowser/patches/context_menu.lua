@@ -211,11 +211,9 @@ local function apply_context_menu()
 
             -- Lockdown: block context menu across all views (filebrowser, groups, collections, etc.)
             if zen_plugin then
-                local ft = zen_plugin.config and zen_plugin.config.features
-                local lc = zen_plugin.config and zen_plugin.config.lockdown
-                if type(ft) == "table" and ft.lockdown_mode == true
-                        and type(lc) == "table" and lc.disable_context_menu == true then
-                    return
+              local lc = zen_plugin.config and zen_plugin.config.lockdown
+              if type(lc) == "table" and lc.disable_context_menu == true then
+                 return orig_showFileDialog(self_fc, item)
                 end
             end
 

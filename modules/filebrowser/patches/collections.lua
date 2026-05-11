@@ -933,8 +933,17 @@ local function apply_collections()
         local UIManager_mod = require("ui/uimanager")
         local Device        = require("device")
 
-        menu.onMenuHold = function(menu_self, item)
-            return show_coll_item_menu(fm_coll, item, menu)
+        -- Lockdown mode: use native collection menu
+        local file_chooser = fm_coll.ui.file_chooser
+        local orig_showFileDialog = file_chooser.showFileDialog
+
+        local lc = zen_plugin.config and zen_plugin.config.lockdown
+        if type(lc) == "table" and lc.disable_context_menu == true then
+            menu.onMenuHold = function() return true end
+        else
+            menu.onMenuHold = function(menu_self, item)
+                return show_coll_item_menu(fm_coll, item, menu)
+            end
         end
 
         if Device:isTouchDevice() then

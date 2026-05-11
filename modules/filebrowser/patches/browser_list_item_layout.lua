@@ -1,8 +1,7 @@
 local function apply_browser_list_item_layout()
     -- Capture plugin reference while __ZEN_UI_PLUGIN is still set by run_feature.
-    -- Also re-check the global at render time (same robustness pattern as
-    -- browser_cover_rounded_corners) so live config changes take effect immediately.
     local _plugin_ref = rawget(_G, "__ZEN_UI_PLUGIN")
+    local Cover = require("common/cover_utils")
 
     local BD = require("ui/bidi")
     local Blitbuffer = require("ffi/blitbuffer")
@@ -31,194 +30,27 @@ local function apply_browser_list_item_layout()
     local Screen = Device.screen
     local scale_by_size = Screen:scaleBySize(1000000) * (1 / 1000000)
 
-   -- 生成无封面书籍的占位图 blitbuffer（接受文件路径）
-    local function generatePlaceholderCoverFromPath(filepath, width, height)
-    local Blitbuffer = require("ffi/blitbuffer")
-    local Font = require("ui/font")
-    local TextBoxWidget = require("ui/widget/textboxwidget")
-    local BD = require("ui/bidi")
-    
-    -- 获取书籍信息
-    local ok, BookInfoManager = pcall(require, "bookinfomanager")
-    local title = ""
-    local authors = ""
-    
-    if ok then
-        local bookinfo = BookInfoManager:getBookInfo(filepath, true)
-        if bookinfo and not bookinfo.ignore_meta then
-            title = bookinfo.title or ""
-            authors = bookinfo.authors or ""
-            if authors and authors:find("\n") then
-                authors = authors:match("^([^\n]+)")
-            end
-        end
-    end
-    
-    -- 如果标题为空，从文件名提取
-    if title == "" then
-        local fname = filepath:match("([^/]+)$") or ""
-        fname = fname:gsub("/$", "")
-        fname = fname:gsub("%.[^%.]+$", "")
-        title = fname
-    end
-    
-    -- 设置默认值
-    if title == "" then title = _("Unknown") end
-    if authors == "" then authors = _("Unknown Author") end
-    
-    -- 创建画布
-    local final_bb = Blitbuffer.new(width, height, Blitbuffer.TYPE_BBRGB32)
-    
-    -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
-    local split_y = math.floor(height * 2 / 3)
-    local lighter_color = Blitbuffer.ColorRGB32(212, 220, 243, 255)
-    local darker_color = Blitbuffer.ColorRGB32(130, 159, 227, 255)
-    
-    for y = 0, split_y - 1 do
-        for x = 0, width - 1 do
-            final_bb:setPixel(x, y, lighter_color)
-        end
-    end
-    for y = split_y, height - 1 do
-        for x = 0, width - 1 do
-            final_bb:setPixel(x, y, darker_color)
-        end
-    end
-    
-    local title_area_h = split_y - 10
-    local author_area_h = height - split_y - 10
-    local max_text_width = width - 16
-    
-    local title_color = Blitbuffer.ColorRGB32(1, 68, 142, 255)
-    local authors_color = Blitbuffer.ColorRGB32(8, 51, 93, 255)
-    
-    -- 标题 TextBoxWidget（动态字体大小）
-    local title_font_size = 20
-    local min_title_font = 10
-    local title_widget = nil
-    
-    while title_font_size >= min_title_font do
-        if title_widget then title_widget:free() end
-        local face = Font:getFace("ffont", title_font_size)
-        title_widget = TextBoxWidget:new{
-            text = title,
-            face = face,
-            width = max_text_width,
-            alignment = "center",
-            bold = true,
-            fgcolor = title_color,
-            bgcolor = lighter_color,
-        }
-        if title_widget:getSize().h <= title_area_h then
-            break
-        end
-        title_font_size = title_font_size - 1
-    end
-    
-    if title_widget:getSize().h > title_area_h then
-        title_widget:free()
-        local face = Font:getFace("ffont", min_title_font)
-        title_widget = TextBoxWidget:new{
-            text = title,
-            face = face,
-            width = max_text_width,
-            alignment = "center",
-            bold = true,
-            fgcolor = title_color,
-            bgcolor = lighter_color,
-            height = title_area_h,
-            height_adjust = true,
-            height_overflow_show_ellipsis = true,
-        }
-    end
-    title_widget.handleEvent = function() return false end
-    
-    -- 作者 TextBoxWidget（动态字体大小）
-    local authors_font_size = 16
-    local min_authors_font = 6
-    local authors_widget = nil
-    
-    while authors_font_size >= min_authors_font do
-        if authors_widget then authors_widget:free() end
-        local face = Font:getFace("ffont", authors_font_size)
-        authors_widget = TextBoxWidget:new{
-            text = authors,
-            face = face,
-            width = max_text_width,
-            alignment = "center",
-            fgcolor = authors_color,
-            bgcolor = darker_color,
-        }
-        if authors_widget:getSize().h <= author_area_h then
-            break
-        end
-        authors_font_size = authors_font_size - 1
-    end
-    
-    if authors_widget and authors_widget:getSize().h > author_area_h then
-        authors_widget:free()
-        local face = Font:getFace("ffont", min_authors_font)
-        authors_widget = TextBoxWidget:new{
-            text = authors,
-            face = face,
-            width = max_text_width,
-            alignment = "center",
-            fgcolor = authors_color,
-            bgcolor = darker_color,
-            height = author_area_h,
-            height_adjust = true,
-            height_overflow_show_ellipsis = true,
-        }
-    end
-    if authors_widget then
-        authors_widget.handleEvent = function() return false end
-    end
-    
-    -- 绘制标题
-    local title_y = math.max(5, (split_y - title_widget:getSize().h) / 2)
-    title_widget:paintTo(final_bb, math.max(0, (width - title_widget:getSize().w) / 2), title_y)
-    title_widget:free()
-    
-    -- 绘制作者
-    if authors_widget then
-        local authors_y = split_y + math.max(5, (author_area_h - authors_widget:getSize().h) / 2)
-        authors_widget:paintTo(final_bb, math.max(0, (width - authors_widget:getSize().w) / 2), authors_y)
-        authors_widget:free()
-    end
-    
-    return final_bb
-end
-
-    local function get_upvalue(fn, name)
-        if type(fn) ~= "function" then return nil end
-        for i = 1, 64 do
-            local upname, value = debug.getupvalue(fn, i)
-            if not upname then break end
-            if upname == name then return value end
-        end
-    end
-
     local function patchListMenu()
         local ListMenu = require("listmenu")
-        local ListMenuItem = get_upvalue(ListMenu._updateItemsBuildUI, "ListMenuItem")
+        local ListMenuItem = Cover.getUpvalue(ListMenu._updateItemsBuildUI, "ListMenuItem")
         if not ListMenuItem then return end
         if ListMenuItem._zen_bll_patched then return end
 
         local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
         if not ok_bim then return end
 
-        -- ── Corner-mask helpers (reused in paintTo) ───────────────────────────
+        -- Corner-mask helpers
         local corner_radius = Screen:scaleBySize(8)
 
         local function paintCornerMasks(bb, tx, ty, tw, th, r)
             local color = Blitbuffer.COLOR_WHITE
             for j = 0, r - 1 do
                 local inner = math.sqrt(r * r - (r - j) * (r - j))
-                local cut   = math.ceil(r - inner)
+                local cut = math.ceil(r - inner)
                 if cut > 0 then
-                    bb:paintRect(tx,            ty + j,          cut, 1, color)
-                    bb:paintRect(tx + tw - cut, ty + j,          cut, 1, color)
-                    bb:paintRect(tx,            ty + th - 1 - j, cut, 1, color)
+                    bb:paintRect(tx, ty + j, cut, 1, color)
+                    bb:paintRect(tx + tw - cut, ty + j, cut, 1, color)
+                    bb:paintRect(tx, ty + th - 1 - j, cut, 1, color)
                     bb:paintRect(tx + tw - cut, ty + th - 1 - j, cut, 1, color)
                 end
             end
@@ -229,14 +61,14 @@ end
             local r_inner = r - bsz
             for j = 0, r - 1 do
                 for c = 0, r - 1 do
-                    local dx   = r - c - 0.5
-                    local dy   = r - j - 0.5
+                    local dx = r - c - 0.5
+                    local dy = r - j - 0.5
                     local dist = math.sqrt(dx * dx + dy * dy)
                     if dist >= r_inner and dist <= r_outer then
-                        bb:paintRect(tx + c,          ty + j,           1, 1, color)
-                        bb:paintRect(tx + tw - 1 - c, ty + j,           1, 1, color)
-                        bb:paintRect(tx + c,          ty + th - 1 - j,  1, 1, color)
-                        bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j,  1, 1, color)
+                        bb:paintRect(tx + c, ty + j, 1, 1, color)
+                        bb:paintRect(tx + tw - 1 - c, ty + j, 1, 1, color)
+                        bb:paintRect(tx + c, ty + th - 1 - j, 1, 1, color)
+                        bb:paintRect(tx + tw - 1 - c, ty + th - 1 - j, 1, 1, color)
                     end
                 end
             end
@@ -266,11 +98,8 @@ end
                     local cover_v_pad = Screen:scaleBySize(4)
                     local cover_zone_w = dimen_h
                     local max_img  = dimen_h - 2 * border_size - 2 * cover_v_pad
-                    -- 从设置获取比例
-                    local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
-                    local num, den = ratio_str:match("(%d+):(%d+)")
-                    local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
-                    local cover_w = math.floor(max_img * target_ratio)
+                    local ratio = Cover.getRatio()
+                    local cover_w = math.floor(max_img * ratio)
 
                     local function _fontSize(nominal, max_size)
                         local fs = math.floor(nominal * dimen_h * (1 / 64) / scale_by_size)
@@ -351,12 +180,8 @@ end
             local cover_v_pad = Screen:scaleBySize(4)  -- top+bottom breathing room
             local cover_zone_w = dimen_h  -- squared, identical to stock list mode
             local max_img = dimen_h - 2 * border_size - 2 * cover_v_pad
-            -- Standard portrait width (2:3) so every cover frame is the same size
-            -- 从设置获取比例
-            local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
-            local num, den = ratio_str:match("(%d+):(%d+)")
-            local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
-            local cover_w = math.floor(max_img * target_ratio)
+            local ratio = Cover.getRatio()
+            local cover_w = math.floor(max_img * ratio)
 
             -- Font sizing identical to listmenu.lua's internal _fontSize closure.
             local function _fontSize(nominal, max_size)
@@ -423,8 +248,7 @@ end
                     cover_bb_used = true
                     -- Uniform fill: scale from the actual cached-bb dimensions so
                     -- the image covers the entire 2:3 frame, then centre-crop to
-                    -- exactly cover_w × max_img.  Always applied regardless of
-                    -- whether sf is > or < 1 so small and large covers both fill.
+                    -- exactly cover_w × max_img.
                     local bb_w     = bookinfo.cover_bb:getWidth()
                     local bb_h     = bookinfo.cover_bb:getHeight()
                     local sf       = math.max(cover_w / bb_w, max_img / bb_h)
@@ -459,30 +283,33 @@ end
                     self._cover_frame = cover_frame
                     self.menu._has_cover_images = true
                     self._has_cover_image = true
-              else
-                        -- Placeholder (no cover or not yet fetched)
-                        local final_bb = generatePlaceholderCoverFromPath(filepath, cover_w, max_img)
-                        local wimage = ImageWidget:new{
-                            image = final_bb,
-                            width = cover_w,
-                            height = max_img,
-                            _free_image = true,
-                        }
-                        local cover_frame = FrameContainer:new{
-                            width = cover_w + 2 * border_size,
-                            height = max_img + 2 * border_size,
-                            margin = 0, padding = 0, bordersize = border_size,
-                            dim = file_deleted,
-                            CenterContainer:new{
-                                dimen = { w = cover_w, h = max_img },
-                                wimage,
-                            },
-                        }
+                else
+                    -- No cover or not yet fetched - use unified placeholder generator
+                    local final_bb = Cover.genCover(filepath, cover_w, max_img)
+                    local wimage = ImageWidget:new{
+                        image = final_bb,
+                        width = cover_w,
+                        height = max_img,
+                        _free_image = true,
+                    }
+                    wimage:_render()
+                    local cover_frame = FrameContainer:new{
+                        width = cover_w + 2 * border_size,
+                        height = max_img + 2 * border_size,
+                        margin = 0, padding = 0, bordersize = border_size,
+                        dim = file_deleted,
+                        CenterContainer:new{
+                            dimen = { w = cover_w, h = max_img },
+                            wimage,
+                        },
+                    }
                     wleft = CenterContainer:new{
                         dimen = { w = cover_zone_w, h = dimen_h },
                         cover_frame,
                     }
                     self._cover_frame = cover_frame
+                    self.menu._has_cover_images = true
+                    self._has_cover_image = true
                 end
             end
 

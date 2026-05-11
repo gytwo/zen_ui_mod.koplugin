@@ -1,6 +1,7 @@
 local function apply_browser_folder_cover()
     -- Capture plugin reference at apply-time.
     local _plugin = rawget(_G, "__ZEN_UI_PLUGIN")
+    local Cover = require("common/cover_utils")
 
     local AlphaContainer = require("ui/widget/container/alphacontainer")
     local BD = require("ui/bidi")
@@ -47,11 +48,10 @@ local function apply_browser_folder_cover()
         end
     end
 
-    local function getMenuItem(menu, ...) -- path
+    local function getMenuItem(menu, ...)
         local function findItem(sub_items, texts)
             local find = {}
             local texts = type(texts) == "table" and texts or { texts }
-            -- stylua: ignore
             for _, text in ipairs(texts) do find[text] = true end
             for _, item in ipairs(sub_items) do
                 local text = item.text or (item.text_func and item.text_func())
@@ -60,7 +60,7 @@ local function apply_browser_folder_cover()
         end
 
         local sub_items, item
-        for _, texts in ipairs { ... } do -- walk path
+        for _, texts in ipairs { ... } do
             sub_items = (item or menu).sub_item_table
             if not sub_items then return end
             item = findItem(sub_items, texts)
@@ -85,24 +85,23 @@ local function apply_browser_folder_cover()
         return table.concat(keys, "")
     end
 
-    -- Must be declared before getListItem and genItemTableFromPath close over it.
+    -- Performance tracking
     local _perf = {
-        page_t0          = nil,   -- os.clock() at page load start
+        page_t0          = nil,
         update_calls     = 0,
-        update_time      = 0,     -- total seconds in MosaicMenuItem:update
-        orig_update_time = 0,     -- time inside original_update only
-        extra_getbi_time = 0,     -- time for our second getBookInfo call
-        ancestor_calls   = 0,     -- times getBookInfoWithFallback ran ancestor search
+        update_time      = 0,
+        orig_update_time = 0,
+        extra_getbi_time = 0,
+        ancestor_calls   = 0,
         ancestor_hits    = 0,
         ancestor_time    = 0,
-        collect_calls    = 0,     -- collectCoversFromDir invocations
+        collect_calls    = 0,
         collect_time     = 0,
-        paint_tw_calls   = 0,     -- TextWidget allocations in paintTo badge
-        -- tab-switch / page-load costs
-        gen_item_time    = 0,     -- total in genItemTableFromPath (incl. getListItem)
+        paint_tw_calls   = 0,
+        gen_item_time    = 0,
         getlistitem_calls = 0,
-        getlistitem_time  = 0,    -- total in getListItem override
-        lfsdir_scans     = 0,     -- dirs scanned with lfs.dir for time collate
+        getlistitem_time  = 0,
+        lfsdir_scans     = 0,
         lfsdir_time      = 0,
     }
 
@@ -156,17 +155,14 @@ local function apply_browser_folder_cover()
 
     local orig_FileChooser_getListItem = FileChooser.getListItem
     local cached_list = {}
-    local _item_table_cache = nil  -- {key, table}: full item_table cached by path+mtime+settings
+    local _item_table_cache = nil
 
     function FileChooser:getListItem(dirpath, f, fullpath, attributes, collate)
-        -- Skip all extras for PathChooser/dialog instances (name is not 'filemanager').
         if self.name ~= "filemanager" then
             return orig_FileChooser_getListItem(self, dirpath, f, fullpath, attributes, collate)
         end
         local _t0_gli = os.clock()
         _perf.getlistitem_calls = _perf.getlistitem_calls + 1
-        -- For time-based collate on directories, compute sort key from children's
-        -- max atime/mtime (folder's own atime is not updated when books are read).
         if attributes.mode == "directory" and collate
                 and collate.can_collate_mixed and collate.mandatory_func and not collate.item_func then
             local item = orig_FileChooser_getListItem(self, dirpath, f, fullpath, attributes, collate)
@@ -194,19 +190,17 @@ local function apply_browser_folder_cover()
                 new_attr.access = max_access
                 new_attr.modification = max_modification
                 item.attr = new_attr
-            end  -- if ok
+            end
             _perf.lfsdir_time = _perf.lfsdir_time + (os.clock() - _t0_lfs)
             _perf.getlistitem_time = _perf.getlistitem_time + (os.clock() - _t0_gli)
             return item
-        end  -- if directory
+        end
         local key = toKey(dirpath, f, fullpath, attributes, collate, self.show_filter.status)
         cached_list[key] = cached_list[key] or orig_FileChooser_getListItem(self, dirpath, f, fullpath, attributes, collate)
         _perf.getlistitem_time = _perf.getlistitem_time + (os.clock() - _t0_gli)
         return cached_list[key]
     end
 
-    -- Build a cache key encoding everything that affects the item table.
-    -- One lfs.attributes call per tab-switch
     local function _item_table_key(path)
         local mtime = lfs.attributes(path, "modification") or 0
         local filter = FileChooser.show_filter and FileChooser.show_filter.status
@@ -223,18 +217,13 @@ local function apply_browser_folder_cover()
 
     function FileChooser:genItemTableFromPath(path)
         if not self._dummy and self.name == "filemanager" then
-            -- Access-time collate: file atimes change when books are opened, but
-            -- directory mtime does not, so the cache key never changes. Skip
-            -- caching entirely so the list is always re-sorted after reading.
             local collate_mode = G_reader_settings:readSetting("collate", "strcoll")
             local use_cache = collate_mode ~= "access"
 
             local key = _item_table_key(path)
             if use_cache and _item_table_cache and _item_table_cache.key == key then
-                -- cache hit: directory unchanged and same settings; skip full rescan
                 return _item_table_cache.table
             end
-            -- cache miss: do a full rebuild
             if _perf.page_t0 then _perf_dump("prev-page") end
             _perf_reset()
             cached_list = {}
@@ -262,30 +251,14 @@ local function apply_browser_folder_cover()
             border_size = Size.border.thin,
             alpha = 0.75,
             nb_items_font_size = 15,
-            nb_items_badge_size = Screen:scaleBySize(22),  -- fixed circle diameter
-            nb_items_offset = Screen:scaleBySize(5),       -- push badge down from top edge
+            nb_items_badge_size = Screen:scaleBySize(22),
+            nb_items_offset = Screen:scaleBySize(5),
             dir_max_font_size = 25,
         },
     }
 
-    -- Light gray in light mode; white in night mode (avoids ghosting from mid-gray inversion).
     local function placeholderBg()
         return Screen.night_mode and Blitbuffer.COLOR_WHITE or Blitbuffer.COLOR_LIGHT_GRAY
-    end
-
-    local function get_upvalue(fn, name)
-        if type(fn) ~= "function" then
-            return nil
-        end
-        for i = 1, 64 do
-            local upname, value = debug.getupvalue(fn, i)
-            if not upname then
-                break
-            end
-            if upname == name then
-                return value
-            end
-        end
     end
 
     local function getCornerRadius()
@@ -296,10 +269,9 @@ local function apply_browser_folder_cover()
 
     local function patchCoverBrowser(plugin)
         local MosaicMenu = require("mosaicmenu")
-        local MosaicMenuItem = get_upvalue(MosaicMenu._updateItemsBuildUI, "MosaicMenuItem")
-        if not MosaicMenuItem then return end -- Protect against remnants of project title
-        -- upvalue name may differ across KOReader versions; fall back to direct require
-        local BookInfoManager = get_upvalue(MosaicMenuItem.update, "BookInfoManager")
+        local MosaicMenuItem = Cover.getUpvalue(MosaicMenu._updateItemsBuildUI, "MosaicMenuItem")
+        if not MosaicMenuItem then return end
+        local BookInfoManager = Cover.getUpvalue(MosaicMenuItem.update, "BookInfoManager")
         if not BookInfoManager then
             local ok, bim = pcall(require, "bookinfomanager")
             if ok then BookInfoManager = bim end
@@ -309,13 +281,8 @@ local function apply_browser_folder_cover()
         local logger = require("logger")
         local UIManager = require("ui/uimanager")
 
-        -- Per-menu list of folder items whose cover hasn't been finalized yet.
-        -- Keyed by menu table reference; each value is a list of item references.
-        -- Weak keys so entries GC along with the menu when a page is left.
         local pending_folders_by_menu = setmetatable({}, { __mode = "k" })
 
-        -- Schedule a single deferred pass after book-item repaints complete.
-        -- Calls update() on each pending folder item and triggers per-item setDirty.
         local function scheduleFolderRefresh(menu)
             if not menu._zen_folder_refresh_scheduled then
                 menu._zen_folder_refresh_scheduled = true
@@ -324,13 +291,10 @@ local function apply_browser_folder_cover()
                     local pending = pending_folders_by_menu[menu]
                     if not pending then return end
                     local show_parent = menu.show_parent
-                    -- Snapshot and clear so items can safely re-register if still unresolved.
-                    -- Leaving unprocessed items in-list while update() re-adds them causes
-                    -- exponential list growth (1->2->4->...) and a multi-second freeze.
                     pending_folders_by_menu[menu] = nil
                     for _, item in ipairs(pending) do
                         if item then
-                            item._zen_pending_refresh = nil  -- allow re-registration
+                            item._zen_pending_refresh = nil
                             if not item._foldercover_processed then
                                 item:update()
                                 if item._foldercover_processed and show_parent then
@@ -346,7 +310,6 @@ local function apply_browser_folder_cover()
             end
         end
 
-        -- Folder book-count badge drawn directly at paint time.
         local _BlitBadge = require("ffi/blitbuffer")
         local _FontBadge = require("ui/font")
         local _TW        = require("ui/widget/textwidget")
@@ -360,7 +323,6 @@ local function apply_browser_folder_cover()
             end
         end
 
-        -- Walk the paintTo wrapper chain for the uv accessor from browser_cover_badges.
         local function find_uv_fn(fn, depth)
             depth = depth or 0
             if depth > 10 or type(fn) ~= "function" then return nil end
@@ -375,7 +337,6 @@ local function apply_browser_folder_cover()
             end
             return nil
         end
-        -- Captured once at setupLayout time; uv reads corner_mark_size live.
         local _badge_uv_fn = find_uv_fn(MosaicMenuItem.paintTo)
 
         local _cached_badge_scale    = 1.0
@@ -390,22 +351,14 @@ local function apply_browser_folder_cover()
             end
             return _cached_badge_scale
         end
-        local _folder_paintTo_logged = false
+
         local orig_folder_paintTo = MosaicMenuItem.paintTo
         function MosaicMenuItem:paintTo(bb, x, y)
-            if not _folder_paintTo_logged and self.is_directory then
-                _folder_paintTo_logged = true
-                local logger = require("logger")
-                logger.dbg("zen-ui:browser_folder_cover:paintTo: self.height=", self.height,
-                    "self.width=", self.width, "_zen_cover_dimen=", tostring(rawget(self, "_zen_cover_dimen")),
-                    "_zen_title_strip_patched=", tostring(MosaicMenuItem._zen_title_strip_patched))
-            end
             orig_folder_paintTo(self, bb, x, y)
             if self.is_go_up then return end
             local count = rawget(self, "_zen_folder_count")
             if not count then return end
 
-            -- Use stored cover dimen to position the badge (widget-tree depth differs from books).
             local cd = rawget(self, "_zen_cover_dimen")
             if not (cd and cd.w and cd.w > 0) then return end
             local corner_mark_size = (_badge_uv_fn and _badge_uv_fn("corner_mark_size"))
@@ -413,8 +366,6 @@ local function apply_browser_folder_cover()
             local eff_size = math.floor(math.max(corner_mark_size, math.floor((cd.w or 0) * 0.14))
                 * get_badge_scale())
 
-            -- Use the cached centered_top (computed when self.height = cover-area height).
-            -- Re-deriving from self.height would be wrong when mosaic_title_strip inflates it.
             local cover_x = x + math.floor((self.width - cd.w) / 2)
             local cover_y = y + (rawget(self, "_zen_cover_top") or math.floor((self.height - cd.h) / 2))
 
@@ -444,10 +395,8 @@ local function apply_browser_folder_cover()
             if tw.free then tw:free() end
         end
 
-        -- Per-session set to avoid repeated SQL for the same path.
         local zen_migrated_paths = {}
 
-        -- Walk ancestor dirs for a DB entry matching basename; handles books moved to subfolders.
         local ffiUtil = require("ffi/util")
         local MAX_ANCESTOR_LEVELS = 3
 
@@ -458,18 +407,16 @@ local function apply_browser_folder_cover()
             local basename = ffiUtil.basename(path)
             local home_dir = paths.getHomeDir()
 
-            -- Search ancestor dirs only within home_dir.
             if not home_dir or not paths.isInHomeDir(path) then
                 return nil, nil
             end
 
-            -- Probe <ancestor>/<basename> at each level up.
             _perf.ancestor_calls = _perf.ancestor_calls + 1
             local t0_anc = os.clock()
-            local dir = ffiUtil.dirname(path)  -- immediate containing dir
+            local dir = ffiUtil.dirname(path)
             for _ = 1, MAX_ANCESTOR_LEVELS do
                 local parent = ffiUtil.dirname(dir)
-                if parent == dir then break end  -- filesystem root
+                if parent == dir then break end
                 local candidate = parent .. "/" .. basename
                 if candidate ~= path then
                     local candidate_bi = BookInfoManager:getBookInfo(candidate, true)
@@ -485,14 +432,13 @@ local function apply_browser_folder_cover()
                         return candidate_bi, candidate
                     end
                 end
-                if parent == home_dir then break end  -- don't walk above home
+                if parent == home_dir then break end
                 dir = parent
             end
             _perf.ancestor_time = _perf.ancestor_time + (os.clock() - t0_anc)
             return nil, nil
         end
 
-        -- Best-effort DB path migration; silently ignored on error.
         local function tryMigrateBookInfoPath(old_path, new_path)
             if old_path == new_path then return end
             pcall(function()
@@ -510,213 +456,13 @@ local function apply_browser_folder_cover()
             end)
         end
 
--- ========== 在这里添加辅助函数 ==========
--- 生成无封面书籍的占位图 blitbuffer
-local function generatePlaceholderCover(book_title, book_authors, width, height)
-    -- 创建画布
-    local final_bb = Blitbuffer.new(width, height, Blitbuffer.TYPE_BBRGB32)
-    
-    -- 上面 2/3 浅蓝灰色，下面 1/3 深蓝灰色
-    local split_y = math.floor(height * 2 / 3)
-    local lighter_color = Blitbuffer.ColorRGB32(212, 220, 243, 255)
-    local darker_color = Blitbuffer.ColorRGB32(130, 159, 227, 255)
-    
-    for y = 0, split_y - 1 do
-        for x = 0, width - 1 do
-            final_bb:setPixel(x, y, lighter_color)
-        end
-    end
-    for y = split_y, height - 1 do
-        for x = 0, width - 1 do
-            final_bb:setPixel(x, y, darker_color)
-        end
-    end
-    
-    local title_area_h = split_y - 10
-    local author_area_h = height - split_y - 10
-    local max_text_width = width - 16
-    
-    local title_color = Blitbuffer.ColorRGB32(1, 68, 142, 255)
-    local authors_color = Blitbuffer.ColorRGB32(8, 51, 93, 255)
-    
-    local title = book_title or ""
-    if title == "" then title = _("Unknown") end
-    if book_authors == nil or book_authors == "" then
-        book_authors = _("Unknown Author")
-    end
-    local authors = book_authors
-    if authors and authors:find("\n") then
-        authors = authors:match("^([^\n]+)")
-    end
-    
-    -- 标题 TextBoxWidget
-    local title_font_size = 20
-    local min_title_font = 10
-    local title_widget = nil
-    
-    while title_font_size >= min_title_font do
-        if title_widget then title_widget:free() end
-        local face = Font:getFace("ffont", title_font_size)
-        title_widget = TextBoxWidget:new{
-            text = title,
-            face = face,
-            width = max_text_width,
-            alignment = "center",
-            bold = true,
-            fgcolor = title_color,
-            bgcolor = lighter_color,
-        }
-        if title_widget:getSize().h <= title_area_h then
-            break
-        end
-        title_font_size = title_font_size - 1
-    end
-    
-    if title_widget:getSize().h > title_area_h then
-        title_widget:free()
-        local face = Font:getFace("ffont", min_title_font)
-        title_widget = TextBoxWidget:new{
-            text = title,
-            face = face,
-            width = max_text_width,
-            alignment = "center",
-            bold = true,
-            fgcolor = title_color,
-            bgcolor = lighter_color,
-            height = title_area_h,
-            height_adjust = true,
-            height_overflow_show_ellipsis = true,
-        }
-    end
-    title_widget.handleEvent = function() return false end
-    
-    -- 作者 TextBoxWidget
-    local authors_font_size = 16
-    local min_authors_font = 6
-    local authors_widget = nil
-    
-    while authors_font_size >= min_authors_font do
-        if authors_widget then authors_widget:free() end
-        local face = Font:getFace("ffont", authors_font_size)
-        authors_widget = TextBoxWidget:new{
-            text = authors,
-            face = face,
-            width = max_text_width,
-            alignment = "center",
-            fgcolor = authors_color,
-            bgcolor = darker_color,
-        }
-        if authors_widget:getSize().h <= author_area_h then
-            break
-        end
-        authors_font_size = authors_font_size - 1
-    end
-    
-    if authors_widget and authors_widget:getSize().h > author_area_h then
-        authors_widget:free()
-        local face = Font:getFace("ffont", min_authors_font)
-        authors_widget = TextBoxWidget:new{
-            text = authors,
-            face = face,
-            width = max_text_width,
-            alignment = "center",
-            fgcolor = authors_color,
-            bgcolor = darker_color,
-            height = author_area_h,
-            height_adjust = true,
-            height_overflow_show_ellipsis = true,
-        }
-    end
-    if authors_widget then
-        authors_widget.handleEvent = function() return false end
-    end
-    
-    -- 绘制标题
-    local title_y = math.max(5, (split_y - title_widget:getSize().h) / 2)
-    title_widget:paintTo(final_bb, math.max(0, (width - title_widget:getSize().w) / 2), title_y)
-    title_widget:free()
-    
-    -- 绘制作者
-    if authors_widget then
-        local authors_y = split_y + math.max(5, (author_area_h - authors_widget:getSize().h) / 2)
-        authors_widget:paintTo(final_bb, math.max(0, (width - authors_widget:getSize().w) / 2), authors_y)
-        authors_widget:free()
-    end
-    
-    return final_bb
-end
--- ========== 辅助函数添加结束 ==========
-
-        --- Recursively collect book covers from dir_path and its subdirectories.
-        --- @return table covers  List of {data=bb, w=number, h=number}
-        local function collectCoversFromDir(dir_path, chooser, max_covers, max_depth, copy_bb, entries)
-            local t0_collect = _perf.collect_calls == 0 and os.clock() or nil
-            _perf.collect_calls = _perf.collect_calls + 1
-            local covers = {}
-            local subdirs = {}
-
-            if not entries then
-                chooser._dummy = true
-                entries = chooser:genItemTableFromPath(dir_path)
-                chooser._dummy = false
-            end
-            if not entries then return covers end
-
-for __, entry in ipairs(entries) do
-    if entry.is_file or entry.file then
-        if #covers < max_covers then
-            local bookinfo, found_at = getBookInfoWithFallback(entry.path)
-            local cover_bb = nil
-            local cover_w, cover_h = nil, nil
-            
-            if bookinfo and bookinfo.cover_bb and bookinfo.has_cover
-                    and bookinfo.cover_fetched and not bookinfo.ignore_cover then
-                -- 有封面，直接使用
-                cover_bb = copy_bb and bookinfo.cover_bb:copy() or bookinfo.cover_bb
-                cover_w = bookinfo.cover_w
-                cover_h = bookinfo.cover_h
-            else
-                -- 没有封面，生成占位图
-                -- 获取书籍标题和作者
-                local props = BookInfoManager:getDocProps(entry.path) or {}
-                local title = props.title or ""
-                local authors = props.authors or ""
-                
-                -- 从文件名提取标题
-                if title == "" then
-                    local fname = entry.text or ""
-                    if fname:match("/$") then fname = fname:sub(1, -2) end
-                    title = fname:gsub("%.[^%.]+$", "")
-                end
-                if title == "" then title = _("Unknown") end
-                if authors == "" then authors = _("Unknown Author") end
-                
-                -- 生成占位图（使用默认尺寸，后续会缩放）
-                cover_bb = generatePlaceholderCover(title, authors, 200, 300)
-                cover_w = 200
-                cover_h = 300
-            end
-            
-            if cover_bb then
-                table.insert(covers, { data = cover_bb, w = cover_w, h = cover_h })
-            end
-        end
-    end
-end
-
-            if t0_collect then
-                _perf.collect_time = _perf.collect_time + (os.clock() - t0_collect)
-            end
-            return covers
-        end
-
-        -- setting
+        -- Settings
         function BooleanSetting(text, name, default)
             local self = { text = text }
             self.get = function()
                 if not BookInfoManager then return default and false or nil end
                 local setting = BookInfoManager:getSetting(name)
-                if default then return not setting end -- false is stored as nil, so we need or own logic for boolean default
+                if default then return not setting end
                 return setting
             end
             self.toggle = function()
@@ -733,70 +479,59 @@ end
             show_item_count = BooleanSetting(_("Show item count on folder covers"), "folder_item_count_show", true),
             name_opaque = BooleanSetting(_("Folder name opaque background"), "folder_name_opaque", true),
             gallery_mode = {
-    text = _("Gallery view (4-grid)"),
-    get = function() return G_reader_settings:isTrue("folder_gallery_mode") end,
-    toggle = function()
-        G_reader_settings:flipNilOrFalse("folder_gallery_mode")
-        -- 互斥：开启画廊时关闭堆叠
-        if G_reader_settings:isTrue("folder_gallery_mode") then
-            G_reader_settings:saveSetting("folder_stack_mode", false)
-        end
-        local ui = require("apps/filemanager/filemanager").instance
-        if ui and ui.file_chooser then
-            ui.file_chooser:updateItems()
-        end
-    end,
-},
-stack_mode = {
-    text = _("Stack effect (overlapping covers)"),
-    get = function() return G_reader_settings:isTrue("folder_stack_mode") end,
-    toggle = function()
-        G_reader_settings:flipNilOrFalse("folder_stack_mode")
-        -- 互斥：开启堆叠时关闭画廊
-        if G_reader_settings:isTrue("folder_stack_mode") then
-            G_reader_settings:saveSetting("folder_gallery_mode", false)
-        end
-        local ui = require("apps/filemanager/filemanager").instance
-        if ui and ui.file_chooser then
-            ui.file_chooser:updateItems()
-        end
-    end,
-},
+                text = _("Gallery view (4-grid)"),
+                get = function() return G_reader_settings:isTrue("folder_gallery_mode") end,
+                toggle = function()
+                    G_reader_settings:flipNilOrFalse("folder_gallery_mode")
+                    if G_reader_settings:isTrue("folder_gallery_mode") then
+                        G_reader_settings:saveSetting("folder_stack_mode", false)
+                    end
+                    local ui = require("apps/filemanager/filemanager").instance
+                    if ui and ui.file_chooser then
+                        ui.file_chooser:updateItems()
+                    end
+                end,
+            },
+            stack_mode = {
+                text = _("Stack effect (overlapping covers)"),
+                get = function() return G_reader_settings:isTrue("folder_stack_mode") end,
+                toggle = function()
+                    G_reader_settings:flipNilOrFalse("folder_stack_mode")
+                    if G_reader_settings:isTrue("folder_stack_mode") then
+                        G_reader_settings:saveSetting("folder_gallery_mode", false)
+                    end
+                    local ui = require("apps/filemanager/filemanager").instance
+                    if ui and ui.file_chooser then
+                        ui.file_chooser:updateItems()
+                    end
+                end,
+            },
         }
 
-        -- cover item
-            local function _zen_update_impl(self, ...)
-             -- ========== ADD THIS BLOCK ==========
-             -- Skip all folder cover logic for search results
-             if self.menu and self.menu.name == "filesearcher" then
-                 return original_update(self, ...)
-             end
-             -- ========== END OF ADDED BLOCK ==========
-            -- Guard: block update() while ancestor cover is shown but bookinfo isn't
-            -- in the DB yet, to prevent dimension mismatches and ghost pixels.
+        -- Main update implementation
+        local function _zen_update_impl(self, ...)
+            -- Skip all folder cover logic for search results
+            if self.menu and self.menu.name == "filesearcher" then
+                return original_update(self, ...)
+            end
+
             if self._zen_ancestor_cover then
                 if self.entry and (self.entry.is_file or self.entry.file) then
                     local _p = self.entry.path or self.entry.file
                     if _p and not BookInfoManager:getBookInfo(_p, true) then
-                        return  -- bookinfo still nil; keep ancestor cover
+                        return
                     end
                 end
                 self._zen_ancestor_cover = nil
-                self.refresh_dimen = nil  -- force full-cell repaint to clear ancestor ghost
+                self.refresh_dimen = nil
             end
 
-            -- Group view detail menus (_zen_tab_id), collections (_zen_coll_list), and
-            -- history (name=="history") all contain real book items; treat like filemanager.
             local is_non_fm = not (self.menu and (
                 self.menu.name == "filemanager"
                 or self.menu.name == "history"
                 or self.menu._zen_tab_id
                 or self.menu._zen_coll_list))
 
-            -- For non-FM file items (e.g. screensaver image picker): selectively allow
-            -- cover previews. Native image files (jpg/png/etc.) decode fast without CRE.
-            -- Non-image files (epub, svg, pdf...) are suppressed to avoid crengine being
-            -- invoked for every uncached file, which causes severe lag and log spam.
             if is_non_fm and (self.entry.is_file or self.entry.file) then
                 local _path = self.entry.path or self.entry.file or ""
                 local _ext = _path:match("%.([^%.]+)$")
@@ -804,7 +539,7 @@ stack_mode = {
                     jpg=1, jpeg=1, png=1, gif=1, bmp=1, webp=1, tiff=1, tif=1, svg=1,
                 })[_ext:lower()] ~= nil
                 if _is_native_img then
-                    original_update(self, ...)  -- allow cover preview; no CRE involved
+                    original_update(self, ...)
                 else
                     local saved = self.do_cover_image
                     self.do_cover_image = false
@@ -819,19 +554,14 @@ stack_mode = {
             original_update(self, ...)
             _perf.orig_update_time = _perf.orig_update_time + (os.clock() - _t0_orig)
             if self._foldercover_processed or self.menu.no_refresh_covers then return end
-            -- For file items CoverBrowser must have enabled cover rendering and set mandatory.
-            -- For folder items (incl. search results) we always attempt it regardless.
             if (self.entry.is_file or self.entry.file) then
                 if not self.do_cover_image or not self.mandatory then return end
-                -- When a book item's bookinfo just became available, schedule
-                -- a refresh pass for any pending folder items on the same page.
                 if not was_found and self.bookinfo_found and self.menu then
                     scheduleFolderRefresh(self.menu)
                 end
             end
 
-            -- For moved books: render cover from ancestor bookinfo instead of FakeCover
-            -- while KOReader's extraction runs. Standard rendering takes over on update.
+            -- Handle single book files (Scenario 1 & 2)
             local _resolved_path = self.entry.path or self.entry.file
             if (self.entry.is_file or self.entry.file) and _resolved_path then
                 local path = _resolved_path
@@ -841,20 +571,11 @@ stack_mode = {
                 if not bookinfo then
                     local ancestor_bi, ancestor_path = getBookInfoWithFallback(path)
                     if ancestor_bi and ancestor_path ~= path and ancestor_bi.cover_bb then
-                        -- Copy the blitbuffer: BookInfoManager frees its cached copy
-                        -- after extraction; painting a freed buffer crashes.
                         local cover_bb_copy = ancestor_bi.cover_bb:copy()
                         local border = Folder.face.border_size
                         local max_w = self.width - 2 * border
                         local bh = self.height - 2 * border
-                        local portrait_w, portrait_h
-                        if bh * 2 <= max_w * 3 then
-                            portrait_h = bh
-                            portrait_w = math.floor(bh * 2 / 3)
-                        else
-                            portrait_w = max_w
-                            portrait_h = math.min(math.floor(max_w * 3 / 2), bh)
-                        end
+                        local portrait_w, portrait_h = Cover.calcDims(max_w, bh)
                         local cover_frame = FrameContainer:new {
                             padding     = 0,
                             bordersize  = border,
@@ -880,39 +601,19 @@ stack_mode = {
                             self._underline_container[1]:free()
                         end
                         self._underline_container[1] = overlap
-                        -- Mark this item so update() calls are blocked until bookinfo
-                        -- is available at the new path (see flag check at top of update).
                         self._zen_ancestor_cover = true
-                        -- Best-effort DB migration for next standard render cycle.
                         if not zen_migrated_paths[path] then
                             zen_migrated_paths[path] = true
                             tryMigrateBookInfoPath(ancestor_path, path)
                         end
                         return
                     end
-                    -- No ancestor cover found (genuinely new/unindexed file).
-                    -- Replace KOReader's FakeCover with a clean portrait-sized
-                    -- placeholder so there is never a size mismatch between what
-                    -- sits on the e-ink panel and the real cover that will replace
-                    -- it.  Using the same portrait dimensions as the real cover
-                    -- means the repaint region when bookinfo arrives covers every
-                    -- pixel that our placeholder occupied — no ghost border remains.
-                    -- This also survives navigate-away-and-back: widget instances
-                    -- are recreated on return, so a flag on the old instance would
-                    -- be lost; overwriting _underline_container[1] here works on
-                    -- every render regardless of prior state.
+                    -- No ancestor cover - show placeholder
                     do
                         local border = Folder.face.border_size
-                        local max_w  = self.width  - 2 * border
-                        local bh     = self.height - 2 * border
-                        local portrait_w, portrait_h
-                        if bh * 2 <= max_w * 3 then
-                            portrait_h = bh
-                            portrait_w = math.floor(bh * 2 / 3)
-                        else
-                            portrait_w = max_w
-                            portrait_h = math.min(math.floor(max_w * 3 / 2), bh)
-                        end
+                        local max_w = self.width - 2 * border
+                        local bh = self.height - 2 * border
+                        local portrait_w, portrait_h = Cover.calcDims(max_w, bh)
                         local placeholder = FrameContainer:new {
                             padding       = 0,
                             bordersize    = border,
@@ -940,48 +641,13 @@ stack_mode = {
                     local border = Folder.face.border_size
                     local max_w = self.width - 2 * border
                     local bh = self.height - 2 * border
-                    
-                    -- 从配置读取比例
-                    local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
-                    local num, den = ratio_str:match("(%d+):(%d+)")
-                    local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
-                    
-                    local portrait_w, portrait_h
-                    if bh * target_ratio <= max_w then
-                        portrait_h = bh
-                        portrait_w = math.floor(bh * target_ratio)
-                    else
-                        portrait_w = max_w
-                        portrait_h = math.floor(max_w / target_ratio)
-                    end
-                    
+                    local portrait_w, portrait_h = Cover.calcDims(max_w, bh)
                     local dimen = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
                     local centered_top = math.floor((self.height - dimen.h) / 2)
-                    
-                    -- 获取书籍信息
-                    local title = bookinfo.title or ""
-                    local authors = bookinfo.authors or ""
-                    if authors and authors:find("\n") then
-                        authors = authors:match("^([^\n]+)")
-                    end
-                    
-                    -- 如果标题为空，从文件名提取
-                    if title == "" then
-                        local fname = self.text or ""
-                        if fname:match("/$") then fname = fname:sub(1, -2) end
-                        title = fname:gsub("%.[^%.]+$", "")
-                    end
-                    if title == "" then
-                        title = _("Unknown")
-                    end
-                    if authors == "" then
-                        authors = _("Unknown Author")
-                    end
-                    
-                       -- 生成占位图
-                       local final_bb = generatePlaceholderCover(title, authors, portrait_w, portrait_h)
-                    
-                    -- 使用原始 gray_frame 结构，替换内部内容为图片
+
+                    -- Use unified cover generator for placeholder
+                    local final_bb = Cover.genCover(path, portrait_w, portrait_h)
+
                     local gray_frame = FrameContainer:new {
                         padding       = 0,
                         bordersize    = border,
@@ -989,7 +655,7 @@ stack_mode = {
                         height        = dimen.h,
                         background    = placeholderBg(),
                         overlap_align = "center",
-                          CenterContainer:new {
+                        CenterContainer:new {
                             dimen = { w = portrait_w, h = portrait_h },
                             ImageWidget:new {
                                 image = final_bb,
@@ -998,14 +664,11 @@ stack_mode = {
                             },
                         },
                     }
-                    
-                    -- Handle selected state in multi-select mode (dim the cover)
-                    -- References the native KOReader FrameContainer.dim mechanism
+
                     if self.dim or (self.entry and self.entry.dim) then
                         gray_frame.dim = true
                     end
-                    
-                    -- 放入单元格（不显示文件名，只显示图片）
+
                     self._cover_frame = gray_frame
                     local widget = OverlapGroup:new {
                         dimen = { w = self.width, h = self.height },
@@ -1028,83 +691,74 @@ stack_mode = {
                 return
             end
 
-            -- Folder items only below this point.
+            -- Folder items (Scenario 3 & 4)
             local dir_path = self.entry and self.entry.path
-            -- is_go_up items from group_view detail menus have no path; check before
-            -- the dir_path guard so they still get the themed folder cover.
-if self.entry.is_go_up then
-    self._foldercover_processed = true
-    local border = Folder.face.border_size
-    local max_w = self.width - 2 * border
-    local bh = self.height - 2 * border
-    local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
-    local num, den = ratio_str:match("(%d+):(%d+)")
-    local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
-    local portrait_w, portrait_h
-    if bh * target_ratio <= max_w then
-        portrait_h = bh
-        portrait_w = math.floor(bh * target_ratio)
-    else
-        portrait_w = max_w
-        portrait_h = math.floor(max_w / target_ratio)
-    end
-    local dimen = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
-    local centered_top = math.floor((self.height - dimen.h) / 2)
-    
-    local arrow_size = math.min(portrait_w, portrait_h) * 0.25
-    local arrow_text = TextWidget:new{
-        text = "↑",
-        face = Font:getFace("cfont", math.floor(arrow_size)),
-        fgcolor = Blitbuffer.COLOR_BLACK,
-    }
-    
-    local gray_frame = FrameContainer:new {
-        padding = 0,
-        bordersize = border,
-        width = dimen.w, height = dimen.h,
-        background = placeholderBg(),
-        CenterContainer:new {
-            dimen = { w = portrait_w, h = portrait_h },
-            CenterContainer:new {
-                dimen = { w = portrait_w, h = portrait_h },
-                arrow_text,
-            },
-        },
-        overlap_align = "center",
-    }
-    
-    self._cover_frame = gray_frame
-    
-    local widget = OverlapGroup:new {
-        dimen = { w = self.width, h = self.height },
-        VerticalGroup:new {
-            VerticalSpan:new { width = centered_top },
-            CenterContainer:new {
-                dimen = { w = self.width, h = dimen.h },
-                OverlapGroup:new {
-                    dimen = dimen,
-                    gray_frame,
-                },
-            },
-        },
-    }
-    if self._underline_container[1] then
-        self._underline_container[1]:free()
-    end
-    self._underline_container[1] = widget
-    return
-end
+
+            -- Handle "go up" item
+            if self.entry.is_go_up then
+                self._foldercover_processed = true
+                local border = Folder.face.border_size
+                local max_w = self.width - 2 * border
+                local bh = self.height - 2 * border
+                local portrait_w, portrait_h = Cover.calcDims(max_w, bh)
+                local dimen = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
+                local centered_top = math.floor((self.height - dimen.h) / 2)
+                
+                local arrow_size = math.min(portrait_w, portrait_h) * 0.25
+                local arrow_text = TextWidget:new{
+                    text = "↑",
+                    face = Font:getFace("cfont", math.floor(arrow_size)),
+                    fgcolor = Blitbuffer.COLOR_BLACK,
+                }
+                
+                local gray_frame = FrameContainer:new {
+                    padding = 0,
+                    bordersize = border,
+                    width = dimen.w, height = dimen.h,
+                    background = placeholderBg(),
+                    CenterContainer:new {
+                        dimen = { w = portrait_w, h = portrait_h },
+                        CenterContainer:new {
+                            dimen = { w = portrait_w, h = portrait_h },
+                            arrow_text,
+                        },
+                    },
+                    overlap_align = "center",
+                }
+                
+                self._cover_frame = gray_frame
+                
+                local widget = OverlapGroup:new {
+                    dimen = { w = self.width, h = self.height },
+                    VerticalGroup:new {
+                        VerticalSpan:new { width = centered_top },
+                        CenterContainer:new {
+                            dimen = { w = self.width, h = dimen.h },
+                            OverlapGroup:new {
+                                dimen = dimen,
+                                gray_frame,
+                            },
+                        },
+                    },
+                }
+                if self._underline_container[1] then
+                    self._underline_container[1]:free()
+                end
+                self._underline_container[1] = widget
+                return
+            end
 
             if not dir_path then return end
 
-            -- PathChooser: shape + name + rounded corners only; no cover fetch, count, or badges.
+            -- PathChooser: shape + name only
             if is_non_fm then
                 self._foldercover_processed = true
                 self:_setFolderCover { no_image = true }
                 return
             end
 
-            local cover_file = findCover(dir_path) --custom
+            -- Custom cover image
+            local cover_file = findCover(dir_path)
             if cover_file then
                 local success, w, h = pcall(function()
                     local tmp_img = ImageWidget:new { file = cover_file, scale_factor = 1 }
@@ -1123,91 +777,33 @@ end
 
             local _fm = require("apps/filemanager/filemanager").instance
             local _main_chooser = _fm and _fm.file_chooser
-            -- Prefer the main file chooser so all files are visible regardless of
-            -- how the current menu was opened (e.g. move-dialog uses a dirs-only
-            -- chooser which returns zero book entries and a blank cover).
             local _chooser = _main_chooser
                 or (self.menu.genItemTableFromPath and self.menu)
             if not _chooser then
                 self._foldercover_processed = true
                 return
             end
-            _chooser._dummy = true
-            local entries = _chooser:genItemTableFromPath(dir_path) -- sorted
-            _chooser._dummy = false
-            if not entries then
+
+            -- Use unified makeCover - handles everything
+            local border = Folder.face.border_size
+            local max_w = self.width - 2 * border
+            local bh = self.height - 2 * border
+            local folder_name = dir_path:match("([^/]+)/?$") or dir_path
+            folder_name = BD.directory(folder_name)
+            
+            local cover_widget, mode, scenario = Cover.makeCover(dir_path, _chooser, {
+                is_folder = true,
+                max_w = max_w,
+                max_h = bh,
+                folder_name = folder_name,
+            })
+            
+            -- Pass the cover widget to _setFolderCover
+            if cover_widget then
                 self._foldercover_processed = true
-                return
-            end
-
-            -- Collect covers based on mode
-            local is_gallery = G_reader_settings:isTrue("folder_gallery_mode")
-            local is_stack = G_reader_settings:isTrue("folder_stack_mode")
-            local max_covers
-            local copy_bb
-            if is_gallery then
-                max_covers = 4
-                copy_bb = true
-            elseif is_stack then
-                max_covers = 3
-                copy_bb = true
+                self:_setFolderCover { image_widget = cover_widget }
             else
-                max_covers = 1
-                copy_bb = false
-            end
-            local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, copy_bb, entries)
-
-            if is_gallery then
-                if #covers == 0 then
-                    self:_setFolderCover { no_image = true }
-                else
-                    self._foldercover_processed = true
-                    self:_setFolderCover { gallery = covers }
-                end
-                if not self._foldercover_processed and self.menu and not self._zen_pending_refresh then
-                    self._zen_pending_refresh = true
-                    local pending = pending_folders_by_menu[self.menu]
-                    if not pending then
-                        pending = {}
-                        pending_folders_by_menu[self.menu] = pending
-                    end
-                    pending[#pending + 1] = self
-                end
-            elseif is_stack then
-                if #covers == 0 then
-                    self:_setFolderCover { no_image = true }
-                else
-                    self._foldercover_processed = true
-                    self:_setFolderCover { stack = covers }
-                end
-                if not self._foldercover_processed and self.menu and not self._zen_pending_refresh then
-                    self._zen_pending_refresh = true
-                    local pending = pending_folders_by_menu[self.menu]
-                    if not pending then
-                        pending = {}
-                        pending_folders_by_menu[self.menu] = pending
-                    end
-                    pending[#pending + 1] = self
-                end
-            else
-                if #covers > 0 then
-                    self._foldercover_processed = true
-                    self:_setFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h }
-                else
-                    -- Do NOT set _foldercover_processed here: leave it nil so the
-                    -- next updateItems() re-scans once cover extraction completes.
-                    self:_setFolderCover { no_image = true }
-                    -- Register for deferred refresh; guard prevents re-registration while already pending.
-                    if self.menu and not self._zen_pending_refresh then
-                        self._zen_pending_refresh = true
-                        local pending = pending_folders_by_menu[self.menu]
-                        if not pending then
-                            pending = {}
-                            pending_folders_by_menu[self.menu] = pending
-                        end
-                        pending[#pending + 1] = self
-                    end
-                end
+                self:_setFolderCover { no_image = true }
             end
         end
 
@@ -1219,287 +815,54 @@ end
         end
 
         function MosaicMenuItem:_setFolderCover(img)
-            -- Compute the largest 2:3 portrait box that fits within the cell.
-            -- Uses both self.width and self.height so the cover scales correctly
-            -- for any grid layout (2×2, 4×3, etc.), matching the dual-constraint
-            -- approach used in browser_cover_mosaic_uniform.lua.
-            local border      = Folder.face.border_size  -- Size.border.thin
-            local max_w       = self.width  - 2 * border
-            -- When title strip is active and _setFolderCover is called from a standalone
-            -- update() (deferred refresh), self.height has been restored to full size by
-            -- mosaic_title_strip.update. During init, mosaic_title_strip.init already
-            -- reduced self.height, so no further adjustment is needed (_zen_in_init=true).
+            local border = Folder.face.border_size
+            local max_w = self.width - 2 * border
             local strip_h = (not MosaicMenuItem._zen_in_init)
                 and (rawget(MosaicMenuItem, "_zen_strip_h") or 0) or 0
-            local eff_h   = self.height - strip_h
-            local bh          = eff_h - 2 * border
-            local available_h = bh
-            local portrait_w, portrait_h
-            local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
-            local num, den = ratio_str:match("(%d+):(%d+)")
-            local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
-
-            if available_h * target_ratio <= max_w then
-                portrait_h = available_h
-                portrait_w = math.floor(available_h * target_ratio)
-            else
-                portrait_w = max_w
-                portrait_h = math.floor(max_w / target_ratio)
-            end
-            local size  = { w = portrait_w, h = portrait_h }
+            local eff_h = self.height - strip_h
+            local bh = eff_h - 2 * border
+            local portrait_w, portrait_h = Cover.calcDims(max_w, bh)
             local dimen = { w = portrait_w + 2 * border, h = portrait_h + 2 * border }
 
-            -- All images are fit-to-box (width=portrait_w, height=portrait_h, no
-            -- explicit scale_factor) so KOReader auto-scales to min(w,h) ratio.
-            -- This guarantees zero overflow regardless of source aspect ratio.
-            local image_widget
-            if img.gallery then
-                local covers = img.gallery
-                local sep = 1
-                local half_w  = math.floor((portrait_w - sep) / 2)
-                local half_w2 = portrait_w - sep - half_w
-                local half_h  = math.floor((portrait_h - sep) / 2)
-                local half_h2 = portrait_h - sep - half_h
-                local cell_dims = {
-                    { w = half_w,  h = half_h  },
-                    { w = half_w2, h = half_h  },
-                    { w = half_w,  h = half_h2 },
-                    { w = half_w2, h = half_h2 },
-                }
-                local cells = {}
-                for i = 1, 4 do
-                    local c = covers[i]
-                    local cd = cell_dims[i]
-                    if c then
-                        cells[i] = CenterContainer:new {
-                            dimen = { w = cd.w, h = cd.h },
-                            ImageWidget:new {
-                                image  = c.data,
-                                width  = cd.w,
-                                height = cd.h,
-                            },
-                        }
-                    else
-                        -- Empty slot: transparent widget with correct dimensions so the
-                        -- layout engine sizes the row/column correctly.  The outer
-                        -- FrameContainer's background shows through.
-                        cells[i] = CenterContainer:new {
-                            dimen = { w = cd.w, h = cd.h },
-                            VerticalSpan:new { width = 1 },
-                        }
+            -- Use the image_widget if provided by makeCover, otherwise draw based on img type
+            local image_widget = img.image_widget
+            
+            if not image_widget then
+                if img.gallery then
+                    image_widget = Cover.drawGallery(img.gallery, portrait_w, portrait_h, border, placeholderBg)
+                elseif img.stack then
+                    image_widget = Cover.drawStack(img.stack, portrait_w, portrait_h, border, placeholderBg)
+                elseif img.no_image then
+                    local folder_name = self.text:gsub("/$", "")
+                    folder_name = BD.directory(folder_name)
+                    image_widget = Cover.drawNoImage(folder_name, portrait_w, portrait_h, border, placeholderBg)
+                elseif img.data then
+                    image_widget = Cover.drawSingle(img.data, portrait_w, portrait_h, border, placeholderBg)
+                elseif img.file then
+                    -- Custom image from file
+                    local img_options = { file = img.file }
+                    if img.scale_to_fit then
+                        img_options.scale_factor = math.max(portrait_h / img.h, portrait_w / img.w)
                     end
-                end
-                image_widget = FrameContainer:new {
-                    padding = 0,
-                    bordersize = border,
-                    width = dimen.w, height = dimen.h,
-                    background = placeholderBg(),
-                    CenterContainer:new {
-                        dimen = { w = portrait_w, h = portrait_h },
-                        VerticalGroup:new {
-                            HorizontalGroup:new {
-                                cells[1],
-                                LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = sep, h = half_h } },
-                                cells[2],
-                            },
-                            LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = portrait_w, h = sep } },
-                            HorizontalGroup:new {
-                                cells[3],
-                                LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = sep, h = half_h2 } },
-                                cells[4],
-                            },
-                        },
-                    },
-                    overlap_align = "center",
-                }
-            elseif img.stack then
-                -- Stack effect (overlapping covers) from v68 patch
-                local covers = img.stack
-                local stack_count = #covers
-                if stack_count == 0 then
-                    image_widget = FrameContainer:new {
-                        padding = 0,
-                        bordersize = border,
-                        width = dimen.w, height = dimen.h,
-                        background = placeholderBg(),
-                        CenterContainer:new {
-                            dimen = { w = portrait_w, h = portrait_h },
-                            VerticalSpan:new { width = 1 },
-                        },
-                        overlap_align = "center",
-                    }
+                    local image = ImageWidget:new(img_options)
+                    image:_render()
+                    image_widget = image
                 else
-                    -- Create canvas for stacked covers
-                    local final_bb = Blitbuffer.new(portrait_w, portrait_h)
-                    final_bb:fill(Blitbuffer.COLOR_WHITE)
-                    
-                    local book_width = portrait_w * 0.85
-                    local book_height = book_width * (portrait_h / portrait_w)
-                    local base_x = math.floor((portrait_w - book_width) / 2)
-                    local base_y = math.floor((portrait_h - book_height) / 2)
-                    
-                    -- Calculate offsets based on cover count
-                    local offsets
-                    if stack_count == 1 then
-                        offsets = { { x = 0, y = 6 } }
-                    elseif stack_count == 2 then
-                        offsets = { { x = 8, y = 0 }, { x = -8, y = 12 } }
-                    else
-                        offsets = { { x = 12, y = 0 }, { x = 0, y = 6 }, { x = -12, y = 12 } }
-                    end
-                    
-                    -- Draw from bottom layer up
-                    for i = math.min(stack_count, 3), 1, -1 do
-                        local cover = covers[i]
-                        local offset_idx = math.min(stack_count - i + 1, #offsets)
-                        local offset = offsets[offset_idx] or { x = 0, y = 0 }
-                        local img_widget = ImageWidget:new {
-                            image = cover.data,
-                            width = book_width,
-                            height = book_height,
-                        }
-                        img_widget:paintTo(final_bb, base_x + offset.x, base_y + offset.y)
-                    end
-                    
-                    -- Draw folder icon overlay (bottom)
-                    local plugin_root = require("common/plugin_root")
-                    local folder_icon_width = portrait_w
-                    local folder_icon_height = folder_icon_width * 0.65
-                    local folder_icon = ImageWidget:new{
-                        file = plugin_root .. "/icons/folder.png",
-                        width = folder_icon_width,
-                        height = folder_icon_height,
-                        alpha = true,
-                    }
-                    folder_icon:paintTo(final_bb, 0, portrait_h - folder_icon_height)
-                    
-                    image_widget = FrameContainer:new {
-                        padding = 0,
-                        bordersize = border,
-                        width = dimen.w, height = dimen.h,
-                        background = placeholderBg(),
-                        CenterContainer:new {
-                            dimen = { w = portrait_w, h = portrait_h },
-                            ImageWidget:new {
-                                image = final_bb,
-                                width = portrait_w,
-                                height = portrait_h,
-                            },
-                        },
-                        overlap_align = "center",
-                    }
+                    image_widget = Cover.drawNoImage(self.text, portrait_w, portrait_h, border, placeholderBg)
                 end
-elseif img.no_image then
-    -- 获取文件夹名称
-    local folder_name = self.text:gsub("/$", "")
-    folder_name = BD.directory(folder_name)
-    
-    -- 创建画布
-    local final_bb = Blitbuffer.new(portrait_w, portrait_h, Blitbuffer.TYPE_BBRGB32)
-    final_bb:fill(Blitbuffer.COLOR_WHITE)
-    
-    -- 动态调整字体大小
-    local font_size = 20
-    local min_font = 10
-    local text_widget = nil
-    
-    while font_size >= min_font do
-        if text_widget then text_widget:free() end
-        local face = Font:getFace("cfont", font_size)
-        text_widget = TextBoxWidget:new{
-            text = folder_name,
-            face = face,
-            width = portrait_w - 16,
-            alignment = "center",
-            bold = true,
-            fgcolor = Blitbuffer.COLOR_BLACK,
-            bgcolor = Blitbuffer.COLOR_WHITE,
-        }
-        if text_widget:getSize().h <= portrait_h - 10 then
-            break
-        end
-        font_size = font_size - 1
-    end
-    
-    text_widget.handleEvent = function() return false end
-    
-    if text_widget:getSize().h > portrait_h - 10 then
-        text_widget:free()
-        local face = Font:getFace("cfont", min_font)
-        text_widget = TextBoxWidget:new{
-            text = folder_name,
-            face = face,
-            width = portrait_w - 16,
-            alignment = "center",
-            bold = true,
-            fgcolor = Blitbuffer.COLOR_BLACK,
-            bgcolor = Blitbuffer.COLOR_WHITE,
-            height = portrait_h - 10,
-            height_adjust = true,
-            height_overflow_show_ellipsis = true,
-        }
-        text_widget.handleEvent = function() return false end
-    end
-    
-    local y = (portrait_h - text_widget:getSize().h) / 2
-    text_widget:paintTo(final_bb, (portrait_w - text_widget:getSize().w) / 2, y)
-    text_widget:free()
-    
-    image_widget = FrameContainer:new {
-        padding = 0,
-        bordersize = border,
-        width = dimen.w, height = dimen.h,
-        background = placeholderBg(),
-        CenterContainer:new {
-            dimen = { w = portrait_w, h = portrait_h },
-            ImageWidget:new {
-                image = final_bb,
-                width = portrait_w,
-                height = portrait_h,
-            },
-        },
-        overlap_align = "center",
-    }
-            else
-                image_widget = FrameContainer:new {
-                    padding = 0,
-                    bordersize = border,
-                    width = dimen.w, height = dimen.h,
-                    background = Blitbuffer.COLOR_LIGHT_GRAY,
-                    CenterContainer:new {
-                        dimen = { w = portrait_w, h = portrait_h },
-                        ImageWidget:new {
-                            file   = img.file,
-                            image  = img.data,
-                            width  = portrait_w,
-                            height = portrait_h,
-                        },
-                    },
-                    overlap_align = "center",
-                }
             end
 
-            -- Pass inner image dimensions; the FrameContainer (bordersize) brings the
-            -- banner flush with the outer cover edge (dimen.w = size.w + 2*border_size).
-            -- Cover geometry is stored on self so the paintTo wrapper can position
-            -- the badge correctly without walking the widget tree at paint time.
             self._zen_cover_dimen = dimen
-            -- centered_top is computed against eff_h (usable area, strip excluded) so
-            -- the badge lands on the cover image rather than inside the strip.
             self._zen_cover_top = math.floor((eff_h - dimen.h) / 2)
-            -- Parse file count from KOReader's mandatory string (e.g. "2 <folder_icon> 5 <file_icon>").
-            -- U+F016 (file icon, \xef\x80\x96) always follows the file count; anchoring on it
-            -- correctly skips the leading subdir count when both dirs and files are present.
-            -- mandatory may be a number (e.g. book count) in collections/group-view context.
+            
             local _file_count = type(self.mandatory) == "string"
                 and (tonumber(self.mandatory:match("(%d+)%s*\xef\x80\x96")) or 0) or 0
             self._zen_folder_count = (settings.show_item_count.get() and _file_count > 0)
                 and _file_count or nil
-            local directory = self:_getTextBoxes { w = size.w, h = size.h }
+            
+            local directory = self:_getTextBoxes { w = portrait_w, h = portrait_h }
 
             local folder_name_widget
-            -- When the title strip is active it renders the folder name below
-            -- the cover; suppress the on-cover overlay to avoid duplication.
             if settings.show_folder_name.get() and not MosaicMenuItem._zen_title_strip_patched then
                 local NameContainer = settings.name_centered.get() and CenterContainer or BottomContainer
                 local name_frame = FrameContainer:new {
@@ -1519,20 +882,11 @@ elseif img.no_image then
                 folder_name_widget = VerticalSpan:new { width = 0 }
             end
 
-            -- Badge is now drawn in paintTo (paint-time, scales with corner_mark_size).
             local nbitems_widget = VerticalSpan:new { width = 0 }
 
-            -- Center the image exactly like a book cover so folder covers align with
-            -- their row neighbours in all grid layouts.
-            -- Loose grids (e.g. 3×2): enough space above the image → horizontal tab
-            --   lines float above the cover (classic look).
-            -- Tight grids (e.g. 3×3): no clear space above → vertical spine lines on
-            --   the left of the cover, mirroring list mode.
-            -- In both cases the line closer to the cover is longer; the outer one is
-            -- shorter.  Rounded corners inset the lines on both sides.
-            local centered_top  = math.floor((eff_h - dimen.h) / 2)
-            local top_h         = 2 * (Folder.edge.thick + Folder.edge.margin)
-            local spine_gap     = Screen:scaleBySize(9)
+            local centered_top = math.floor((eff_h - dimen.h) / 2)
+            local top_h = 2 * (Folder.edge.thick + Folder.edge.margin)
+            local spine_gap = Screen:scaleBySize(9)
             local use_top_lines = centered_top >= top_h
                 or math.floor((self.width - dimen.w) / 2) < spine_gap
 
@@ -1546,10 +900,8 @@ elseif img.no_image then
             local decoration_layer
             if not BookInfoManager:getSetting("folder_spine_lines_show") then
                 if use_top_lines then
-                    -- Horizontal lines above the image.
-                    -- line1 (top / farther from cover): shorter.  line2 (bottom / closer): longer.
                     local line1_w = math.max(0, math.floor(dimen.w * (Folder.edge.width ^ 2)) - 2 * line_inset)
-                    local line2_w = math.max(0, math.floor(dimen.w * Folder.edge.width)       - 2 * line_inset)
+                    local line2_w = math.max(0, math.floor(dimen.w * Folder.edge.width) - 2 * line_inset)
                     decoration_layer = TopContainer:new {
                         dimen = { w = self.width, h = self.height },
                         VerticalGroup:new {
@@ -1571,13 +923,9 @@ elseif img.no_image then
                         },
                     }
                 else
-                    -- Vertical spine lines to the left of the cover image.
-                    -- line1 (outer / farther from cover): shorter.  line2 (inner / closer): longer.
-                    local spine_x   = math.max(0, math.floor((self.width - dimen.w) / 2))
-                    local line1_h   = math.max(0, math.floor(dimen.h * (Folder.edge.width ^ 2)) - 2 * line_inset)
-                    local line2_h   = math.max(0, math.floor(dimen.h * Folder.edge.width)       - 2 * line_inset)
-                    -- Use eff_h so spine lines center within the cover area, not the full
-                    -- cell (which includes the strip region when called via deferred refresh).
+                    local spine_x = math.max(0, math.floor((self.width - dimen.w) / 2))
+                    local line1_h = math.max(0, math.floor(dimen.h * (Folder.edge.width ^ 2)) - 2 * line_inset)
+                    local line2_h = math.max(0, math.floor(dimen.h * Folder.edge.width) - 2 * line_inset)
                     decoration_layer = LeftContainer:new {
                         dimen = { w = self.width, h = eff_h },
                         HorizontalGroup:new {
@@ -1604,12 +952,11 @@ elseif img.no_image then
 
             local widget = OverlapGroup:new {
                 dimen = { w = self.width, h = self.height },
-                -- Layer 1: image cover + overlays, centered to match adjacent book covers.
                 VerticalGroup:new {
                     VerticalSpan:new { width = centered_top },
                     CenterContainer:new {
-                        dimen = { w = self.width, h = dimen.h },
-                        OverlapGroup:new {
+                         dimen = { w = self.width, h = dimen.h },
+                         OverlapGroup:new {
                             dimen = dimen,
                             image_widget,
                             folder_name_widget,
@@ -1617,7 +964,6 @@ elseif img.no_image then
                         },
                     },
                 },
-                -- Layer 2: tab lines above (loose grids) or spine lines left (tight grids).
                 decoration_layer,
             }
             if self._underline_container[1] then
@@ -1629,13 +975,8 @@ elseif img.no_image then
         end
 
         function MosaicMenuItem:_getTextBoxes(dimen)
-            -- Use entry-counted books when available (correct in search results and
-            -- move-dialog folders where mandatory uses a different/absent glyph format).
             local nb_font_size = dimen.badge_font_size or Folder.face.nb_items_font_size
 
-            -- Reserve a fixed height so the directory text doesn't crowd the badge
-            -- area at the top of the cover.  Use the same font as before for the
-            -- height probe so we don't need to know corner_mark_size here.
             local badge_ref = TextWidget:new {
                 text = "0",
                 face = Font:getFace("cfont", nb_font_size),
@@ -1646,19 +987,15 @@ elseif img.no_image then
             badge_ref:free()
 
             local text = self.text
-            if text:match("/$") then text = text:sub(1, -2) end -- remove "/"
+            if text:match("/$") then text = text:sub(1, -2) end
             text = BD.directory(text)
             local available_height = dimen.h - 2 * badge_h
             local dir_font_size = Folder.face.dir_max_font_size
-            local min_font_size = 14  -- shrink to this before allowing wrap/overflow
-            local x_pad = Screen:scaleBySize(4)  -- horizontal breathing room
+            local min_font_size = 14
+            local x_pad = Screen:scaleBySize(4)
             local text_w = dimen.w - 2 * x_pad
             local directory
 
-            -- Phase 1: shrink font until the text fits on a single line within
-            -- text_w (cover width minus horizontal padding).  Using a single-line
-            -- TextWidget probe avoids the awkward two-words-per-line wrapping that
-            -- happens at large font sizes on narrow covers.
             local probe
             local single_line_fits = false
             while dir_font_size >= min_font_size do
@@ -1677,10 +1014,6 @@ elseif img.no_image then
                 dir_font_size = dir_font_size - 1
             end
 
-            -- Always render at dimen.w so the background FrameContainer spans the
-            -- full cover width.  x_pad is only used in the probe above to ensure
-            -- the chosen font has comfortable breathing room; the natural centering
-            -- of the text inside the full-width widget provides the visual padding.
             if single_line_fits then
                 probe:free()
                 directory = TextBoxWidget:new {
@@ -1691,8 +1024,6 @@ elseif img.no_image then
                     bold      = true,
                 }
             else
-                -- Could not fit on one line even at min_font_size; allow up to 2 lines
-                -- then ellipsis so very long names (e.g. group view) are clipped cleanly.
                 if probe then probe:free() end
                 local line_probe = TextWidget:new {
                     text = "Ag", face = Font:getFace("cfont", min_font_size),
@@ -1715,10 +1046,10 @@ elseif img.no_image then
             return directory
         end
 
-        -- list mode cover
+        -- List mode cover handling
         do
             local ListMenu = require("listmenu")
-            local ListMenuItem = get_upvalue(ListMenu._updateItemsBuildUI, "ListMenuItem")
+            local ListMenuItem = Cover.getUpvalue(ListMenu._updateItemsBuildUI, "ListMenuItem")
             if ListMenuItem then
                 local original_list_update = ListMenuItem.update
 
@@ -1726,8 +1057,6 @@ elseif img.no_image then
                     original_list_update(self, ...)
                     if self.entry.is_go_up then return end
                     if self._foldercover_processed or self.menu.no_refresh_covers then return end
-                    -- Only handle folder items; file items are handled by CoverBrowser directly.
-                    -- Do not gate on mandatory: search results don't set it on directory items.
                     if self.entry.is_file or self.entry.file then return end
                     local dir_path = self.entry and self.entry.path
                     if not dir_path then return end
@@ -1757,64 +1086,43 @@ elseif img.no_image then
                         self._foldercover_processed = true
                         return
                     end
-                    _chooser._dummy = true
-                    local entries = _chooser:genItemTableFromPath(dir_path)
-                    _chooser._dummy = false
-                    if not entries then
-                        self._foldercover_processed = true                        return
-                    end
 
-                    -- Collect covers based on mode
-                    -- Collect covers based on mode
-                    local is_gallery = G_reader_settings:isTrue("folder_gallery_mode")
-                   local is_stack = G_reader_settings:isTrue("folder_stack_mode")
-                    local max_covers
-                    local copy_bb
-                    if is_gallery then
-                        max_covers = 4
-                        copy_bb = true
-                    elseif is_stack then
-                        max_covers = 3
-                        copy_bb = true
+                    -- Use unified makeCover - handles everything
+                    local folder_name = dir_path:match("([^/]+)/?$") or dir_path
+                    folder_name = BD.directory(folder_name)
+                    
+                    -- Get dimensions for list mode
+                    local underline_h = 1
+                    local dimen_h = self.height - 2 * underline_h
+                    local border_size = Size.border.thin
+                    local cover_v_pad = Screen:scaleBySize(4)
+                    local max_img = dimen_h - 2 * border_size - 2 * cover_v_pad
+                    local ratio = Cover.getRatio()
+                    local cover_w = math.floor(max_img * ratio)
+                    
+                    local cover_widget, mode, scenario = Cover.makeCover(dir_path, _chooser, {
+                        is_folder = true,
+                        max_w = cover_w + 2 * border_size,
+                        max_h = max_img + 2 * border_size,
+                        folder_name = folder_name,
+                    })
+                    
+                    if cover_widget then
+                        self._foldercover_processed = true
+                        self:_setListFolderCover { image_widget = cover_widget }
                     else
-                        max_covers = 1
-                        copy_bb = false
-                    end
-                    local covers = collectCoversFromDir(dir_path, _chooser, max_covers, 2, copy_bb, entries)
-
-                    if is_gallery then
-                        if #covers == 0 then
-                            self:_setListFolderCover { no_image = true }
-                        else
-                            self._foldercover_processed = true
-                            self:_setListFolderCover { gallery = covers }
-                        end
-                    elseif is_stack then
-                        if #covers == 0 then
-                            self:_setListFolderCover { no_image = true }
-                        else
-                            self._foldercover_processed = true
-                            self:_setListFolderCover { stack = covers }
-                        end
-                    else
-                        if #covers > 0 then
-                            self._foldercover_processed = true
-                            self:_setListFolderCover { data = covers[1].data, w = covers[1].w, h = covers[1].h }
-                        else
-                            self:_setListFolderCover { no_image = true }
-                        end
+                        self:_setListFolderCover { no_image = true }
                     end
                 end
 
                 function ListMenuItem:_setListFolderCover(img)
-                    local underline_h = 1 -- same as self.underline_h = 1 set in ListMenuItem:init()
+                    local underline_h = 1
                     local border_size = Size.border.thin
-                    local cover_v_pad = Screen:scaleBySize(4)  -- matches bll top+bottom padding
+                    local cover_v_pad = Screen:scaleBySize(4)
                     local dimen_h = self.height - 2 * underline_h
-                    local cover_zone_w = dimen_h -- squared, matches book cover zone in list mode
+                    local cover_zone_w = dimen_h
                     local max_img = dimen_h - 2 * border_size - 2 * cover_v_pad
 
-                    -- Font sizes scaled to item height, matching ListMenuItem's _fontSize formula.
                     local scale_by_size = Screen:scaleBySize(1000000) * (1 / 1000000)
                     local function _fontSize(nominal, max_size)
                         local fs = math.floor(nominal * dimen_h * (1 / 64) / scale_by_size)
@@ -1822,285 +1130,47 @@ elseif img.no_image then
                         return fs
                     end
 
-                    -- Build the cover image widget (left side, squared zone, same as book covers).
-                    -- spine_x = left edge of the cover image within the cover zone (for spine line placement).
-                    local wleft
-                    local spine_x
-                    if img.gallery then
-                        local covers = img.gallery
-                        local gall_h = max_img
-                       local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
-                       local num, den = ratio_str:match("(%d+):(%d+)")
-                       local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
-                       local gall_w = math.floor(max_img * target_ratio)
-                        local cover_w = gall_w + 2 * border_size
-                        local cover_h = gall_h + 2 * border_size
-                        spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
-                        if #covers == 0 then
-                            -- No covers extracted yet; show placeholder and keep retrying.
-                            wleft = CenterContainer:new {
-                                dimen = { w = cover_zone_w, h = dimen_h },
-                                FrameContainer:new {
-                                    width = cover_w, height = cover_h,
-                                    margin = 0, padding = 0, bordersize = border_size,
-                                    background = Blitbuffer.COLOR_LIGHT_GRAY,
-                                    CenterContainer:new {
-                                        dimen = { w = gall_w, h = gall_h },
-                                        VerticalSpan:new { width = 1 },
-                                    },
-                                },
-                            }
-                        else
-                            local sep = 1
-                            local half_w  = math.floor((gall_w - sep) / 2)
-                            local half_w2 = gall_w - sep - half_w
-                            local half_h  = math.floor((gall_h - sep) / 2)
-                            local half_h2 = gall_h - sep - half_h
-                            local cell_dims = {
-                                { w = half_w,  h = half_h  },
-                                { w = half_w2, h = half_h  },
-                                { w = half_w,  h = half_h2 },
-                                { w = half_w2, h = half_h2 },
-                            }
-                            local cells = {}
-                            for i = 1, 4 do
-                                local c = covers[i]
-                                local cd = cell_dims[i]
-                                if c then
-                                    cells[i] = CenterContainer:new {
-                                        dimen = { w = cd.w, h = cd.h },
-                                        ImageWidget:new {
-                                            image  = c.data,
-                                            width  = cd.w,
-                                            height = cd.h,
-                                        },
-                                    }
-                                else
-                                    cells[i] = CenterContainer:new {
-                                        dimen = { w = cd.w, h = cd.h },
-                                        VerticalSpan:new { width = 1 },
-                                    }
-                                end
+                    local ratio = Cover.getRatio()
+                    local portrait_w = math.floor(max_img * ratio)
+                    local cover_w = portrait_w + 2 * border_size
+                    local spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
+                    
+                    local white_bg = function() return Blitbuffer.COLOR_WHITE end
+                    local light_gray_bg = function() return Blitbuffer.COLOR_LIGHT_GRAY end
+                    
+                    local cover_display_widget = img.image_widget
+                    
+                    if not cover_display_widget then
+                        if img.gallery then
+                            cover_display_widget = Cover.drawGallery(img.gallery, portrait_w, max_img, border_size, light_gray_bg)
+                        elseif img.stack then
+                            cover_display_widget = Cover.drawStack(img.stack, portrait_w, max_img, border_size, light_gray_bg)
+                        elseif img.no_image then
+                            local folder_name = self.text:gsub("/$", "")
+                            folder_name = BD.directory(folder_name)
+                            cover_display_widget = Cover.drawNoImage(folder_name, portrait_w, max_img, border_size, white_bg)
+                        elseif img.data then
+                            cover_display_widget = Cover.drawSingle(img.data, portrait_w, max_img, border_size, light_gray_bg)
+                        elseif img.file then
+                            local img_options = { file = img.file }
+                            if img.scale_to_fit then
+                                img_options.scale_factor = math.max(max_img / img.h, portrait_w / img.w)
                             end
-                            wleft = CenterContainer:new {
-                                dimen = { w = cover_zone_w, h = dimen_h },
-                                FrameContainer:new {
-                                    width = cover_w, height = cover_h,
-                                    margin = 0, padding = 0, bordersize = border_size,
-                                    background = Blitbuffer.COLOR_LIGHT_GRAY,
-                                    CenterContainer:new {
-                                        dimen = { w = gall_w, h = gall_h },
-                                        VerticalGroup:new {
-                                            HorizontalGroup:new {
-                                                cells[1],
-                                                LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = sep, h = half_h } },
-                                                cells[2],
-                                            },
-                                            LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = gall_w, h = sep } },
-                                            HorizontalGroup:new {
-                                                cells[3],
-                                                LineWidget:new { background = Blitbuffer.COLOR_WHITE, dimen = { w = sep, h = half_h2 } },
-                                                cells[4],
-                                            },
-                                        },
-                                    },
-                                },
-                            }
-                        end
-                    elseif img.stack then
-                        -- Stack effect for list mode
-                        local covers = img.stack
-                        local gall_h = max_img
-                        local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
-                        local num, den = ratio_str:match("(%d+):(%d+)")
-                        local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
-                        local gall_w = math.floor(max_img * target_ratio)
-                        local cover_w = gall_w + 2 * border_size
-                        local cover_h = gall_h + 2 * border_size
-                        spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
-                        
-                        if #covers == 0 then
-                            wleft = CenterContainer:new {
-                                dimen = { w = cover_zone_w, h = dimen_h },
-                                FrameContainer:new {
-                                    width = cover_w, height = cover_h,
-                                    margin = 0, padding = 0, bordersize = border_size,
-                                    background = Blitbuffer.COLOR_LIGHT_GRAY,
-                                    CenterContainer:new {
-                                        dimen = { w = gall_w, h = gall_h },
-                                        VerticalSpan:new { width = 1 },
-                                    },
-                                },
-                            }
+                            local image = ImageWidget:new(img_options)
+                            image:_render()
+                            cover_display_widget = image
                         else
-                            -- Create canvas for stacked covers
-                            local final_bb = Blitbuffer.new(gall_w, gall_h)
-                            final_bb:fill(Blitbuffer.COLOR_WHITE)
-                            
-                            local book_width = gall_w * 0.85
-                            local book_height = book_width * (gall_h / gall_w)
-                            local base_x = math.floor((gall_w - book_width) / 2)
-                            local base_y = math.floor((gall_h - book_height) / 2)
-                            
-                            local stack_count = #covers
-                            local offsets
-                            if stack_count == 1 then
-                                offsets = { { x = 0, y = 6 } }
-                            elseif stack_count == 2 then
-                                offsets = { { x = 8, y = 0 }, { x = -8, y = 12 } }
-                            else
-                                offsets = { { x = 12, y = 0 }, { x = 0, y = 6 }, { x = -12, y = 12 } }
-                            end
-                            
-                            for i = math.min(stack_count, 3), 1, -1 do
-                                local cover = covers[i]
-                                local offset_idx = math.min(stack_count - i + 1, #offsets)
-                                local offset = offsets[offset_idx] or { x = 0, y = 0 }
-                                local img_widget = ImageWidget:new {
-                                    image = cover.data,
-                                    width = book_width,
-                                    height = book_height,
-                                }
-                                img_widget:paintTo(final_bb, base_x + offset.x, base_y + offset.y)
-                            end
-                            
-                            -- Draw folder icon overlay (bottom)
-                            local plugin_root = require("common/plugin_root")
-                            local folder_icon_width = gall_w
-                            local folder_icon_height = folder_icon_width * 0.65
-                            local folder_icon = ImageWidget:new{
-                                file = plugin_root .. "/icons/folder.png",
-                                width = folder_icon_width,
-                                height = folder_icon_height,
-                                alpha = true,
-                            }
-                            folder_icon:paintTo(final_bb, 0, gall_h - folder_icon_height)
-                            
-                            wleft = CenterContainer:new {
-                                dimen = { w = cover_zone_w, h = dimen_h },
-                                FrameContainer:new {
-                                    width = cover_w, height = cover_h,
-                                    margin = 0, padding = 0, bordersize = border_size,
-                                    background = Blitbuffer.COLOR_LIGHT_GRAY,
-                                    CenterContainer:new {
-                                        dimen = { w = gall_w, h = gall_h },
-                                        ImageWidget:new {
-                                            image = final_bb,
-                                            width = gall_w,
-                                            height = gall_h,
-                                        },
-                                    },
-                                },
-                            }
+                            local folder_name = self.text:gsub("/$", "")
+                            folder_name = BD.directory(folder_name)
+                            cover_display_widget = Cover.drawNoImage(folder_name, portrait_w, max_img, border_size, white_bg)
                         end
-elseif img.no_image then
-    local ratio_str = G_reader_settings:readSetting("uniform_cover_ratio") or "2:3"
-    local num, den = ratio_str:match("(%d+):(%d+)")
-    local target_ratio = (tonumber(num) or 2) / (tonumber(den) or 3)
-    local portrait_w = math.floor(max_img * target_ratio)
-    local cover_w = portrait_w + 2 * border_size
-    spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
-    
-    -- 创建画布
-    local final_bb = Blitbuffer.new(portrait_w, max_img, Blitbuffer.TYPE_BBRGB32)
-    final_bb:fill(Blitbuffer.COLOR_WHITE)
-    
-    -- 获取文件夹名称
-    local folder_name = self.text:gsub("/$", "")
-    folder_name = BD.directory(folder_name)
-    
-    -- 动态调整字体大小
-    local font_size = 20
-    local min_font = 10
-    local text_widget = nil
-    
-    while font_size >= min_font do
-        if text_widget then text_widget:free() end
-        local face = Font:getFace("cfont", font_size)
-        text_widget = TextBoxWidget:new{
-            text = folder_name,
-            face = face,
-            width = portrait_w - 16,
-            alignment = "center",
-            bold = true,
-            fgcolor = Blitbuffer.COLOR_BLACK,
-            bgcolor = Blitbuffer.COLOR_WHITE,
-        }
-        if text_widget:getSize().h <= max_img - 10 then
-            break
-        end
-        font_size = font_size - 1
-    end
-    
-    text_widget.handleEvent = function() return false end
-    
-    if text_widget:getSize().h > max_img - 10 then
-        text_widget:free()
-        local face = Font:getFace("cfont", min_font)
-        text_widget = TextBoxWidget:new{
-            text = folder_name,
-            face = face,
-            width = portrait_w - 16,
-            alignment = "center",
-            bold = true,
-            fgcolor = Blitbuffer.COLOR_BLACK,
-            bgcolor = Blitbuffer.COLOR_WHITE,
-            height = max_img - 10,
-            height_adjust = true,
-            height_overflow_show_ellipsis = true,
-        }
-        text_widget.handleEvent = function() return false end
-    end
-    
-    local y = (max_img - text_widget:getSize().h) / 2
-    text_widget:paintTo(final_bb, (portrait_w - text_widget:getSize().w) / 2, y)
-    text_widget:free()
-    
-    wleft = CenterContainer:new {
-        dimen = { w = cover_zone_w, h = dimen_h },
-        FrameContainer:new {
-            width = cover_w,
-            height = max_img + 2 * border_size,
-            margin = 0, padding = 0, bordersize = border_size,
-            background = Blitbuffer.COLOR_LIGHT_GRAY,
-            CenterContainer:new {
-                dimen = { w = portrait_w, h = max_img },
-                ImageWidget:new {
-                    image = final_bb,
-                    width = portrait_w,
-                    height = max_img,
-                },
-            },
-        },
-    }
-                    else
-                        local img_options = { file = img.file, image = img.data }
-                        if img.scale_to_fit then
-                            img_options.scale_factor = math.max(max_img / img.w, max_img / img.h)
-                            img_options.width = max_img
-                            img_options.height = max_img
-                        else
-                            img_options.scale_factor = math.min(max_img / img.w, max_img / img.h)
-                        end
-                        local image = ImageWidget:new(img_options)
-                        image:_render()
-                        local image_size = image:getSize()
-                        local cover_w = image_size.w + 2 * border_size
-                        spine_x = math.max(0, math.floor((cover_zone_w - cover_w) / 2))
-                        wleft = CenterContainer:new {
-                            dimen = { w = cover_zone_w, h = dimen_h },
-                            FrameContainer:new {
-                                width = cover_w,
-                                height = image_size.h + 2 * border_size,
-                                margin = 0, padding = 0, bordersize = border_size,
-                                image,
-                            },
-                        }
                     end
-
-                    -- Spine lines slightly offset from the left edge of the cover image.
-                    -- line1 (outer, farther from cover) = shorter; line2 (inner, closer) = longer.
-                    -- Mirrors the vertical-spine proportions used in _setFolderCover (tight mosaic grids).
+                    
+                    local wleft = CenterContainer:new {
+                        dimen = { w = cover_zone_w, h = dimen_h },
+                        cover_display_widget,
+                    }
+                    -- Spine lines
                     local plug_rc = _plugin or rawget(_G, "__ZEN_UI_PLUGIN")
                     local rounded = plug_rc
                         and type(plug_rc.config) == "table"
@@ -2108,9 +1178,9 @@ elseif img.no_image then
                         and plug_rc.config.features.browser_cover_rounded_corners == true
                     local line_inset = rounded and Screen:scaleBySize(4) or 0
                     local line1_h = math.max(0, math.floor(dimen_h * (Folder.edge.width ^ 2)) - 2 * line_inset)
-                    local line2_h = math.max(0, math.floor(dimen_h *  Folder.edge.width)       - 2 * line_inset)
+                    local line2_h = math.max(0, math.floor(dimen_h * Folder.edge.width) - 2 * line_inset)
                     local spine_gap = Screen:scaleBySize(8)
-                    self._cover_frame = wleft[1]  -- FrameContainer child; used by paintTo for rounded corners
+                    self._cover_frame = wleft[1]
                     if not BookInfoManager:getSetting("folder_spine_lines_show") then
                         wleft = OverlapGroup:new {
                             dimen = { w = cover_zone_w, h = dimen_h },
@@ -2139,24 +1209,23 @@ elseif img.no_image then
                         }
                     end
 
-                    -- Right-side count column: folder count on top, file count below.
+                    -- Right column with counts
                     local pad = Screen:scaleBySize(10)
-                    local wmain_left_pad = Screen:scaleBySize(5) -- narrower padding when cover present
-                    -- mandatory format: "N <\uF114> M <\uF016>" or just "M <\uF016>"
+                    local wmain_left_pad = Screen:scaleBySize(5)
                     local _file_count = tonumber((self.mandatory or ""):match("(%d+)%s*\xef\x80\x96")) or 0
-                    local _dir_count  = tonumber((self.mandatory or ""):match("(%d+)%s*\xef\x84\x94")) or 0
+                    local _dir_count = tonumber((self.mandatory or ""):match("(%d+)%s*\xef\x84\x94")) or 0
                     local fs_right = _fontSize(16, 20)
                     local file_label = tostring(_file_count) .. " " .. (_file_count == 1 and _("Book") or _("Books"))
-                    local dir_label  = tostring(_dir_count)  .. " " .. (_dir_count  == 1 and _("Folder") or _("Folders"))
+                    local dir_label = tostring(_dir_count) .. " " .. (_dir_count == 1 and _("Folder") or _("Folders"))
                     local wfile = TextWidget:new{ text = file_label, face = Font:getFace("cfont", fs_right), padding = 0 }
-                    local wdir  = TextWidget:new{ text = dir_label,  face = Font:getFace("cfont", fs_right), padding = 0 }
+                    local wdir = TextWidget:new{ text = dir_label, face = Font:getFace("cfont", fs_right), padding = 0 }
                     local wright_w = math.max(wfile:getWidth(), _dir_count > 0 and wdir:getWidth() or 0)
                     local wright_right_pad = pad
                     local wright = VerticalGroup:new{}
                     if _dir_count > 0 then table.insert(wright, wdir) end
                     table.insert(wright, wfile)
 
-                    -- Folder name widget (middle area).
+                    -- Folder name (middle column)
                     local text = self.text
                     if text:match("/$") then text = text:sub(1, -2) end
                     text = BD.directory(text)
@@ -2172,6 +1241,7 @@ elseif img.no_image then
                         height_overflow_show_ellipsis = true,
                     }
 
+                    -- Assemble final widget
                     local dimen = { w = self.width, h = dimen_h }
                     local widget = OverlapGroup:new {
                         dimen = dimen,
@@ -2205,25 +1275,13 @@ elseif img.no_image then
             end
         end
 
-        -- Hook CoverBrowser's onBookInfoUpdated.
-        -- Flash suppression: the per-item _zen_ancestor_cover flag in update()
-        -- blocks original_update() from rebuilding a FakeCover while bookinfo is
-        -- not yet in the DB at the item's actual path.  Once extraction completes
-        -- (which is when this event fires), the guard detects the now-available
-        -- bookinfo, clears itself, and lets original_update() install the real cover.
-        -- So orig_biu MUST run for migrated paths — suppressing it would freeze the
-        -- ancestor cover on screen indefinitely.  Just clear the migration flag here
-        -- so future update() calls don't re-attempt the SQL migration.
+        -- Hook CoverBrowser's onBookInfoUpdated
         if type(plugin.onBookInfoUpdated) == "function" then
             local orig_biu = plugin.onBookInfoUpdated
             function plugin:onBookInfoUpdated(filepath, bookinfo)
-                -- Clear migration flag (prevents redundant SQL on future update calls)
-                -- but always let orig_biu run so the item gets its real cover.
                 zen_migrated_paths[filepath] = nil
                 orig_biu(self, filepath, bookinfo)
-                -- Invalidate item_table cache: opened/bold state changed without dir mtime bump.
                 _item_table_cache = nil
-                -- Trigger deferred refresh for any folder items awaiting child covers.
                 local fm = require("apps/filemanager/filemanager").instance
                 local fc = fm and fm.file_chooser
                 if fc and pending_folders_by_menu[fc] then
@@ -2243,13 +1301,11 @@ elseif img.no_image then
             if item then
                 item.sub_item_table[#item.sub_item_table].separator = true
                 for i, setting in pairs(settings) do
-                    if
-                        not getMenuItem( -- already exists ?
+                    if not getMenuItem(
                             menu_items.filebrowser_settings,
                             _("Mosaic and detailed list settings"),
                             setting.text
-                        )
-                    then
+                        ) then
                         table.insert(item.sub_item_table, {
                             text = setting.text,
                             checked_func = function() return setting.get() end,
@@ -2264,10 +1320,6 @@ elseif img.no_image then
         end
     end
 
-    -- `require("coverbrowser")` fails at plugin-init time because the plugin
-    -- hasn't been instantiated yet.  By the time FileManager:setupLayout() runs
-    -- (inside FileManager:init()), all plugins — including coverbrowser — have
-    -- already been registered on `self`.  Hook there instead.
     local FileManager = require("apps/filemanager/filemanager")
     local orig_fm_setupLayout = FileManager.setupLayout
     local coverbrowser_patched = false
@@ -2277,8 +1329,6 @@ elseif img.no_image then
         if not coverbrowser_patched and self.coverbrowser then
             patchCoverBrowser(self.coverbrowser)
             coverbrowser_patched = true
-            -- The file list may have already rendered before patching completed.
-            -- Schedule a refresh so our cover rendering runs on all visible items.
             local UIManager = require("ui/uimanager")
             UIManager:scheduleIn(0, function()
                 if self.file_chooser then
@@ -2288,6 +1338,5 @@ elseif img.no_image then
         end
     end
 end
-
 
 return apply_browser_folder_cover

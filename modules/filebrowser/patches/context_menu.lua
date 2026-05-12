@@ -1001,15 +1001,45 @@ local function apply_context_menu()
                             align = "left",
                             callback = function()
                                 UIManager:close(edit_dialog)
-                                file_manager:onToggleSelectMode()
-                                if is_file then
-                                    file_manager.selected_files[file] = true
-                                    item.dim = true
-                                    self_fc:updateItems(1, true)
-                                end
-                            end,
-                        },
-                    },
+                                 -- Detect current interface and enter select mode
+                                 if file_manager.collections and file_manager.collections.booklist_menu then
+                                     if not file_manager.collections.selected_files then
+                                         file_manager.collections:toggleSelectMode()
+                                     end
+                                     if is_file then
+                                         file_manager.collections.selected_files[file] = true
+                                         item.dim = true
+                                         self_fc:updateItems(1, true)
+                                     end
+                                 elseif file_manager.history and file_manager.history.booklist_menu then
+                                     if not file_manager.history.selected_files then
+                                         file_manager.history:toggleSelectMode()
+                                     end
+                                     if is_file then
+                                         file_manager.history.selected_files[file] = true
+                                         item.dim = true
+                                         self_fc:updateItems(1, true)
+                                     end
+                                 elseif file_manager.filesearcher and file_manager.filesearcher.booklist_menu then
+                                     if not file_manager.filesearcher.selected_files then
+                                         file_manager.filesearcher:setSelectMode()
+                                     end
+                                     if is_file then
+                                         file_manager.filesearcher.selected_files[file] = true
+                                         item.dim = true
+                                         self_fc:updateItems(1, true)
+                                     end
+                                 else
+                                     file_manager:onToggleSelectMode()
+                                     if is_file then
+                                         file_manager.selected_files[file] = true
+                                         item.dim = true
+                                         self_fc:updateItems(1, true)
+                                     end
+                                 end
+                             end,
+                         },
+                     },
                     {
                         {
                             text = "\u{F0190}  " .. _("Cut"),

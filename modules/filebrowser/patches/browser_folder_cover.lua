@@ -510,10 +510,6 @@ local function apply_browser_folder_cover()
 
         -- Main update implementation
         local function _zen_update_impl(self, ...)
-            -- Skip all folder cover logic for search results
-            if self.menu and self.menu.name == "filesearcher" then
-                return original_update(self, ...)
-            end
 
             if self._zen_ancestor_cover then
                 if self.entry and (self.entry.is_file or self.entry.file) then
@@ -526,11 +522,15 @@ local function apply_browser_folder_cover()
                 self.refresh_dimen = nil
             end
 
+            -- Apply cover logic to search results as well
+            local is_search = self.menu and self.menu.name == "filesearcher"
+
             local is_non_fm = not (self.menu and (
                 self.menu.name == "filemanager"
                 or self.menu.name == "history"
                 or self.menu._zen_tab_id
-                or self.menu._zen_coll_list))
+                or self.menu._zen_coll_list
+                or is_search))
 
             if is_non_fm and (self.entry.is_file or self.entry.file) then
                 local _path = self.entry.path or self.entry.file or ""

@@ -222,11 +222,16 @@ local function apply_browser_cover_badges()
         local _badges_target_log_done = false
         function MosaicMenuItem:paintTo(bb, x, y)
             -- _zen_tab_id: group view detail menus; _zen_coll_list: collections; history by name.
+            local is_search = self.menu and self.menu.name == "filesearcher"
+            local is_collection = self.menu and self.menu._zen_coll_list
+
             local _is_fm = self.menu and (
                 self.menu.name == "filemanager"
                 or self.menu.name == "history"
                 or self.menu._zen_tab_id
-                or self.menu._zen_coll_list)
+                or self.menu._zen_coll_list    
+                or is_collection
+                    or is_search) 
             -- Clear the full cell to white before painting so that portrait
             -- covers (which are narrower than the cell) don't leave ghost pixels
             -- from a previously painted full-width placeholder in the margins.
@@ -254,7 +259,15 @@ local function apply_browser_cover_badges()
             end
 
             -- Resolve inner cover-frame sub-widget and current mark size
-            local target = self[1] and self[1][1] and self[1][1][1]
+            -- Resolve inner cover-frame sub-widget
+            local target = self._cover_frame or (self[1] and self[1][1] and self[1][1][1])
+
+            if not (target and target.dimen and target.dimen.y) then
+                local logger = require("logger")
+                logger.dbg("zen-ui:browser_cover_badges:paintTo: target not found")
+                return
+            end
+
             if not (target and target.dimen and target.dimen.y) then
                 local logger = require("logger")
                 logger.dbg("zen-ui:browser_cover_badges:paintTo: target not found, self[1]=",

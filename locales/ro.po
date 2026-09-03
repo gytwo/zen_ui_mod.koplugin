@@ -1,0 +1,1723 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: zen-ui 0.1.0\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ro\n"
+
+msgid "%1 (%2)"
+msgstr "%1 (%2)"
+
+msgid "%1 et al."
+msgstr "%1 et al."
+
+msgid "%1 mins left in chapter"
+msgstr "%1 min rămase în capitol"
+
+msgid "%d%% Read"
+msgstr "%d%% citit"
+
+msgid "(auto)"
+msgstr "(auto)"
+
+msgid "1 author"
+msgstr "1 autor"
+
+msgid "1 book"
+msgstr "1 carte"
+
+msgid "1 min left in chapter"
+msgstr "1 min rămas în capitol"
+
+msgid "1 series"
+msgstr "1 serie"
+
+msgid "1 tag"
+msgstr "1 etichetă"
+
+msgid "12-hour  (3:30 PM)"
+msgstr "12 ore  (3:30 PM)"
+
+msgid "12-hour time"
+msgstr "Format 12 ore"
+
+msgid "24-hour  (15:30)"
+msgstr "24 ore  (15:30)"
+
+msgid "< 1 min left in chapter"
+msgstr "< 1 min rămas în capitol"
+
+msgid "A minimal, clean, and simple interface for your e-reader.\n\nSwipe or tap Next to continue."
+msgstr "O interfață minimală, curată și simplă pentru e-reader-ul tău.\n\nGlisați sau atingeți Înainte pentru a continua."
+
+msgid "A short summary of what went wrong"
+msgstr "Un scurt rezumat al problemei"
+
+msgid "A simple tab-based bar at the bottom of your library.\nFully customizable to make it your own"
+msgstr "O bară simplă cu file în partea de jos a bibliotecii dvs.\nComplet personalizabilă după cum doriți."
+
+msgid "About"
+msgstr "Despre"
+
+msgid "Action: %1"
+msgstr "Acțiune: %1"
+
+msgid "Action: (none)"
+msgstr "Acțiune: (nimic)"
+
+msgid "Active tab color"
+msgstr "Culoare filă activă"
+
+msgid "Active tab color: "
+msgstr "Culoare filă activă: "
+
+msgid "Active tab RGB"
+msgstr "RGB filă activă"
+
+msgid "Active tab styling"
+msgstr "Stil filă activă"
+
+msgid "Active tab underline"
+msgstr "Subliniere filă activă"
+
+msgid "Add catalog"
+msgstr "Adaugă catalog"
+
+msgid "Add custom button"
+msgstr "Adaugă buton personalizat"
+
+msgid "Add folder…"
+msgstr "Adaugă folder…"
+
+msgid "Add to collection"
+msgstr "Adaugă în colecție"
+
+msgid "added"
+msgstr "adăugat"
+
+msgid "Additional home folders"
+msgstr "Foldere suplimentare de acasă"
+
+msgid "Advanced"
+msgstr "Avansat"
+
+msgid "Alexandre Dumas"
+msgstr "Alexandre Dumas"
+
+msgid "All"
+msgstr "Tot"
+
+msgid "All settings in one unified tab.\nCheck for and install Zen UI updates directly from your e-reader."
+msgstr "Toate setările într-o singură filă unificată.\nVerificați și instalați actualizările Zen UI direct de pe e-reader-ul dvs."
+
+msgid "All Time"
+msgstr "Tot timpul"
+
+msgid "Allow custom icons"
+msgstr "Permite pictograme personalizate"
+
+msgid "Allow delete in context menu"
+msgstr "Permite ștergerea din meniul contextual"
+
+msgid "Amber"
+msgstr "Chihlimbar"
+
+msgid "An item with that name already exists."
+msgstr "Există deja un element cu acest nume."
+
+msgid "An unobtrusive reader view with customizable top clock and bottom progress bar."
+msgstr "Vizualizare de citire discretă cu ceas personalizabil sus și bară de progres jos."
+
+msgid "Apply"
+msgstr "Aplică"
+
+msgid "Are you sure you want to exit KOReader?"
+msgstr "Sigur vrei să ieși din KOReader?"
+
+msgid "Are you sure you want to quit KOReader?"
+msgstr "Sigur vrei să închizi KOReader?"
+
+msgid "Are you sure you want to restart KOReader?"
+msgstr "Sigur vrei să repornești KOReader?"
+
+msgid "Arrange"
+msgstr "Aranjează"
+
+msgid "Arrange center items"
+msgstr "Aranjează elemente centrale"
+
+msgid "Arrange left items"
+msgstr "Aranjează elemente stânga"
+
+msgid "Arrange navbar tabs"
+msgstr "Aranjează filele barei de navigare"
+
+msgid "Arrange quick settings buttons"
+msgstr "Aranjează butoanele setărilor rapide"
+
+msgid "Arrange right items"
+msgstr "Aranjează elemente dreapta"
+
+msgid "Arrange tabs"
+msgstr "Aranjează filele"
+
+msgid "Ascending"
+msgstr "Ascendent"
+
+msgid "Authors"
+msgstr "Autori"
+
+msgid "authors"
+msgstr "autori"
+
+msgid "Authors & Series"
+msgstr "Autori și serii"
+
+msgid "Automatic suspend"
+msgstr "Suspendare automată"
+
+msgid "avg pages/day"
+msgstr "pag. med./zi"
+
+msgid "avg time/book"
+msgstr "timp med./carte"
+
+msgid "avg time/day"
+msgstr "timp med./zi"
+
+msgid "Badge size"
+msgstr "Dimensiunea insignei"
+
+msgid "Badges"
+msgstr "Insigne"
+
+msgid "Bar"
+msgstr "Bară"
+
+msgid "Battery"
+msgstr "Baterie"
+
+msgid "Battery Stats"
+msgstr "Statistici baterie"
+
+msgid "Beginning / End"
+msgstr "Început / Sfârșit"
+
+msgid "best day"
+msgstr "cea mai bună zi"
+
+msgid "best month"
+msgstr "cea mai bună lună"
+
+msgid "best week"
+msgstr "cea mai bună săptămână"
+
+msgid "Beta"
+msgstr "Beta"
+
+msgid "Blue"
+msgstr "Albastru"
+
+msgid "Bold"
+msgstr "Îngroșat"
+
+msgid "Bold active tab"
+msgstr "Filă activă îngroșată"
+
+msgid "Bold text"
+msgstr "Text îngroșat"
+
+msgid "Book"
+msgstr "Carte"
+
+msgid "Book added to download list"
+msgstr "Carte adăugată în lista de descărcări"
+
+msgid "Book cover - black background"
+msgstr "Copertă — fundal negru"
+
+msgid "Book information"
+msgstr "Informații carte"
+
+msgid "Book Status"
+msgstr "Stare carte"
+
+msgid "books"
+msgstr "cărți"
+
+msgid "Books"
+msgstr "Cărți"
+
+msgid "books finished"
+msgstr "cărți terminate"
+
+msgid "Books tab label"
+msgstr "Etichetă filă Cărți"
+
+msgid "Books tab label: "
+msgstr "Etichetă filă Cărți: "
+
+msgid "Bottom"
+msgstr "Jos"
+
+msgid "Bottom status bar"
+msgstr "Bara de stare inferioară"
+
+msgid "Brief description of the bug"
+msgstr "Descriere scurtă a erorii"
+
+msgid "Brightness"
+msgstr "Luminozitate"
+
+msgid "Brightness schedule"
+msgstr "Planificare luminozitate"
+
+msgid "Browse your entire library organized by author or series.\nAccess these views anytime from the navigation bar."
+msgstr "Răsfoiți întreaga bibliotecă organizată pe autori sau serii.\nAccesați aceste vizualizări oricând din bara de navigare."
+
+msgid "Bug description (optional)"
+msgstr "Descrierea erorii (opțional)"
+
+msgid "Bug report submitted!"
+msgstr "Raport trimis!"
+
+msgid "Bug report title"
+msgstr "Titlul raportului de eroare"
+
+msgid "Bullet"
+msgstr "Punct"
+
+msgid "Buttons"
+msgstr "Butoane"
+
+msgid "Calendar"
+msgstr "Calendar"
+
+msgid "Calibre"
+msgstr "Calibre"
+
+msgid "Calibre plugin is not installed."
+msgstr "Pluginul Calibre nu este instalat."
+
+msgid "Calibre Search"
+msgstr "Căutare Calibre"
+
+msgid "Cancel"
+msgstr "Anulare"
+
+msgid "Cannot open last document"
+msgstr "Nu se poate deschide ultimul document"
+
+msgid "Casual Chess"
+msgstr "Șah casual"
+
+msgid "Center"
+msgstr "Centru"
+
+msgid "Center items"
+msgstr "Elemente centrale"
+
+msgid "Centered Pages"
+msgstr "Pagini centrate"
+
+msgid "Change folder"
+msgstr "Schimbă dosarul"
+
+msgid "Change Row"
+msgstr "Schimbă rândul"
+
+msgid "Chapter Time + %"
+msgstr "Timp capitol + %"
+
+msgid "Check for updates"
+msgstr "Verifică actualizări"
+
+msgid "Checking for updates…"
+msgstr "Se verifică actualizările…"
+
+msgid "Chess"
+msgstr "Șah"
+
+msgid "Choose a different folder"
+msgstr "Alegeți un alt dosar"
+
+msgid "Choose a preset for your reading progress bar."
+msgstr "Alegeți o presetare pentru bara de progres de lectură."
+
+msgid "Choose which tabs appear in your navigation bar.\nYou can rearrange or adjust these anytime in Settings."
+msgstr "Alegeți ce file apar în bara de navigare.\nPuteți rearanja sau ajusta oricând în Setări."
+
+msgid "Classic (filename only)"
+msgstr "Clasic (doar numele fișierului)"
+
+msgid "Clean, minimal library with mosaic cover art and list views, reduced clutter, and a streamlined context menu."
+msgstr "Bibliotecă curată și minimalistă cu vizualizare mozaic de coperte și vizualizare listă, mai puțin aglomerată și cu meniu contextual simplificat."
+
+msgid "Clear"
+msgstr "Șterge"
+
+msgid "Clear all gestures"
+msgstr "Șterge toate gesturile"
+
+msgid "Close"
+msgstr "Închide"
+
+msgid "Cloud"
+msgstr "Nor"
+
+msgid "Cloud storage"
+msgstr "Stocare în nor"
+
+msgid "Collections"
+msgstr "Colecții"
+
+msgid "Colored active tab"
+msgstr "Filă activă colorată"
+
+msgid "Colored status icons"
+msgstr "Pictograme de stare colorate"
+
+msgid "Columns"
+msgstr "Coloane"
+
+msgid "Compact"
+msgstr "Compact"
+
+msgid "Connect folders"
+msgstr "Conectează dosarele"
+
+msgid "Connections"
+msgstr "Conexiuni"
+
+msgid "Context Menu"
+msgstr "Meniu contextual"
+
+msgid "Continue"
+msgstr "Continuă"
+
+msgid "Copy"
+msgstr "Copiază"
+
+msgid "Could not reach update server. Check your internet connection."
+msgstr "Nu s-a putut contacta serverul de actualizări. Verificați conexiunea la Internet."
+
+msgid "CoverBrowser plugin is not enabled, some features will not work correctly."
+msgstr "Pluginul CoverBrowser nu este activat, unele funcții nu vor funcționa corect."
+
+msgid "Covers"
+msgstr "Coperte"
+
+msgid "crash.log will be embedded in a public GitHub issue. It may contain file paths and book titles."
+msgstr "Fișierul crash.log va fi inclus într-o problemă publică pe GitHub. Poate conține căi de fișiere și titluri de cărți."
+
+msgid "Create this folder and use as home"
+msgstr "Creați acest dosar și utilizați-l ca dosar principal"
+
+msgid "Crop folder custom image"
+msgstr "Decupează imaginea personalizată a dosarului"
+
+msgid "Crossword"
+msgstr "Cuvinte încrucișate"
+
+msgid "Current home folder:"
+msgstr "Dosarul principal curent:"
+
+msgid "Current only"
+msgstr "Doar curent"
+
+msgid "Custom"
+msgstr "Personalizat"
+
+msgid "Custom button label"
+msgstr "Etichetă buton personalizat"
+
+msgid "Custom buttons"
+msgstr "Butoane personalizate"
+
+msgid "Custom RGB"
+msgstr "RGB personalizat"
+
+msgid "Custom separator"
+msgstr "Separator personalizat"
+
+msgid "Custom text"
+msgstr "Text personalizat"
+
+msgid "Custom text: "
+msgstr "Text personalizat: "
+
+msgid "Custom: "
+msgstr "Personalizat: "
+
+msgid "Cut"
+msgstr "Taie"
+
+msgid "Dash"
+msgstr "Liniuță"
+
+msgid "date modified"
+msgstr "dată modificare"
+
+msgid "Day brightness"
+msgstr "Luminozitate zi"
+
+msgid "Day brightness time"
+msgstr "Oră luminozitate zi"
+
+msgid "Day brightness time: "
+msgstr "Oră luminozitate zi: "
+
+msgid "Day brightness: "
+msgstr "Luminozitate zi: "
+
+msgid "day streak"
+msgstr "serie de zile"
+
+msgid "Day warmth"
+msgstr "Căldură zi"
+
+msgid "Day warmth time"
+msgstr "Oră căldură zi"
+
+msgid "Day warmth time: "
+msgstr "Oră căldură zi: "
+
+msgid "Day warmth: "
+msgstr "Căldură zi: "
+
+msgid "Debug logging"
+msgstr "Jurnal de depanare"
+
+msgid "Debug logging must be enabled to submit bug reports."
+msgstr "Jurnalizarea de depanare trebuie activată pentru a trimite rapoarte."
+
+msgid "default"
+msgstr "implicit"
+
+msgid "Delete"
+msgstr "Șterge"
+
+msgid "Delete collection"
+msgstr "Șterge colecția"
+
+msgid "Delete OPDS catalog?"
+msgstr "Șterge catalogul OPDS?"
+
+msgid "Delete preset?"
+msgstr "Șterge setarea predefinită?"
+
+msgid "Descending"
+msgstr "Descendent"
+
+msgid "Description"
+msgstr "Descriere"
+
+msgid "Detailed list with cover images and filenames"
+msgstr "Listă detaliată cu coperte și nume de fișier"
+
+msgid "Detailed list with cover images and metadata"
+msgstr "Listă detaliată cu coperte și metadate"
+
+msgid "Detailed list with metadata, no images"
+msgstr "Listă detaliată cu metadate, fără imagini"
+
+msgid "Details"
+msgstr "Detalii"
+
+msgid "Device: "
+msgstr "Dispozitiv: "
+
+msgid "Dictionary lookup"
+msgstr "Căutare în dicționar"
+
+msgid "Dim finished books"
+msgstr "Estompează cărțile terminate"
+
+msgid "Disable bottom menu swipe"
+msgstr "Dezactivează glisarea meniului de jos"
+
+msgid "Disable context menu"
+msgstr "Dezactivează meniul contextual"
+
+msgid "Disable multi-word selection"
+msgstr "Dezactivează selecția mai multor cuvinte"
+
+msgid "Disable settings panel"
+msgstr "Dezactivează panoul de setări"
+
+msgid "Disable word search on hold"
+msgstr "Dezactivează căutarea cuvântului la apăsare lungă"
+
+msgid "Disk space"
+msgstr "Spațiu pe disc"
+
+msgid "Display"
+msgstr "Afișaj"
+
+msgid "Display mode"
+msgstr "Mod afișare"
+
+msgid "Done"
+msgstr "Gata"
+
+msgid "Dots"
+msgstr "Puncte"
+
+msgid "Download"
+msgstr "Descarcă"
+
+msgid "Download failed: "
+msgstr "Descărcare eșuată: "
+
+msgid "Downloaded"
+msgstr "Descărcat"
+
+msgid "Edit"
+msgstr "Editează"
+
+msgid "Enable"
+msgstr "Activează"
+
+msgid "Enable bottom swipe"
+msgstr "Activează glisarea de jos"
+
+msgid "Enable brightness schedule"
+msgstr "Activare planificare luminozitate"
+
+msgid "Enable custom status bar"
+msgstr "Activează bara de stare personalizată"
+
+msgid "Enable KOReader verbose debug logging. Logs are written to koreader.log. Takes effect immediately."
+msgstr "Activați jurnalizarea detaliată de depanare KOReader. Jurnalele sunt scrise în koreader.log. Intră în vigoare imediat."
+
+msgid "Enable night mode schedule"
+msgstr "Activare planificare mod noapte"
+
+msgid "Enable page browser"
+msgstr "Activează browserul de pagini"
+
+msgid "Enable reader clock"
+msgstr "Activează ceasul cititorului"
+
+msgid "Enable warmth schedule"
+msgstr "Activare planificare căldură"
+
+msgid "Enable Zen UI enhancements to the OPDS browser: cover art, list view, hold menu, and navigation improvements."
+msgstr "Activați îmbunătățirile Zen UI pentru browserul OPDS: coperte, vizualizare listă, meniu la apăsare lungă și îmbunătățiri de navigare."
+
+msgid "Enabling debug logging, restart required. Please reproduce the issue, then submit the report."
+msgstr "Se activează jurnalizarea de depanare, este necesar un repornire. Reproduceți problema, apoi trimiteți raportul."
+
+msgid "Enter your GitHub username to be tagged in the issue"
+msgstr "Introduceți numele dvs. de utilizator GitHub pentru a fi menționat în problemă"
+
+msgid "Exit"
+msgstr "Ieșire"
+
+msgid "Extra large"
+msgstr "Extra mare"
+
+msgid "Extract and cache book metadata and cover images for books in the current directory. Requires CoverBrowser plugin."
+msgstr "Extrage și stochează metadatele și copertele cărților din directorul curent. Necesită pluginul CoverBrowser."
+
+msgid "Extract metadata"
+msgstr "Extrage metadate"
+
+msgid "Failed to remove existing plugin."
+msgstr "Nu s-a putut elimina pluginul existent."
+
+msgid "Failed to submit report: "
+msgstr "Trimiterea raportului a eșuat: "
+
+msgid "Failed to unpack update."
+msgstr "Nu s-a putut dezarhiva actualizarea."
+
+msgid "Favorites"
+msgstr "Favorite"
+
+msgid "File Browser"
+msgstr "Browser fișiere"
+
+msgid "File search"
+msgstr "Căutare fișiere"
+
+msgid "Filebrowser"
+msgstr "Manager fișiere"
+
+msgid "Filebrowser plugin is not installed."
+msgstr "Pluginul Filebrowser nu este instalat."
+
+msgid "Filter"
+msgstr "Filtrare"
+
+msgid "Filter by status"
+msgstr "Filtrare după stare"
+
+msgid "Finished"
+msgstr "Terminat"
+
+msgid "finished"
+msgstr "terminat"
+
+msgid "Firmware: "
+msgstr "Firmware: "
+
+msgid "Folder"
+msgstr "Dosar"
+
+msgid "Folder name centered"
+msgstr "Nume dosar centrat"
+
+msgid "Folder name opaque background"
+msgstr "Fundal opac pentru numele dosarului"
+
+msgid "Folder name position"
+msgstr "Poziție nume dosar"
+
+msgid "Folder presets"
+msgstr "Setări predefinite dosar"
+
+msgid "Folders"
+msgstr "Dosare"
+
+msgid "Folders and files mixed"
+msgstr "Dosare și fișiere amestecate"
+
+msgid "Font"
+msgstr "Font"
+
+msgid "Font size"
+msgstr "Dimensiune font"
+
+msgid "Font size:"
+msgstr "Dimensiune font:"
+
+msgid "Font:"
+msgstr "Font:"
+
+msgid "Force sync"
+msgstr "Sincronizare forțată"
+
+msgid "Force sync all catalogs"
+msgstr "Sincronizare forțată a tuturor cataloagelor"
+
+msgid "Format: R,G,B (0-255)"
+msgstr "Format: R,G,B (0-255)"
+
+msgid "Gallery view"
+msgstr "Vizualizare galerie"
+
+msgid "Get Started"
+msgstr "Începeți"
+
+msgid "GitHub username (optional)"
+msgstr "Nume utilizator GitHub (opțional)"
+
+msgid "Global"
+msgstr "Global"
+
+msgid "Go"
+msgstr "Mergi"
+
+msgid "Go to page"
+msgstr "Mergi la pagina"
+
+msgid "Green"
+msgstr "Verde"
+
+msgid "Hide in CBZ/PDF files"
+msgstr "Ascunde în fișiere CBZ/PDF"
+
+msgid "Hide list borders"
+msgstr "Ascunde marginile listei"
+
+msgid "Hide up folder"
+msgstr "Ascunde dosarul părinte"
+
+msgid "Highlight / Lookup"
+msgstr "Evidențiere / Căutare"
+
+msgid "History"
+msgstr "Istoric"
+
+msgid "Hold to skip"
+msgstr "Ține apăsat pentru a sări"
+
+msgid "Home"
+msgstr "Acasă"
+
+msgid "Home Folder"
+msgstr "Dosar principal"
+
+msgid "Home folder"
+msgstr "Dosar principal"
+
+msgid "Hour"
+msgstr "Oră"
+
+msgid "Icon: %1"
+msgstr "Pictogramă: %1"
+
+msgid "Incompatible plugins have been disabled:"
+msgstr "Pluginurile incompatibile au fost dezactivate:"
+
+msgid "Install dictionary"
+msgstr "Instalează dicționar"
+
+msgid "items per page"
+msgstr "elemente pe pagină"
+
+msgid "Items per page"
+msgstr "Elemente pe pagină"
+
+msgid "Keep existing settings"
+msgstr "Păstrați setările existente"
+
+msgid "Keywords"
+msgstr "Cuvinte cheie"
+
+msgid "KOReader: "
+msgstr "KOReader: "
+
+msgid "Label: %1"
+msgstr "Etichetă: %1"
+
+msgid "Landscape mosaic mode"
+msgstr "Mod mozaic peisaj"
+
+msgid "Landscape mosaic: "
+msgstr "Mozaic peisaj: "
+
+msgid "Large"
+msgstr "Mare"
+
+msgid "last read date"
+msgstr "ultima dată citit"
+
+msgid "Later"
+msgstr "Mai târziu"
+
+msgid "latest"
+msgstr "cea mai recentă"
+
+msgid "Leave empty to use action title"
+msgstr "Lasă gol pentru a folosi titlul acțiunii"
+
+msgid "Left"
+msgstr "Stânga"
+
+msgid "Left items"
+msgstr "Elemente stânga"
+
+msgid "Library"
+msgstr "Bibliotecă"
+
+msgid "Library View"
+msgstr "Vizualizare bibliotecă"
+
+msgid "List (basic)"
+msgstr "Listă (de bază)"
+
+msgid "List (detailed)"
+msgstr "Listă (detaliată)"
+
+msgid "List - detailed titles and metadata"
+msgstr "Listă — titluri detaliate și metadate"
+
+msgid "List: "
+msgstr "Listă: "
+
+msgid "LocalSend"
+msgstr "LocalSend"
+
+msgid "Lock home folder"
+msgstr "Blochează dosarul principal"
+
+msgid "Lockdown"
+msgstr "Restricție"
+
+msgid "Lockdown mode"
+msgstr "Mod restricție"
+
+msgid "Magnify UI"
+msgstr "Mărire interfață"
+
+msgid "Manga"
+msgstr "Manga"
+
+msgid "Manga folder not found: "
+msgstr "Dosarul manga nu a fost găsit: "
+
+msgid "Manga tab action: "
+msgstr "Acțiune filă Manga: "
+
+msgid "Menu"
+msgstr "Meniu"
+
+msgid "Middle dot"
+msgstr "Punct median"
+
+msgid "Minimal status bar in the library view.\nCustomizable - show only what you need: time, battery, etc."
+msgstr "Bară de stare minimalistă în vizualizarea bibliotecii.\nPersonalizabilă: afișați doar ceea ce aveți nevoie: oră, baterie etc."
+
+msgid "Minute"
+msgstr "Minut"
+
+msgid "Mosaic"
+msgstr "Mozaic"
+
+msgid "Mosaic - large cover thumbnails"
+msgstr "Mozaic — miniaturi mari ale copertelor"
+
+msgid "Mosaic and detailed list settings"
+msgstr "Setări mozaic și listă detaliată"
+
+msgid "Mosaic with cover images"
+msgstr "Mozaic cu coperte"
+
+msgid "Mosaic with text"
+msgstr "Mozaic cu text"
+
+msgid "Move"
+msgstr "Mută"
+
+msgid "Move failed."
+msgstr "Mutare eșuată."
+
+msgid "Move to…"
+msgstr "Mută în…"
+
+msgid "name"
+msgstr "nume"
+
+msgid "name (natural sorting)"
+msgstr "nume (sortare naturală)"
+
+msgid "Navbar"
+msgstr "Bară de navigare"
+
+msgid "Navbar Tabs"
+msgstr "File bare de navigare"
+
+msgid "Navigation Bar"
+msgstr "Bară de navigare"
+
+msgid "New"
+msgstr "New"
+
+msgid "New collection"
+msgstr "Colecție nouă"
+
+msgid "New folder"
+msgstr "Dosar nou"
+
+msgid "News"
+msgstr "Știri"
+
+msgid "News folder not found: "
+msgstr "Dosarul de știri nu a fost găsit: "
+
+msgid "News tab action: "
+msgstr "Acțiune filă Știri: "
+
+msgid "Next"
+msgstr "Următor"
+
+msgid "Next page"
+msgstr "Pagina următoare"
+
+msgid "Night"
+msgstr "Noapte"
+
+msgid "Night brightness"
+msgstr "Luminozitate noapte"
+
+msgid "Night brightness time"
+msgstr "Oră luminozitate noapte"
+
+msgid "Night brightness time: "
+msgstr "Oră luminozitate noapte: "
+
+msgid "Night brightness: "
+msgstr "Luminozitate noapte: "
+
+msgid "Night mode"
+msgstr "Mod noapte"
+
+msgid "Night mode off time"
+msgstr "Oră oprire mod noapte"
+
+msgid "Night mode off: "
+msgstr "Mod noapte oprit: "
+
+msgid "Night mode on time"
+msgstr "Oră pornire mod noapte"
+
+msgid "Night mode on: "
+msgstr "Mod noapte pornit: "
+
+msgid "Night mode schedule"
+msgstr "Planificare mod noapte"
+
+msgid "Night warmth"
+msgstr "Căldură noapte"
+
+msgid "Night warmth time"
+msgstr "Oră căldură noapte"
+
+msgid "Night warmth time: "
+msgstr "Oră căldură noapte: "
+
+msgid "Night warmth: "
+msgstr "Căldură noapte: "
+
+msgid "No books found"
+msgstr "Nu s-au găsit cărți"
+
+msgid "No description."
+msgstr "Fără descriere."
+
+msgid "No network connection. Please connect to Wi-Fi and try again."
+msgstr "Fără conexiune la rețea. Conectați-vă la Wi-Fi și încercați din nou."
+
+msgid "No reader engine for this file or invalid file."
+msgstr "Niciun motor de citire pentru acest fișier sau fișier invalid."
+
+msgid "No separator"
+msgstr "Fără separator"
+
+msgid "No update asset found."
+msgstr "Nu s-a găsit nicio resursă de actualizare."
+
+msgid "Normal"
+msgstr "Normal"
+
+msgid "Nothing"
+msgstr "Nimic"
+
+msgid "Notion"
+msgstr "Notion"
+
+msgid "NotionSync"
+msgstr "NotionSync"
+
+msgid "Off"
+msgstr "Oprit"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "OPDS"
+msgstr "OPDS"
+
+msgid "Open folder"
+msgstr "Deschide dosar"
+
+msgid "Open folder: "
+msgstr "Deschide dosar: "
+
+msgid "Open QuickRSS"
+msgstr "Deschide QuickRSS"
+
+msgid "Open Rakuyomi"
+msgstr "Deschide Rakuyomi"
+
+msgid "Open RSS Reader"
+msgstr "Deschide cititorul RSS"
+
+msgid "Opening"
+msgstr "Se deschide"
+
+msgid "Order"
+msgstr "Ordine"
+
+msgid "Page Browser"
+msgstr "Browser pagini"
+
+msgid "Page number"
+msgstr "Număr pagină"
+
+msgid "Page number format"
+msgstr "Format număr pagină"
+
+msgid "Page stream"
+msgstr "Flux de pagini"
+
+msgid "Page x / y"
+msgstr "Pagina x / y"
+
+msgid "pages"
+msgstr "pag."
+
+msgid "Pages + Chapter Time + %"
+msgstr "Pagini + Timp capitol + %"
+
+msgid "Pages and %"
+msgstr "Pagini și %"
+
+msgid "pages today"
+msgstr "pagini azi"
+
+msgid "Partial pages refresh"
+msgstr "Reîmprospătare pagini parțiale"
+
+msgid "Paste"
+msgstr "Lipește"
+
+msgid "percent - unopened - finished last"
+msgstr "procent - nedeschis - terminat ultimul"
+
+msgid "percent - unopened first"
+msgstr "procent - nedeschis primul"
+
+msgid "percent - unopened last"
+msgstr "procent - nedeschis ultimul"
+
+msgid "Personal Records"
+msgstr "Recorduri personale"
+
+msgid "Please delete the Project: Title plugin from your plugins folder and restart KOReader."
+msgstr "Ștergeți pluginul Project: Title din folderul de pluginuri și reporniți KOReader."
+
+msgid "Plugin management"
+msgstr "Gestionare pluginuri"
+
+msgid "Portrait list mode"
+msgstr "Mod listă portret"
+
+msgid "Portrait mosaic mode"
+msgstr "Mod mozaic portret"
+
+msgid "Portrait mosaic: "
+msgstr "Mozaic portret: "
+
+msgid "Position"
+msgstr "Poziție"
+
+msgid "Preset name"
+msgstr "Nume setare predefinită"
+
+msgid "Presets"
+msgstr "Setări predefinite"
+
+msgid "Prev"
+msgstr "Anterior"
+
+msgid "Previous page"
+msgstr "Pagina anterioară"
+
+msgid "Progress"
+msgstr "Progres"
+
+msgid "Project: Title is not compatible with Zen UI."
+msgstr "Project: Title nu este compatibil cu Zen UI."
+
+msgid "Puzzle"
+msgstr "Puzzle"
+
+msgid "Quick Settings"
+msgstr "Setări rapide"
+
+msgid "QuickRSS"
+msgstr "QuickRSS"
+
+msgid "QuickRSS plugin is not installed."
+msgstr "Pluginul QuickRSS nu este instalat."
+
+msgid "Quit"
+msgstr "Închide"
+
+msgid "Quit KOReader"
+msgstr "Închide KOReader"
+
+msgid "Rakuyomi"
+msgstr "Rakuyomi"
+
+msgid "Rakuyomi plugin is not installed."
+msgstr "Pluginul Rakuyomi nu este instalat."
+
+msgid "RAM usage"
+msgstr "Utilizare RAM"
+
+msgid "Read now"
+msgstr "Citește acum"
+
+msgid "Read status"
+msgstr "Stare citire"
+
+msgid "read today"
+msgstr "citit azi"
+
+msgid "Reader"
+msgstr "Cititor"
+
+msgid "Reader clock"
+msgstr "Ceas cititor"
+
+msgid "Reader clock font"
+msgstr "Font ceas cititor"
+
+msgid "Reader Progress"
+msgstr "Progres de lectură"
+
+msgid "Reading"
+msgstr "Se citește"
+
+msgid "reading"
+msgstr "în citire"
+
+msgid "Rebooting…"
+msgstr "Se repornește…"
+
+msgid "Recently read"
+msgstr "Citite recent"
+
+msgid "Red"
+msgstr "Roșu"
+
+msgid "Refresh navbar"
+msgstr "Reîncarcă bara de navigare"
+
+msgid "Regular Oxford English"
+msgstr "Regular Oxford English"
+
+msgid "Regular Oxford English (203 MB)"
+msgstr "Regular Oxford English (203 MB)"
+
+msgid "Remove"
+msgstr "Elimină"
+
+msgid "Remove default"
+msgstr "Elimină implicit"
+
+msgid "Remove from collection"
+msgstr "Elimină din colecție"
+
+msgid "Remove from history"
+msgstr "Elimină din istoric"
+
+msgid "Remove this button"
+msgstr "Elimină acest buton"
+
+msgid "Remove this folder from additional home folders?"
+msgstr "Eliminați acest folder din folderele suplimentare de acasă?"
+
+msgid "Rename"
+msgstr "Redenumește"
+
+msgid "Report a Bug"
+msgstr "Raportează o eroare"
+
+msgid "Require hold to toggle buttons"
+msgstr "Necesită apăsare lungă pentru a comuta butoanele"
+
+msgid "Restart"
+msgstr "Repornește"
+
+msgid "Restart Book"
+msgstr "Repornește cartea"
+
+msgid "Restart now"
+msgstr "Repornește acum"
+
+msgid "Restore library view on return"
+msgstr "Restaurează vizualizarea bibliotecii la revenire"
+
+msgid "Resume from page"
+msgstr "Continuă de la pagina"
+
+msgid "Reverse sorting"
+msgstr "Sortare inversă"
+
+msgid "Review"
+msgstr "Recenzie"
+
+msgid "Right"
+msgstr "Dreapta"
+
+msgid "Right items"
+msgstr "Elemente dreapta"
+
+msgid "Rotate"
+msgstr "Rotire"
+
+msgid "Rounded cover corners"
+msgstr "Colțuri rotunjite ale copertelor"
+
+msgid "Rows"
+msgstr "Rânduri"
+
+msgid "RSS Reader"
+msgstr "Cititor RSS"
+
+msgid "RSS Reader plugin is not installed."
+msgstr "Pluginul RSS Reader nu este instalat."
+
+msgid "Save"
+msgstr "Salvează"
+
+msgid "Save current settings as preset"
+msgstr "Salvează setările curente ca setare predefinită"
+
+msgid "Screenshot"
+msgstr "Captură de ecran"
+
+msgid "Screenshot saved to:"
+msgstr "Captură salvată în:"
+
+msgid "Scroll bar style"
+msgstr "Stil bară de derulare"
+
+msgid "Search"
+msgstr "Caută"
+
+msgid "Search Book"
+msgstr "Caută carte"
+
+msgid "Search Library"
+msgstr "Caută în bibliotecă"
+
+msgid "Search results"
+msgstr "Rezultate căutare"
+
+msgid "Select"
+msgstr "Selectează"
+
+msgid "Select icon"
+msgstr "Selectare pictogramă"
+
+msgid "Send with LocalSend"
+msgstr "Trimite cu LocalSend"
+
+msgid "Separator: "
+msgstr "Separator: "
+
+msgid "Series"
+msgstr "Serie"
+
+msgid "series"
+msgstr "serii"
+
+msgid "Series number"
+msgstr "Număr din serie"
+
+msgid "Set"
+msgstr "Setează"
+
+msgid "Set all gestures to pass-through? Top-right corner in reader will be kept as Toggle bookmark."
+msgstr "Setați toate gesturile ca transparente? Colțul din dreapta sus din cititor va fi păstrat ca Comutare marcaj."
+
+msgid "Set as default"
+msgstr "Setează ca implicit"
+
+msgid "Set as wallpaper"
+msgstr "Setează ca fundal"
+
+msgid "Set file types to sync"
+msgstr "Setează tipurile de fișiere de sincronizat"
+
+msgid "Set home folder"
+msgstr "Setează dosarul principal"
+
+msgid "Set max number of files to sync"
+msgstr "Setează numărul maxim de fișiere de sincronizat"
+
+msgid "Set sync folder"
+msgstr "Setează dosarul de sincronizare"
+
+msgid "Settings & Updates"
+msgstr "Setări și actualizări"
+
+msgid "Setup Guide"
+msgstr "Ghid de configurare"
+
+msgid "Short Oxford English"
+msgstr "Short Oxford English"
+
+msgid "Short Oxford English (26 MB)"
+msgstr "Short Oxford English (26 MB)"
+
+msgid "Show author below cover (mosaic)"
+msgstr "Show author below cover (mosaic)"
+
+msgid "Show bottom border"
+msgstr "Afișează chenarul inferior"
+
+msgid "Show brightness slider"
+msgstr "Afișează cursorul luminozității"
+
+msgid "Show favorite badge"
+msgstr "Afișează insigna de favorit"
+
+msgid "Show folder covers as gallery"
+msgstr "Afișează copertele dosarelor ca galerie"
+
+msgid "Show folder name"
+msgstr "Afișează numele dosarului"
+
+msgid "Show folder name on cover"
+msgstr "Afișează numele dosarului pe copertă"
+
+msgid "Show hidden files"
+msgstr "Afișează fișierele ascunse"
+
+msgid "Show in quick settings"
+msgstr "Afișează în setările rapide"
+
+msgid "Show item count on folder covers"
+msgstr "Afișează numărul de elemente pe copertele dosarelor"
+
+msgid "Show item underline"
+msgstr "Afișează sublinierea elementului"
+
+msgid "Show KOReader progress bar"
+msgstr "Afișează bara de progres KOReader"
+
+msgid "Show labels"
+msgstr "Afișează etichete"
+
+msgid "Show new banner"
+msgstr "Show new banner"
+
+msgid "Show other items"
+msgstr "Afișează alte elemente"
+
+msgid "Show other KOReader quick lookup options alongside Zen buttons."
+msgstr "Afișează alte opțiuni de căutare rapidă KOReader alături de butoanele Zen."
+
+msgid "Show page count"
+msgstr "Afișează numărul de pagini"
+
+msgid "Show progress % on mosaic covers"
+msgstr "Afișează % progres pe copertele mozaicului"
+
+msgid "Show series number on covers"
+msgstr "Afișează numărul din serie pe coperte"
+
+msgid "Show spine lines on folder covers"
+msgstr "Afișează linii de cotor pe coperte folderelor"
+
+msgid "Show title below cover (mosaic)"
+msgstr "Show title below cover (mosaic)"
+
+msgid "Show top border"
+msgstr "Afișează chenarul superior"
+
+msgid "Show warmth slider"
+msgstr "Afișează cursorul de căldură"
+
+msgid "Show Wikipedia"
+msgstr "Afișează Wikipedia"
+
+msgid "size"
+msgstr "dimensiune"
+
+msgid "Skip"
+msgstr "Omiteți"
+
+msgid "Skip 10 pages"
+msgstr "Sari 10 pagini"
+
+msgid "Skip 20 pages"
+msgstr "Sari 20 pagini"
+
+msgid "Sleep"
+msgstr "Repaus"
+
+msgid "Sleep Screen"
+msgstr "Ecran de repaus"
+
+msgid "Slide Puzzle"
+msgstr "Puzzle glisant"
+
+msgid "Sort"
+msgstr "Sortare"
+
+msgid "Sort authors"
+msgstr "Sortare autori"
+
+msgid "Sort books by"
+msgstr "Sortare cărți după"
+
+msgid "Sort by"
+msgstr "Sortează după"
+
+msgid "Sort by: "
+msgstr "Sortează după: "
+
+msgid "Sort folder"
+msgstr "Sortare dosar"
+
+msgid "Sort folder by"
+msgstr "Sortează dosar după"
+
+msgid "Sort library"
+msgstr "Sortare bibliotecă"
+
+msgid "Sort library by"
+msgstr "Sortare bibliotecă după"
+
+msgid "Sort order"
+msgstr "Ordine de sortare"
+
+msgid "Sort series"
+msgstr "Sortare serii"
+
+msgid "Space only"
+msgstr "Doar spațiu"
+
+msgid "Space only (small)"
+msgstr "Doar spațiu (mic)"
+
+msgid "Stable"
+msgstr "Stable"
+
+msgid "Statistics"
+msgstr "Statistici"
+
+msgid "Stats"
+msgstr "Statistici"
+
+msgid "Stats: Calendar"
+msgstr "Statistici: Calendar"
+
+msgid "Stats: Progress"
+msgstr "Statistici: Progres"
+
+msgid "Status bar"
+msgstr "Bară de stare"
+
+msgid "Status Bar"
+msgstr "Bară de stare"
+
+msgid "Steps to reproduce, expected vs. actual behavior"
+msgstr "Pași pentru a reproduce, comportament așteptat vs. real"
+
+msgid "Streak"
+msgstr "Serie"
+
+msgid "Stream from page"
+msgstr "Flux de la pagina"
+
+msgid "Styling"
+msgstr "Stil"
+
+msgid "Submit"
+msgstr "Trimite"
+
+msgid "Submitting report…"
+msgstr "Se trimite raportul…"
+
+msgid "Swipe down to reach quick settings like brightness, Wi-Fi, night mode, zen mode and more."
+msgstr "Glisați în jos pentru a accesa setările rapide: luminozitate, Wi-Fi, mod noapte, mod zen și altele."
+
+msgid "Swipe up from the bottom while reading to open the Page Browser.\n\nSkim through pages or skip chapters, browse the table of contents, manage bookmarks, adjust fonts and more."
+msgstr "Glisați în sus din partea de jos în timp ce citiți pentru a deschide Browser-ul de pagini.\n\nRăsfoiți paginile sau săriți capitole, navigați în cuprins, gestionați marcajele, ajustați fonturile și altele."
+
+msgid "Sync"
+msgstr "Sincronizare"
+
+msgid "Sync all catalogs"
+msgstr "Sincronizează toate cataloagele"
+
+msgid "Tabs"
+msgstr "File"
+
+msgid "Tags"
+msgstr "Etichete"
+
+msgid "tags"
+msgstr "etichete"
+
+msgid "Tap and hold any book or folder in your library to reveal details."
+msgstr "Apăsați lung pe orice carte sau dosar din biblioteca dvs. pentru a vedea detalii."
+
+msgid "The best interface is the one you forget is there.\nNow go get lost in a good book."
+msgstr "Cea mai bună interfață este cea pe care o uiți că există.\nAcum mergeți să vă pierdeți într-o carte bună."
+
+msgid "The place for all your books %1"
+msgstr "Locul pentru toate cărțile dvs. %1"
+
+msgid "This change requires a restart to take effect."
+msgstr "Această modificare necesită o repornire pentru a intra în vigoare."
+
+msgid "This is a large file and may take a few minutes. Please wait."
+msgstr "Acesta este un fișier mare și poate dura câteva minute. Vă rugăm așteptați."
+
+msgid "This may take a few minutes. Please wait."
+msgstr "Aceasta poate dura câteva minute. Vă rugăm așteptați."
+
+msgid "This Month"
+msgstr "Luna aceasta"
+
+msgid "This Week"
+msgstr "Săptămâna aceasta"
+
+msgid "This Year"
+msgstr "Anul acesta"
+
+msgid "Time"
+msgstr "Timp"
+
+msgid "Time Format"
+msgstr "Format oră"
+
+msgid "Title"
+msgstr "Titlu"
+
+msgid "To Be Read"
+msgstr "De citit"
+
+msgid "Today"
+msgstr "Azi"
+
+msgid "Too many requests. Please try again later."
+msgstr "Prea multe cereri. Încercați din nou mai târziu."
+
+msgid "total books"
+msgstr "total cărți"
+
+msgid "total pages read"
+msgstr "pagini totale citite"
+
+msgid "total read time"
+msgstr "timp total de citit"
+
+msgid "total time"
+msgstr "timp total"
+
+msgid "Turn on Zen mode to strip KOReader down to its bare essentials.\n\nRemove visual clutter for a focused, distraction-free reading experience. Exit at anytime from Settings."
+msgstr "Activați modul Zen pentru a reduce KOReader la esențial.\n\nEliminați dezordinea vizuală pentru o experiență de lectură concentrată, fără distracții. Ieșiți oricând din Setări."
+
+msgid "type"
+msgstr "tip"
+
+msgid "Underline above icon"
+msgstr "Subliniere deasupra pictogramei"
+
+msgid "Uniform covers"
+msgstr "Coperte uniforme"
+
+msgid "unknown error"
+msgstr "eroare necunoscută"
+
+msgid "Unread"
+msgstr "Necitit"
+
+msgid "Update available: "
+msgstr "Actualizare disponibilă: "
+
+msgid "Update channel"
+msgstr "Canal de actualizare"
+
+msgid "Update now"
+msgstr "Actualizează acum"
+
+msgid "Update Status"
+msgstr "Stare actualizare"
+
+msgid "Updated to %1"
+msgstr "Actualizat la %1"
+
+msgid "Updates"
+msgstr "Actualizări"
+
+msgid "Updating…"
+msgstr "Se actualizează…"
+
+msgid "USB"
+msgstr "USB"
+
+msgid "Use current folder"
+msgstr "Folosește dosarul curent"
+
+msgid "Use default font"
+msgstr "Folosește fontul implicit"
+
+msgid "Use home folder"
+msgstr "Folosește dosarul principal"
+
+msgid "Use last folder"
+msgstr "Folosește ultimul dosar"
+
+msgid "username"
+msgstr "nume utilizator"
+
+msgid "Verbose time to chapter end"
+msgstr "Timp detaliat până la sfârșitul capitolului"
+
+msgid "Vertical bar"
+msgstr "Bară verticală"
+
+msgid "View"
+msgstr "Vizualizare"
+
+msgid "Visibility"
+msgstr "Vizibilitate"
+
+msgid "Warmth"
+msgstr "Căldură"
+
+msgid "Warmth schedule"
+msgstr "Planificare căldură"
+
+msgid "Welcome to Zen UI"
+msgstr "Bun venit în Zen UI"
+
+msgid "What should your device show when it goes to sleep?"
+msgstr "Ce ar trebui să afișeze dispozitivul dvs. când intră în repaus?"
+
+msgid "What's New"
+msgstr "Noutăți"
+
+msgid "When enabled, icons placed in KOReader's user icons folder override the bundled Zen UI icons. Falls back to Zen UI icons, then KOReader built-ins."
+msgstr "Când este activat, pictogramele din dosarul de pictograme al utilizatorului KOReader suprascriu pictogramele Zen UI incluse. Se revine la pictogramele Zen UI, apoi la cele din KOReader."
+
+msgid "Which time format do you prefer?"
+msgstr "Ce format de oră preferați?"
+
+msgid "Wi-Fi"
+msgstr "Wi-Fi"
+
+msgid "You're All Set"
+msgstr "Ești gata"
+
+msgid "Z-Lib"
+msgstr "Z-Lib"
+
+msgid "Z-Library"
+msgstr "Z-Library"
+
+msgid "Zen"
+msgstr "Zen"
+
+msgid "Zen highlight menu"
+msgstr "Meniu de evidențiere Zen"
+
+msgid "Zen icon - white background"
+msgstr "Icoană Zen — fundal alb"
+
+msgid "Zen Mode"
+msgstr "Mod Zen"
+
+msgid "Zen mode"
+msgstr "Mod Zen"
+
+msgid "Zen OPDS"
+msgstr "Zen OPDS"
+
+msgid "Zen quick lookup"
+msgstr "Căutare rapidă Zen"
+
+msgid "Zen UI"
+msgstr "Zen UI"
+
+msgid "Zen UI defaults"
+msgstr "Setări implicite Zen UI"
+
+msgid "Zen UI is up to date."
+msgstr "Zen UI este actualizat."
+
+msgid "Zen UI: "
+msgstr "Zen UI: "
